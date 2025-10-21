@@ -89,7 +89,20 @@ button:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(198,40,40,0.
 .ghost:hover{background:rgba(255,255,255,0.1)}
 
 /* === CONTENIDO PRINCIPAL === */
-.container{padding:20px;display:grid;grid-template-columns:1fr;gap:20px}
+.container{
+/* 👉 PROPIEDADES AGREGADAS PARA CENTRAR: */
+max-width: 2400px; 
+margin: 0 auto; /* Mantenemos el centrado del bloque, que es generalmente bueno */
+
+/* 👇 SOLUCIÓN MÁS LIMPIA: Aumentar el padding izquierdo (Margen interno) */
+padding: 20px 20px 20px 20px; /* Top | Right | Bottom | Left. Cambiamos 20px por 40px en la izquierda */
+
+ /* PROPIEDADES ORIGINALES: */
+display:grid;
+grid-template-columns:1fr;
+ gap:20px;
+}
+
 .section{display:none}.active-section{display:block}
 
 .search-card{background:var(--card-bg);padding:20px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 4px 12px rgba(0,0,0,0.2)}
@@ -304,6 +317,24 @@ input[type=file]{color:var(--muted);margin:8px 0}
     .nav.user-info{width:100%;justify-content:space-between;margin-top:10px}
     .news-card-wrapper{grid-template-columns:1fr}
 }
+
+/* === FOOTER (PIE DE PÁGINA) === */
+.main-footer{
+    display:flex;
+    align-items:center;
+    justify-content:center; /* 👉 Centra el texto */
+    padding:12px 18px;
+    /* Mismo estilo de fondo que el topbar */
+    background:linear-gradient(90deg,rgba(0,0,0,0.8),rgba(18,18,18,0.9));
+    border-top:1px solid rgba(255,255,255,0.03); /* Borde superior en lugar de inferior */
+    color:var(--muted); /* Un color discreto para el texto */
+    font-size:0.9rem;
+    width: 100%;
+    
+    /* 👉 ESTILOS PARA FIJAR EL FOOTER EN LA PARTE INFERIOR */
+    margin-top: auto; /* Permite que el footer se "empuje" hacia abajo */
+}
+
 </style>
 
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -353,22 +384,29 @@ input[type=file]{color:var(--muted);margin:8px 0}
         </header>
 
         <main class="container">
+            
             <section id="home" class="section active-section">
-                <div class="search-card">
-                    <h2>Buscar código en inventarios kacosa 2025</h2>
-                    <div class="row" style="margin-top:8px">
-                        <input id="searchCode" placeholder="Ingrese código..." />
-                        <button id="btnSearch">Buscar</button>
-                    </div>
-                    <div id="searchResults" class="results"></div>
-                </div>
-                <div class="news-card-wrapper" id="mainNews"></div>
-            </section>
+    <div class="search-card">
+        <h2>Buscar código en inventarios kacosa 2025</h2>
+
+        <div class="row filter-controls" style="margin-bottom:12px;">
+             <input id="filterCenter" placeholder="Filtrar por Centro de Inventario" />
+             <button id="btnFilterCenter">Filtrar</button> 
+        </div>
+
+        <div class="row" style="margin-top:8px">
+            <input id="searchCode" placeholder="Ingrese código..." />
+            <button id="btnSearch">Buscar</button>
+        </div>
+        <div id="searchResults" class="results"></div>
+    </div>
+    <div class="news-card-wrapper" id="mainNews"></div>
+</section>
 
             <section id="documents" class="section">
                 <h2>Documentos</h2>
                 <input type="file" id="docFile"/>
-                <input id="docName" placeholder="Nombre del archivo (obligatorio)" />
+                <input id="docName" placeholder=" * Nombre del archivo" />
                 <br>
                 <br>
                 <button id="btnUploadDoc">Subir documento</button>
@@ -387,7 +425,7 @@ input[type=file]{color:var(--muted);margin:8px 0}
             <section id="images" class="section">
                 <h2>Imágenes</h2>
                 <input type="file" id="imgFile" accept="image/*"/>
-                <input id="imgName" placeholder="Nombre de la imagen (obligatorio)" />
+                <input id="imgName" placeholder="* Nombre de la imagen" />
                 <br>
                 <br>
                 <button id="btnUploadImg">Subir imagen</button>
@@ -419,8 +457,17 @@ input[type=file]{color:var(--muted);margin:8px 0}
                 </div>
             </section>
         </main>
+        
+        <footer class="main-footer">
+            <span>
+                Logística & Inventario ©  2025 creado por Derwin Rojas
+            </span>
+        </footer>
+        </div>
+</div>
     </div>
 </div>
+        
 <script>
 /* ====== CONFIG ====== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbxGddNfj5sY12ncFIuVd63C2dBK5I7Amnu7P3FLZ9p-_RIRzK49XuG1ptbA6oklPMyn/exec';
@@ -433,6 +480,9 @@ const firebaseConfig = {
 };
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+
+// 👉 NUEVA VARIABLE GLOBAL: Almacena los resultados de la búsqueda de código
+let currentInventoryResults = [];
 
 /* ====== Helpers (SIN CAMBIOS EN LA LÓGICA DE URLS) ====== */
 
@@ -574,76 +624,96 @@ async function callApi(action, payload = {}) {
     }
 }
 
-    /* ====== BUSCAR CÓDIGO (MODIFICADO) ====== */
+// 👉 NUEVA FUNCIÓN: Maneja el renderizado aplicando el filtro de Centro de Inventario
+function renderInventoryResults() {
+    const out = document.getElementById('searchResults');
+    // Usamos 'filterCenter' que es el ID del input que debes usar en tu HTML
+    const centroFilter = (document.getElementById('filterCenter')?.value || '').trim().toLowerCase(); 
+    
+    // Aplicar filtro por Centro_Inventario a los resultados YA OBTENIDOS
+    const filtered = centroFilter 
+        ? currentInventoryResults.filter(r =>
+            safeString(getField(r, 'Centro_Inventario', 'centroinventario')).toLowerCase().includes(centroFilter))
+        : currentInventoryResults;
+
+    if (!filtered.length) {
+        out.innerHTML = '<div class="muted">Sin resultados para este filtro</div>';
+        return;
+    }
+
+    const rows = filtered.map(r => {
+        const codigo = safeString(getField(r, 'codigo', 'Código', 'code')) || '';
+        const nombre = safeString(getField(r, 'nombre', 'Nombre', 'name')) || '';
+        const descripcion = safeString(getField(r, 'descripcion', 'Descripción', 'description')) || '';
+        const um = safeString(getField(r, 'um', 'UM')) || '';
+        const ubic = safeString(getField(r, 'ubicacionFisicaGeneral', 'ubicacion')) || '';
+        const cantidad = safeString(getField(r, 'cantidad', 'Cant')) || '';
+        const ubicExhib = safeString(getField(r, 'ubicacionExhib', 'ubicacion exhib')) || '';
+        const conteo = safeString(getField(r, 'conteoExhb', 'conteo exhb')) || '';
+        const fechaUlt = safeString(getField(r, 'fechaUltimoConteo', 'fecha')) || '';
+        const auditor = safeString(getField(r, 'ultimoAuditor', 'auditor')) || '';
+        const difG = safeString(getField(r, 'difGeneral', 'dif_general')) || '';
+        const difE = safeString(getField(r, 'difExhib', 'dif_exhib')) || '';
+        const centro = safeString(getField(r, 'Centro_Inventario', 'centroinventario')) || '';
+        const nombreDoc = safeString(getField(r, 'Nombre_Documento', 'nombredocumento')) || '';
+
+        return `<tr>
+            <td>${codigo}</td>
+            <td>${nombre}</td>
+            <td>${descripcion}</td>
+            <td>${um}</td>
+            <td>${ubic}</td>
+            <td>${cantidad}</td>
+            <td>${ubicExhib}</td>
+            <td>${conteo}</td>
+            <td>${fechaUlt}</td>
+            <td>${auditor}</td>
+            <td>${difG}</td>
+            <td>${difE}</td>
+            <td>${centro}</td>
+            <td>${nombreDoc}</td>
+        </tr>`;
+    }).join('');
+
+    out.innerHTML = `<table class="results-table">
+        <thead>
+            <tr>
+                <th>Código</th><th>Nombre</th><th>Descripción</th><th>UM</th>
+                <th>Ubicación Física</th><th>Cantidad</th><th>Ubicación Exhib</th><th>Conteo Exhib</th>
+                <th>Fecha Último Conteo</th><th>Auditor</th><th>DIF General</th><th>DIF Exhib</th>
+                <th>Centro Inventario</th><th>Nombre Documento</th>
+            </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+    </table>`;
+}
+
+// 👉 MODIFICACIÓN DE LA FUNCIÓN btnSearch
 document.getElementById('btnSearch').addEventListener('click', async () =>
 {
     const code = document.getElementById('searchCode').value.trim();
     if (!code) return alert('Ingrese un código.');
-    const centroFilter = (document.getElementById('filterCentroInventario')?.value || '').trim().toLowerCase();
+    
+    // Eliminamos el filtro de Centro de Inventario de aquí, solo traemos los datos
+    
     const data = await getApi('search', { code });
-    const out = document.getElementById('searchResults');
 
     if (data && data.results && data.results.length)
     {
-        // Aplicar filtro por Centro_Inventario si está activo
-        const filtered = centroFilter 
-            ? data.results.filter(r => safeString(getField(r, 'Centro_Inventario')).toLowerCase().includes(centroFilter))
-            : data.results;
-
-        if (!filtered.length) {
-            out.innerHTML = '<div class="muted">Sin resultados para este filtro</div>';
-            return;
-        }
-
-        const rows = filtered.map(r => {
-            const codigo = safeString(getField(r, 'codigo', 'Código', 'code')) || '';
-            const nombre = safeString(getField(r, 'nombre', 'Nombre', 'name')) || '';
-            const descripcion = safeString(getField(r, 'descripcion', 'Descripción', 'description')) || '';
-            const um = safeString(getField(r, 'um', 'UM')) || '';
-            const ubic = safeString(getField(r, 'ubicacionFisicaGeneral', 'ubicacion')) || '';
-            const cantidad = safeString(getField(r, 'cantidad', 'Cant')) || '';
-            const ubicExhib = safeString(getField(r, 'ubicacionExhib', 'ubicacion exhib')) || '';
-            const conteo = safeString(getField(r, 'conteoExhb', 'conteo exhb')) || '';
-            const fechaUlt = safeString(getField(r, 'fechaUltimoConteo', 'fecha')) || '';
-            const auditor = safeString(getField(r, 'ultimoAuditor', 'auditor')) || '';
-            const difG = safeString(getField(r, 'difGeneral', 'dif_general')) || '';
-            const difE = safeString(getField(r, 'difExhib', 'dif_exhib')) || '';
-            const centro = safeString(getField(r, 'Centro_Inventario', 'centroinventario')) || '';
-            const nombreDoc = safeString(getField(r, 'Nombre_Documento', 'nombredocumento')) || '';
-
-            return `<tr>
-                <td>${codigo}</td>
-                <td>${nombre}</td>
-                <td>${descripcion}</td>
-                <td>${um}</td>
-                <td>${ubic}</td>
-                <td>${cantidad}</td>
-                <td>${ubicExhib}</td>
-                <td>${conteo}</td>
-                <td>${fechaUlt}</td>
-                <td>${auditor}</td>
-                <td>${difG}</td>
-                <td>${difE}</td>
-                <td>${centro}</td>
-                <td>${nombreDoc}</td>
-            </tr>`;
-        }).join('');
-
-        out.innerHTML = `<table class="results-table">
-            <thead>
-                <tr>
-                    <th>Código</th><th>Nombre</th><th>Descripción</th><th>UM</th>
-                    <th>Ubicación Física</th><th>Cantidad</th><th>Ubicación Exhib</th><th>Conteo Exhib</th>
-                    <th>Fecha Último Conteo</th><th>Auditor</th><th>DIF General</th><th>DIF Exhib</th>
-                    <th>Centro Inventario</th><th>Nombre Documento</th>
-                </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-        </table>`;
+        // 1. GUARDAMOS LOS RESULTADOS ORIGINALES
+        currentInventoryResults = data.results;
+        
+        // 2. RENDERIZAMOS (APLICANDO EL FILTRO, si ya tiene valor)
+        renderInventoryResults();
+        
     } else {
-        out.innerHTML = '<div class="muted">Sin resultados</div>';
+        currentInventoryResults = [];
+        document.getElementById('searchResults').innerHTML = '<div class="muted">Sin resultados</div>';
     }
 });
+
+// 👉 NUEVO LISTENER: Conecta el botón de filtrar con la función de renderizado
+document.getElementById('btnFilterCenter').addEventListener('click', renderInventoryResults);
     
 /* ====== UPLOAD helpers (SIN CAMBIOS) ====== */
 async function uploadFile(file, filenameOpt) {
