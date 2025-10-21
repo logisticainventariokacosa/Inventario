@@ -16,7 +16,16 @@
 html,body{height:100%}
 body{
     font-family:Inter,system-ui, Arial;
-    background:linear-gradient(180deg,var(--bg),#070707);
+    /* Combinamos: 
+       1. Capa oscura semi-transparente (0.6) para mejorar la legibilidad del texto blanco.
+       2. La imagen de fondo ('img/fondo1.png').
+       3. El color de fondo negro sólido como alternativa. */
+    background:
+        linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
+        url('img/fondo1.png') no-repeat fixed center center / cover,
+        var(--bg); /* Usa tu variable de fondo definida */
+
+    background-size: cover; /* Asegura que la imagen cubra toda la pantalla */
     color:var(--text);
     min-height:100vh;
     line-height:1.5; /* Mejora la legibilidad */
@@ -414,7 +423,7 @@ input[type=file]{color:var(--muted);margin:8px 0}
 </div>
 <script>
 /* ====== CONFIG ====== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbw4GOMG_ZKUxDNdp2yS2qSp6YJmGhK4WMr1NvCkqlrL5-qexvGAH-WB68GYzYmM6d7PGA/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbxGddNfj5sY12ncFIuVd63C2dBK5I7Amnu7P3FLZ9p-_RIRzK49XuG1ptbA6oklPMyn/exec';
 
 const firebaseConfig = {
     apiKey:"AIzaSyDpBoHiKKC7MLQHiWV9psdE3eJ4YuR66GU",
@@ -565,32 +574,45 @@ async function callApi(action, payload = {}) {
     }
 }
 
-/* ====== BUSCAR CÓDIGO (SIN CAMBIOS) ====== */
+    /* ====== BUSCAR CÓDIGO (MODIFICADO) ====== */
 document.getElementById('btnSearch').addEventListener('click', async () =>
 {
     const code = document.getElementById('searchCode').value.trim();
     if (!code) return alert('Ingrese un código.');
+    const centroFilter = (document.getElementById('filterCentroInventario')?.value || '').trim().toLowerCase();
     const data = await getApi('search', { code });
     const out = document.getElementById('searchResults');
 
     if (data && data.results && data.results.length)
     {
-        const rows = data.results.map(r => {
+        // Aplicar filtro por Centro_Inventario si está activo
+        const filtered = centroFilter 
+            ? data.results.filter(r => safeString(getField(r, 'Centro_Inventario')).toLowerCase().includes(centroFilter))
+            : data.results;
+
+        if (!filtered.length) {
+            out.innerHTML = '<div class="muted">Sin resultados para este filtro</div>';
+            return;
+        }
+
+        const rows = filtered.map(r => {
             const codigo = safeString(getField(r, 'codigo', 'Código', 'code')) || '';
             const nombre = safeString(getField(r, 'nombre', 'Nombre', 'name')) || '';
             const descripcion = safeString(getField(r, 'descripcion', 'Descripción', 'description')) || '';
             const um = safeString(getField(r, 'um', 'UM')) || '';
-            const ubic = safeString(getField(r, 'ubicacionFisicaGeneral', 'ubicacion fisica general', 'ubicacion', 'ubicaciongeneral')) || '';
+            const ubic = safeString(getField(r, 'ubicacionFisicaGeneral', 'ubicacion')) || '';
             const cantidad = safeString(getField(r, 'cantidad', 'Cant')) || '';
             const ubicExhib = safeString(getField(r, 'ubicacionExhib', 'ubicacion exhib')) || '';
-            const conteo = safeString(getField(r, 'conteoExhb', 'conteo exhb', 'conteo_exhb')) || '';
-            const fechaUlt = safeString(getField(r, 'fechaUltimoConteo', 'fecha ultimo conteo', 'fecha')) || '';
-            const auditor = safeString(getField(r, 'ultimoAuditor', 'ultimo auditor en contar', 'ultimo auditor')) || '';
+            const conteo = safeString(getField(r, 'conteoExhb', 'conteo exhb')) || '';
+            const fechaUlt = safeString(getField(r, 'fechaUltimoConteo', 'fecha')) || '';
+            const auditor = safeString(getField(r, 'ultimoAuditor', 'auditor')) || '';
             const difG = safeString(getField(r, 'difGeneral', 'dif_general')) || '';
             const difE = safeString(getField(r, 'difExhib', 'dif_exhib')) || '';
+            const centro = safeString(getField(r, 'Centro_Inventario', 'centroinventario')) || '';
+            const nombreDoc = safeString(getField(r, 'Nombre_Documento', 'nombredocumento')) || '';
 
             return `<tr>
-                <td style="min-width:120px">${codigo}</td>
+                <td>${codigo}</td>
                 <td>${nombre}</td>
                 <td>${descripcion}</td>
                 <td>${um}</td>
@@ -602,6 +624,8 @@ document.getElementById('btnSearch').addEventListener('click', async () =>
                 <td>${auditor}</td>
                 <td>${difG}</td>
                 <td>${difE}</td>
+                <td>${centro}</td>
+                <td>${nombreDoc}</td>
             </tr>`;
         }).join('');
 
@@ -611,18 +635,16 @@ document.getElementById('btnSearch').addEventListener('click', async () =>
                     <th>Código</th><th>Nombre</th><th>Descripción</th><th>UM</th>
                     <th>Ubicación Física</th><th>Cantidad</th><th>Ubicación Exhib</th><th>Conteo Exhib</th>
                     <th>Fecha Último Conteo</th><th>Auditor</th><th>DIF General</th><th>DIF Exhib</th>
+                    <th>Centro Inventario</th><th>Nombre Documento</th>
                 </tr>
             </thead>
-            <tbody>
-                ${rows}
-            </tbody>
+            <tbody>${rows}</tbody>
         </table>`;
-    } else
-    {
+    } else {
         out.innerHTML = '<div class="muted">Sin resultados</div>';
     }
 });
-
+    
 /* ====== UPLOAD helpers (SIN CAMBIOS) ====== */
 async function uploadFile(file, filenameOpt) {
     const base64 = await new Promise(res => {
