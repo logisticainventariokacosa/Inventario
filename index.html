@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1"/>
     <title>Logística & Inventario</title>
     
-  <style>
+ <style>
 /* === VARIABLES DE DISEÑO Y RESET === */
 :root{
     --red:#c62828;--black:#121212;--bg:#0f0f0f;
@@ -17,9 +17,9 @@ html,body{height:100%}
 body{
     font-family:Inter,system-ui, Arial;
     /* Combinamos: 
-       1. Capa oscura semi-transparente (0.6) para mejorar la legibilidad del texto blanco.
-       2. La imagen de fondo ('img/fondo1.png').
-       3. El color de fondo negro sólido como alternativa. */
+        1. Capa oscura semi-transparente (0.6) para mejorar la legibilidad del texto blanco.
+        2. La imagen de fondo ('img/fondo1.png').
+        3. El color de fondo negro sólido como alternativa. */
     background:
         linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
         url('Img/fondo1.jpg') no-repeat fixed center center / cover,
@@ -95,12 +95,12 @@ max-width: 2400px;
 margin: 0 auto; /* Mantenemos el centrado del bloque, que es generalmente bueno */
 
 /* 👇 SOLUCIÓN MÁS LIMPIA: Aumentar el padding izquierdo (Margen interno) */
-padding: 20px 20px 20px 20px; /* Top | Right | Bottom | Left. Cambiamos 20px por 40px en la izquierda */
+padding: 20px 20px 20px 30px; /* Top | Right | Bottom | Left. Cambiamos 20px por 40px en la izquierda */
 
  /* PROPIEDADES ORIGINALES: */
 display:grid;
 grid-template-columns:1fr;
- gap:20px;
+    gap:20px;
 }
 
 .section{display:none}.active-section{display:block}
@@ -257,7 +257,6 @@ grid-template-columns:1fr;
     }
 }
 
-
 /* Placeholder/Inputs/Botones */
 .placeholder{
     width:100%;
@@ -288,6 +287,18 @@ input[type=file]{color:var(--muted);margin:8px 0}
     min-width:150px;
 }
 
+/* Estilo para el campo de texto de las noticias */
+#createNewsForm textarea {
+    width: 100%;
+    padding: 10px 12px;
+    margin: 8px 0;
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.06);
+    background: rgba(255,255,255,0.02);
+    color: var(--text);
+    height: 120px;
+    resize: vertical;
+}
 
 /* === MOBILE ADJUSTMENTS === */
 @media(max-width:640px){
@@ -300,8 +311,8 @@ input[type=file]{color:var(--muted);margin:8px 0}
         grid-template-columns: 1fr; /* Volver a una columna en móvil */
     }
     .news-image-area img{
-         max-width:100%;
-         height:auto;
+          max-width:100%;
+          height:auto;
     }
     .news-list .item img{
         float:none;
@@ -443,6 +454,35 @@ input[type=file]{color:var(--muted);margin:8px 0}
 
             <section id="news" class="section">
                 <h2>Noticias</h2>
+                
+                <button id="btnToggleNewsForm" style="margin-bottom: 15px;">CREAR NOTICIA</button>
+
+                <div id="createNewsForm" class="search-card hidden" style="margin-bottom: 30px;">
+                    <h3>Publicar Nueva Noticia</h3>
+                    
+                    <input id="newsTitle" placeholder="* Título de la Noticia" style="margin-bottom: 10px;" />
+                    
+                    <textarea id="newsContent" placeholder="* Contenido de la Noticia"></textarea>
+                    
+                    <label for="newsImgFile" style="display: block; margin-top: 10px; color: var(--muted); font-size: 0.9rem;">Imagen (opcional):</label>
+                    <input type="file" id="newsImgFile" accept="image/*" style="margin-bottom: 10px;"/>
+                    
+                    <div class="row" style="justify-content: flex-start; margin-top: 15px;">
+                        <button id="btnUploadNews">Publicar Noticia</button>
+                        <button id="btnCancelNews" class="alt">Cancelar</button>
+                    </div>
+
+                    <div id="newsStatus" style="margin-top: 10px;"></div>
+                </div>
+
+                <h3 style="margin-top:20px;margin-bottom:15px">Lista de Noticias</h3>
+                
+                <div class="filter-controls">
+                    <input id="filterNewsTitle" placeholder="Filtrar por Título" />
+                    <input id="filterNewsDate" placeholder="Filtrar por Fecha (dd/mm/yyyy)" />
+                    <button id="btnFilterNews">Filtrar</button>
+                    <button id="btnResetNewsFilters" class="alt">Limpiar Filtros</button>
+                </div>
                 <div id="newsList" class="news-list"></div>
             </section>
 
@@ -467,10 +507,10 @@ input[type=file]{color:var(--muted);margin:8px 0}
 </div>
     </div>
 </div>
-        
+    
 <script>
 /* ====== CONFIG ====== */
-const API_URL = 'https://script.google.com/macros/s/AKfycbxGddNfj5sY12ncFIuVd63C2dBK5I7Amnu7P3FLZ9p-_RIRzK49XuG1ptbA6oklPMyn/exec';
+const API_URL = 'https://script.google.com/macros/s/AKfycbzGoWmn4doU1_vDqQvWYbqg4WzW8WD6y64lI96xKYn_bGd-L1THgt3HVJJl_BprqpysTA/exec';
 
 const firebaseConfig = {
     apiKey:"AIzaSyDpBoHiKKC7MLQHiWV9psdE3eJ4YuR66GU",
@@ -483,6 +523,8 @@ const auth = firebase.auth();
 
 // 👉 NUEVA VARIABLE GLOBAL: Almacena los resultados de la búsqueda de código
 let currentInventoryResults = [];
+// 👉 NUEVA VARIABLE GLOBAL: Almacena las noticias cargadas para poder filtrarlas localmente
+let allNewsData = [];
 
 /* ====== Helpers (SIN CAMBIOS EN LA LÓGICA DE URLS) ====== */
 
@@ -523,12 +565,12 @@ function getDriveThumbnailUrl(url, size = 300) {
     }
     
     if (!fileId && url.includes('uc?export=view')) {
-         const m3 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
-         if (m3 && m3[1]) fileId = m3[1];
+           const m3 = url.match(/[?&]id=([a-zA-Z0-9_-]+)/);
+           if (m3 && m3[1]) fileId = m3[1];
     }
 
     if (fileId) {
-         return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`; 
+           return `https://drive.google.com/thumbnail?id=${fileId}&sz=w${size}`; 
     }
 
     return url;
@@ -600,17 +642,19 @@ document.getElementById('btnGoogle').addEventListener('click', async () =>
 document.getElementById('btnLogout').addEventListener('click',
     () => auth.signOut());
 
-/* ====== API Helpers (SIN CAMBIOS) ====== */
+/* ====== API Helpers (CON CAMBIOS EN POST) ====== */
 async function getApi(action, params = {}) {
     const q = new URLSearchParams(Object.assign({ action }, params)).toString();
     const res = await fetch(API_URL + '?' + q);
     return res.json();
 }
 async function callApi(action, payload = {}) {
-    const isUpload = action === 'uploadFile';
+    // MODIFICADO: Ahora incluye 'uploadNews' como una acción sin retorno
+    const isUpload = (action === 'uploadFile' || action === 'addNews'); 
     const body = JSON.stringify(Object.assign({ action }, payload));
     if (isUpload) {
-        await fetch(API_URL, { method: 'POST', body, mode: 'no-cors' });
+        // Usamos 'no-cors' para acciones que no necesitan respuesta del App Script
+        await fetch(API_URL, { method: 'POST', body, mode: 'no-cors' }); 
         return { ok: true, opaque: true };
     } else
     {
@@ -715,7 +759,7 @@ document.getElementById('btnSearch').addEventListener('click', async () =>
 // 👉 NUEVO LISTENER: Conecta el botón de filtrar con la función de renderizado
 document.getElementById('btnFilterCenter').addEventListener('click', renderInventoryResults);
     
-/* ====== UPLOAD helpers (SIN CAMBIOS) ====== */
+/* ====== UPLOAD helpers (SIN CAMBIOS EN LA BASE) ====== */
 async function uploadFile(file, filenameOpt) {
     const base64 = await new Promise(res => {
         const r = new FileReader();
@@ -778,7 +822,6 @@ document.getElementById('btnUploadImg').addEventListener('click', async () =>
 
 document.getElementById('btnFilterDoc').addEventListener('click', () => listUploads('documents'));
 document.getElementById('btnFilterImg').addEventListener('click', () => listUploads('images'));
-
 
 async function listUploads(section = 'documents', findAndShowName = false, findName = '')
 {
@@ -876,59 +919,176 @@ async function listUploads(section = 'documents', findAndShowName = false, findN
     }
 }
 
-/* ====== Noticias (LÓGICA MEJORADA PARA MOSTRAR CONTENIDO) ====== */
-async function loadNews(){
-    const res = await getApi('listNews');
+/* ====== NEW: News Upload (Formulario) ====== */
+
+// 1. Mostrar/Ocultar el formulario de noticias
+document.getElementById('btnToggleNewsForm').addEventListener('click', () => {
+    document.getElementById('createNewsForm').classList.toggle('hidden');
+    // Limpiar campos al mostrar
+    if (!document.getElementById('createNewsForm').classList.contains('hidden')) {
+        document.getElementById('newsTitle').value = '';
+        document.getElementById('newsContent').value = '';
+        document.getElementById('newsImgFile').value = '';
+        document.getElementById('newsStatus').textContent = '';
+    }
+});
+
+document.getElementById('btnCancelNews').addEventListener('click', () => {
+    document.getElementById('createNewsForm').classList.add('hidden');
+});
+
+// 2. Lógica para subir la Noticia
+document.getElementById('btnUploadNews').addEventListener('click', async () =>
+{
+    const title = document.getElementById('newsTitle').value.trim();
+    const content = document.getElementById('newsContent').value.trim();
+    const imgFile = document.getElementById('newsImgFile').files[0];
+    const status = document.getElementById('newsStatus');
+
+    if (!title || !content) return alert('El Título y el Contenido son obligatorios.');
+
+    status.textContent = 'Subiendo noticia...';
+
+    let imageUrl = '';
+
+    try
+    {
+        // 1. Subir la imagen si existe
+        if (imgFile) {
+            status.textContent = 'Subiendo imagen...';
+            // Usamos un nombre único para la imagen de noticia para evitar colisiones
+            const imgName = `NEWS_${Date.now()}_${imgFile.name}`; 
+            
+            // Llama al Apps Script para subir la imagen a Drive/Sheet de archivos
+            const uploadRes = await uploadFile(imgFile, imgName);
+
+            // Dado que 'uploadFile' usa 'mode: no-cors', necesitamos un paso adicional para obtener el URL
+            // Hacemos una nueva llamada a la API para obtener el listado de imágenes y buscar la recién subida
+            const listRes = await getApi('listUploads');
+            const uploadedImg = (listRes.imgs || []).find(x => x.name === imgName);
+            if (uploadedImg && uploadedImg.url) {
+                imageUrl = uploadedImg.url;
+            } else {
+                status.textContent = 'Error: No se pudo obtener el URL de la imagen. La noticia se publicará sin ella.';
+                console.warn('Could not retrieve image URL after upload.');
+            }
+        }
+        
+        // 2. Publicar la noticia con los datos (y el URL de la imagen)
+        status.textContent = 'Publicando noticia en la hoja de cálculo...';
+        
+        const newsData = {
+            titulo: title,
+            contenido: content,
+            imagenUrl: imageUrl,
+        };
+
+        // Nueva acción en Apps Script: 'addNews'
+        await callApi('addNews', { news: newsData });
+
+        status.textContent = '✅ Noticia publicada exitosamente. Recargando lista...';
+        
+        // Limpiar formulario y recargar noticias
+        document.getElementById('createNewsForm').classList.add('hidden');
+        await loadNews();
+
+    } catch (e) {
+        status.textContent = '❌ Error al publicar la noticia.';
+        console.error(e);
+    }
+});
+
+/* ====== Noticias (LÓGICA MEJORADA PARA MOSTRAR Y FILTRAR) ====== */
+
+function renderNews(newsArray) {
     const main = document.getElementById('mainNews');
     const list = document.getElementById('newsList');
-    if (res && res.news && res.news.length)
-    {
-        const n = res.news[0];
-        const imgUrl = getDriveThumbnailUrl(safeString(n.imagenUrl), 300); 
-        const directLink = getDriveDirectUrl(safeString(n.imagenUrl));
 
-        // Renderizado de la NOTICIA PRINCIPAL (AJUSTE DE DISEÑO)
-        main.innerHTML = `
-            <div class="news-image-area">
-                ${imgUrl 
-                    ? `<a href="${directLink}" target="_blank"><img loading="lazy" src="${imgUrl}" alt="noticia" class="news-card-img" 
-                        onerror="this.style.display='none'; this.alt='No image'"></a>` 
-                    : ''}
-                <div class="news-meta-data">
-                    📅 ${safeString(n.fecha)}
-                </div>
-            </div>
-            <div class="news-content-area">
-                <h3>${safeString(n.titulo)}</h3>
-                <p style="margin-top:10px">${safeString(n.contenido)}</p>
-            </div>
-            `; 
-
-        // Renderizado de la LISTA DE NOTICIAS (AJUSTE DE DISEÑO Y CONTENIDO)
-        list.innerHTML = res.news.map(x => {
-            const thumb = getDriveThumbnailUrl(safeString(x.imagenUrl), 200); 
-            const directLinkItem = getDriveDirectUrl(safeString(x.imagenUrl));
-            
-            return `<div class="item">
-                <a href="${directLinkItem}" target="_blank">
-                ${thumb
-                    ? `<img loading="lazy" src="${thumb}" alt="${safeString(x.titulo)}" class="news-list-thumb"
-                        onerror="this.style.display='none'; this.alt='No image'">`
-                    : ''}
-                </a>
-                <div>
-                    <strong>${safeString(x.titulo)}</strong>
-                    <small>${safeString(x.fecha)}</small>
-                    <p>${safeString(x.contenido)}</p> 
-                </div>
-            </div>`;
-        }).join('');
-    } else
-    {
-        main.innerHTML = '<p class="muted">No hay noticias.</p>';
+    if (newsArray.length === 0) {
+        main.innerHTML = '<p class="muted">No hay noticias que coincidan con el filtro.</p>';
         list.innerHTML = '';
+        return;
     }
+
+    // 1. Renderizado de la NOTICIA PRINCIPAL (si hay resultados)
+    const n = newsArray[0];
+    const imgUrl = getDriveThumbnailUrl(safeString(n.imagenUrl), 300); 
+    const directLink = getDriveDirectUrl(safeString(n.imagenUrl));
+
+    main.innerHTML = `
+        <div class="news-image-area">
+            ${imgUrl 
+                ? `<a href="${directLink}" target="_blank"><img loading="lazy" src="${imgUrl}" alt="noticia" class="news-card-img" 
+                    onerror="this.style.display='none'; this.alt='No image'"></a>` 
+                : ''}
+            <div class="news-meta-data">
+                📅 ${safeString(n.fecha)}
+            </div>
+        </div>
+        <div class="news-content-area">
+            <h3>${safeString(n.titulo)}</h3>
+            <p style="margin-top:10px">${safeString(n.contenido)}</p>
+        </div>
+        `; 
+
+    // 2. Renderizado de la LISTA DE NOTICIAS
+    list.innerHTML = newsArray.map(x => {
+        const thumb = getDriveThumbnailUrl(safeString(x.imagenUrl), 200); 
+        const directLinkItem = getDriveDirectUrl(safeString(x.imagenUrl));
+        
+        return `<div class="item">
+            <a href="${directLinkItem}" target="_blank">
+            ${thumb
+                ? `<img loading="lazy" src="${thumb}" alt="${safeString(x.titulo)}" class="news-list-thumb"
+                    onerror="this.style.display='none'; this.alt='No image'">`
+                : ''}
+            </a>
+            <div>
+                <strong>${safeString(x.titulo)}</strong>
+                <small>${safeString(x.fecha)}</small>
+                <p>${safeString(x.contenido)}</p> 
+            </div>
+        </div>`;
+    }).join('');
 }
+
+async function loadNews(){
+    const res = await getApi('listNews');
+    
+    // Almacena los resultados originales de la API
+    allNewsData = (res && res.news && res.news.length) ? res.news : [];
+    
+    // Renderiza la lista completa inicialmente
+    renderNews(allNewsData);
+}
+
+// 3. NEW: News Filtering Logic
+function filterNews() {
+    const titleFilter = (document.getElementById('filterNewsTitle')?.value || '').trim().toLowerCase();
+    const dateFilter = (document.getElementById('filterNewsDate')?.value || '').trim();
+
+    const filteredNews = allNewsData.filter(n => {
+        const title = (n.titulo || '').toString().toLowerCase();
+        const date = (n.fecha || '').toString().trim();
+        
+        return (
+            (!titleFilter || title.includes(titleFilter)) && 
+            // Buscamos si la fecha empieza con el filtro (útil para buscar por dd/mm o dd/mm/yyyy)
+            (!dateFilter || date.startsWith(dateFilter))
+        );
+    });
+
+    renderNews(filteredNews);
+}
+
+// 4. NEW: Listeners para los filtros y limpieza
+document.getElementById('btnFilterNews').addEventListener('click', filterNews);
+
+document.getElementById('btnResetNewsFilters').addEventListener('click', () => {
+    document.getElementById('filterNewsTitle').value = '';
+    document.getElementById('filterNewsDate').value = '';
+    renderNews(allNewsData); // Muestra todos los resultados almacenados
+});
 
 /* ====== Navegación (SIN CAMBIOS EN LÓGICA) ====== */
 document.querySelectorAll('.nav a').forEach(a => {
