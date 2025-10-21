@@ -16,26 +16,56 @@
 html,body{height:100%}
 body{
     font-family:Inter,system-ui, Arial;
-    /* Combinamos: 
-        1. Capa oscura semi-transparente (0.6) para mejorar la legibilidad del texto blanco.
-        2. La imagen de fondo ('img/fondo1.png').
-        3. El color de fondo negro sólido como alternativa. */
     background:
         linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.6)), 
         url('Img/fondo1.jpg') no-repeat fixed center center / cover,
-        var(--bg); /* Usa tu variable de fondo definida */
-
-    background-size: cover; /* Asegura que la imagen cubra toda la pantalla */
+        var(--bg); 
+    background-size: cover; 
     color:var(--text);
     min-height:100vh;
-    line-height:1.5; /* Mejora la legibilidad */
+    line-height:1.5; 
 }
 
 /* === AUTH SCREEN === */
 .auth-screen{display:flex;align-items:center;justify-content:center;height:100vh;padding:16px}
 .card.auth-card{background:linear-gradient(180deg,#1a1a1a,#0f0f0f);border-radius:12px;padding:28px;width:100%;max-width:420px;box-shadow:0 10px 30px rgba(0,0,0,.6);border:1px solid rgba(255,255,255,0.04);text-align:center}
 .auth-card h1{margin-bottom:6px;font-size:22px}.muted{color:var(--muted)}
+
+/* Contenedor para el input y el botón de toggle (para la contraseña) */
+.password-container {
+    position: relative;
+    width: 100%;
+}
+
 .auth-card input{width:100%;padding:10px 12px;margin:8px 0;border-radius:8px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);color:var(--text)}
+
+/* Ajuste para que el input dentro del contenedor de contraseña no tenga doble margen */
+.password-container input {
+    margin: 8px 0; 
+    padding-right: 40px; 
+}
+
+/* Estilo para el botón de alternar visibilidad */
+.toggle-password {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 1.1rem;
+    padding: 0;
+    line-height: 1;
+    z-index: 10;
+    transition: color 0.2s;
+}
+.toggle-password:hover {
+    color: var(--text);
+}
+
+
 .row{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
 button{background:var(--red);border:0;padding:10px 14px;border-radius:10px;color:white;cursor:pointer;transition:transform .12s, box-shadow .12s}
 button.alt{background:transparent;border:1px solid rgba(255,255,255,0.08)}button.google{background:#fff;color:#222}
@@ -51,12 +81,11 @@ button:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(198,40,40,0.
 .nav.menu{display:flex;gap:4px;flex-wrap:wrap;align-items:center}
 
 /* REGLA CRÍTICA: Asegura color blanco y sin subrayado en todos los estados */
-/* ✅ CORRECCIÓN: Se cambió el selector de .nav.menu a .nav .menu para que funcione con la estructura HTML de DIV dentro de NAV */
-.nav .menu a, /* SELECTOR CORREGIDO: Espacio entre .nav y .menu */
+.nav .menu a, 
 .nav .menu a:visited,
-.nav .menu a:link { /* Añadido :link para máxima compatibilidad con el color blanco */
-    color:var(--text) !important; /* Fuerza el color blanco */
-    text-decoration:none !important; /* Fuerza la eliminación del subrayado */
+.nav .menu a:link { 
+    color:var(--text) !important; 
+    text-decoration:none !important; 
     
     padding:8px 12px; 
     border-radius:8px;
@@ -66,15 +95,13 @@ button:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(198,40,40,0.
 }
 
 /* Estilo para el botón hover (al pasar el ratón) */
-/* ✅ CORRECCIÓN: Se cambió el selector de .nav.menu a .nav .menu */
 .nav .menu a:hover{ 
-    color:var(--red) !important; /* El hover ahora se ve rojo */
+    color:var(--red) !important; 
     background:rgba(255, 255, 255, 0.05);
     box-shadow: 0 0 5px rgba(255, 255, 255, 0.1);
 }
 
 /* Estilo para el botón activo (sección actual) */
-/* ✅ CORRECCIÓN: Se cambió el selector de .nav.menu a .nav .menu */
 .nav .menu a.active{
     color:var(--red) !important; 
     font-weight:700;
@@ -90,14 +117,9 @@ button:hover{transform:translateY(-3px);box-shadow:0 10px 20px rgba(198,40,40,0.
 
 /* === CONTENIDO PRINCIPAL === */
 .container{
-/* 👉 PROPIEDADES AGREGADAS PARA CENTRAR: */
 max-width: 2400px; 
-margin: 0 auto; /* Mantenemos el centrado del bloque, que es generalmente bueno */
-
-/* 👇 SOLUCIÓN MÁS LIMPIA: Aumentar el padding izquierdo (Margen interno) */
-padding: 20px 20px 20px 30px; /* Top | Right | Bottom | Left. Cambiamos 20px por 40px en la izquierda */
-
- /* PROPIEDADES ORIGINALES: */
+margin: 0 auto; 
+padding: 20px 20px 20px 30px; 
 display:grid;
 grid-template-columns:1fr;
     gap:20px;
@@ -119,7 +141,7 @@ grid-template-columns:1fr;
 /* === GRID GENERAL (Documentos e Imágenes) MODIFICADO === */
 .grid{
     display:grid;
-    grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); /* Mínimo 280px para más columnas */
+    grid-template-columns:repeat(auto-fill,minmax(280px,1fr)); 
     gap:15px;
     margin-top:15px;
 }
@@ -142,7 +164,7 @@ grid-template-columns:1fr;
 .card-item img{
     max-width:100%;
     border-radius:8px;
-    height:160px; /* Un poco más grande */
+    height:160px; 
     object-fit:cover;
     background:#111;
     margin-bottom:10px;
@@ -154,7 +176,7 @@ grid-template-columns:1fr;
 /* === NOTICIAS (Sección Inicio) MODIFICADO === */
 .news-card-wrapper{
     display:grid;
-    grid-template-columns:1fr; /* Por defecto 1 columna */
+    grid-template-columns:1fr; 
     gap:15px;
     padding:15px;
     background:var(--card-news);
@@ -182,7 +204,7 @@ grid-template-columns:1fr;
     max-height:180px;
     object-fit:cover;
     border-radius:8px;
-    margin:0; /* Se elimina el margen inferior */
+    margin:0; 
 }
 .news-meta-data{
     font-size:12px;
@@ -198,8 +220,8 @@ grid-template-columns:1fr;
     .container{grid-template-columns:1fr 420px}
     .search-card{grid-column:1}
     .news-card-wrapper{
-        grid-column:1 / span 2; /* Ocupa ambas columnas si es necesario */
-        grid-template-columns: auto 1fr; /* Imagen y meta a la izq, Contenido a la derecha */
+        grid-column:1 / span 2; 
+        grid-template-columns: auto 1fr; 
         align-items: flex-start;
     }
     .news-image-area {
@@ -208,7 +230,7 @@ grid-template-columns:1fr;
 }
 @media(min-width:1200px){
      .news-card-wrapper{
-        grid-template-columns: 280px 1fr; /* Más espacio para la imagen */
+        grid-template-columns: 280px 1fr; 
      }
 }
 
@@ -233,7 +255,7 @@ grid-template-columns:1fr;
     height:120px;
     object-fit:cover;
     border-radius:8px;
-    float:left; /* Para que el texto envuelva la imagen en móvil */
+    float:left; 
     margin-right:10px;
     margin-bottom:5px;
 }
@@ -241,16 +263,15 @@ grid-template-columns:1fr;
 /* Desktop: Lista de noticias a 2 columnas */
 @media(min-width:768px){
     .news-list .item{
-        grid-template-columns: auto 1fr; /* Imagen y texto en línea */
+        grid-template-columns: auto 1fr; 
     }
     .news-list .item img{
         max-width:180px;
         height:100px;
-        float:none; /* Desactivar float */
+        float:none; 
         margin-right:0;
     }
     .news-list .item div:first-of-type{
-        /* Contenedor de meta y contenido */
         display: flex;
         flex-direction: column;
         padding-left: 10px;
@@ -287,6 +308,25 @@ input[type=file]{color:var(--muted);margin:8px 0}
     min-width:150px;
 }
 
+/* 💥 AÑADIDO: Contenedor para el input de filtro y su botón de limpieza 💥 */
+.filter-input-group {
+    display: flex;
+    gap: 5px; /* Espacio entre el input y el botón de limpiar */
+    flex: 1; /* Permite que el grupo se estire */
+    min-width: 150px; /* Asegura un mínimo en el grupo */
+}
+.filter-input-group input {
+    flex: 1; /* El input toma el espacio restante del grupo */
+    margin: 0; /* Eliminar el margen extra para ajustarlo al grupo */
+    min-width: 100px; /* Asegura un mínimo para el input */
+}
+.filter-input-group button.alt {
+    padding: 8px 10px; /* Hacer el botón más pequeño y en línea */
+    font-size: 0.8rem;
+    white-space: nowrap; /* Evita que el texto del botón se rompa */
+}
+
+
 /* Estilo para el campo de texto de las noticias */
 #createNewsForm textarea {
     width: 100%;
@@ -308,7 +348,7 @@ input[type=file]{color:var(--muted);margin:8px 0}
     .card-item{min-height:160px;padding:14px}
     .results th{font-size:13px}
     .news-card-wrapper{
-        grid-template-columns: 1fr; /* Volver a una columna en móvil */
+        grid-template-columns: 1fr; 
     }
     .news-image-area img{
           max-width:100%;
@@ -318,32 +358,28 @@ input[type=file]{color:var(--muted);margin:8px 0}
         float:none;
     }
     .filter-controls{flex-direction:column}
-    .filter-controls input{width:100%}
-}
-
-/* === RESPONSIVE === */
-@media(max-width:640px){
-    .nav{flex-direction:column;align-items:flex-start;gap:8px}
-    .nav.menu{flex-wrap:wrap;justify-content:center;width:100%}
-    .nav.user-info{width:100%;justify-content:space-between;margin-top:10px}
-    .news-card-wrapper{grid-template-columns:1fr}
+    .filter-controls > button { /* Botones de acción principal (Filtrar) */
+        width: 100%;
+    }
+    /* El grupo de filtro se mantendrá en línea, pero con flex-wrap en el padre (filter-controls) */
+    .filter-input-group{
+        width: 100%; 
+        min-width: auto;
+    }
 }
 
 /* === FOOTER (PIE DE PÁGINA) === */
 .main-footer{
     display:flex;
     align-items:center;
-    justify-content:center; /* 👉 Centra el texto */
+    justify-content:center; 
     padding:12px 18px;
-    /* Mismo estilo de fondo que el topbar */
     background:linear-gradient(90deg,rgba(0,0,0,0.8),rgba(18,18,18,0.9));
-    border-top:1px solid rgba(255,255,255,0.03); /* Borde superior en lugar de inferior */
-    color:var(--muted); /* Un color discreto para el texto */
+    border-top:1px solid rgba(255,255,255,0.03); 
+    color:var(--muted); 
     font-size:0.9rem;
     width: 100%;
-    
-    /* 👉 ESTILOS PARA FIJAR EL FOOTER EN LA PARTE INFERIOR */
-    margin-top: auto; /* Permite que el footer se "empuje" hacia abajo */
+    margin-top: auto; 
 }
 
 </style>
@@ -359,7 +395,12 @@ input[type=file]{color:var(--muted);margin:8px 0}
             <p class="muted">Accede para información</p>
             <input id="name" placeholder="Nombre"/>
             <input id="email" placeholder="Correo" type="email"/>
-            <input id="password" placeholder="Contraseña" type="password"/>
+            
+            <div class="password-container">
+                <input id="password" placeholder="Contraseña" type="password"/>
+                <button class="toggle-password" id="togglePasswordBtn">👁️</button>
+            </div>
+            
             <div class="row">
                 <button id="btnRegister">Registrarse</button>
                 <button id="btnLogin" class="alt">Iniciar sesión</button>
@@ -401,8 +442,11 @@ input[type=file]{color:var(--muted);margin:8px 0}
         <h2>Buscar código en inventarios kacosa 2025</h2>
 
         <div class="row filter-controls" style="margin-bottom:12px;">
-             <input id="filterCenter" placeholder="Filtrar por Centro de Inventario" />
-             <button id="btnFilterCenter">Filtrar</button> 
+             <div class="filter-input-group">
+                 <input id="filterCenter" placeholder="Filtrar por Centro de Inventario" />
+                 <button id="btnResetFilterCenter" class="alt" data-target="filterCenter">Limpiar</button>
+             </div>
+             <button id="btnFilterCenter">Aplicar Filtro de Centro</button> 
         </div>
 
         <div class="row" style="margin-top:8px">
@@ -425,10 +469,19 @@ input[type=file]{color:var(--muted);margin:8px 0}
                 
                 <h3 style="margin-top:30px;margin-bottom:15px">Archivos subidos</h3>
                 <div class="filter-controls">
-                    <input id="filterNameDoc" placeholder="Filtrar por nombre de usuario" />
-                    <input id="filterEmailDoc" placeholder="Filtrar por correo" />
-                    <input id="filterDateDoc" placeholder="Filtrar por fecha (dd/mm/yyyy)" />
-                    <button id="btnFilterDoc">Filtrar</button>
+                    <div class="filter-input-group">
+                        <input id="filterNameDoc" placeholder="Filtrar por nombre de usuario" />
+                        <button id="btnResetFilterNameDoc" class="alt" data-target="filterNameDoc">Limpiar</button>
+                    </div>
+                    <div class="filter-input-group">
+                        <input id="filterEmailDoc" placeholder="Filtrar por correo" />
+                        <button id="btnResetFilterEmailDoc" class="alt" data-target="filterEmailDoc">Limpiar</button>
+                    </div>
+                    <div class="filter-input-group">
+                        <input id="filterDateDoc" placeholder="Filtrar por fecha (dd/mm/yyyy)" />
+                        <button id="btnResetFilterDateDoc" class="alt" data-target="filterDateDoc">Limpiar</button>
+                    </div>
+                    <button id="btnFilterDoc">Aplicar Filtros</button>
                 </div>
                 <div id="docList" class="grid"></div>
             </section>
@@ -444,10 +497,19 @@ input[type=file]{color:var(--muted);margin:8px 0}
                 
                 <h3 style="margin-top:30px;margin-bottom:15px">Imágenes subidas</h3>
                 <div class="filter-controls">
-                    <input id="filterNameImg" placeholder="Filtrar por nombre de usuario" />
-                    <input id="filterEmailImg" placeholder="Filtrar por correo" />
-                    <input id="filterDateImg" placeholder="Filtrar por fecha (dd/mm/yyyy)" />
-                    <button id="btnFilterImg">Filtrar</button>
+                    <div class="filter-input-group">
+                        <input id="filterNameImg" placeholder="Filtrar por nombre de usuario" />
+                        <button id="btnResetFilterNameImg" class="alt" data-target="filterNameImg">Limpiar</button>
+                    </div>
+                    <div class="filter-input-group">
+                        <input id="filterEmailImg" placeholder="Filtrar por correo" />
+                        <button id="btnResetFilterEmailImg" class="alt" data-target="filterEmailImg">Limpiar</button>
+                    </div>
+                    <div class="filter-input-group">
+                        <input id="filterDateImg" placeholder="Filtrar por fecha (dd/mm/yyyy)" />
+                        <button id="btnResetFilterDateImg" class="alt" data-target="filterDateImg">Limpiar</button>
+                    </div>
+                    <button id="btnFilterImg">Aplicar Filtros</button>
                 </div>
                 <div id="imgList" class="grid"></div>
             </section>
@@ -478,10 +540,16 @@ input[type=file]{color:var(--muted);margin:8px 0}
                 <h3 style="margin-top:20px;margin-bottom:15px">Lista de Noticias</h3>
                 
                 <div class="filter-controls">
-                    <input id="filterNewsTitle" placeholder="Filtrar por Título" />
-                    <input id="filterNewsDate" placeholder="Filtrar por Fecha (dd/mm/yyyy)" />
-                    <button id="btnFilterNews">Filtrar</button>
-                    <button id="btnResetNewsFilters" class="alt">Limpiar Filtros</button>
+                    <div class="filter-input-group">
+                        <input id="filterNewsTitle" placeholder="Filtrar por Título" />
+                        <button id="btnResetFilterNewsTitle" class="alt" data-target="filterNewsTitle">Limpiar</button>
+                    </div>
+                    <div class="filter-input-group">
+                        <input id="filterNewsDate" placeholder="Filtrar por Fecha (dd/mm/yyyy)" />
+                        <button id="btnResetFilterNewsDate" class="alt" data-target="filterNewsDate">Limpiar</button>
+                    </div>
+                    <button id="btnFilterNews">Aplicar Filtros</button>
+                    <button id="btnResetNewsAll" class="alt">Limpiar filtros</button>
                 </div>
                 <div id="newsList" class="news-list"></div>
             </section>
@@ -500,15 +568,13 @@ input[type=file]{color:var(--muted);margin:8px 0}
         
         <footer class="main-footer">
             <span>
-                Logística & Inventario ©  2025 creado por Derwin Rojas
+                Logística & Inventario ©  2025 creado por Derwin Rojas
             </span>
         </footer>
         </div>
-</div>
     </div>
-</div>
-    
-<script>
+
+    <script>
 /* ====== CONFIG ====== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzGoWmn4doU1_vDqQvWYbqg4WzW8WD6y64lI96xKYn_bGd-L1THgt3HVJJl_BprqpysTA/exec';
 
@@ -593,7 +659,17 @@ function getField(obj, ...keys) {
     return '';
 }
 
-/* ====== AUTH (SIN CAMBIOS) ====== */
+/* ====== AUTH (AGREGADO: Lógica de ver/ocultar contraseña) ====== */
+
+// Nuevo listener para el botón de alternar contraseña
+document.getElementById('togglePasswordBtn').addEventListener('click', function() {
+    const passwordInput = document.getElementById('password');
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+    // Cambiar el icono
+    this.textContent = type === 'password' ? '👁️' : '🔒'; 
+});
+
 auth.onAuthStateChanged(user => {
     if (user) {
         document.getElementById('authScreen').classList.add('hidden');
@@ -618,6 +694,7 @@ document.getElementById('btnRegister').addEventListener('click', async () =>
     {
         const userCred = await auth.createUserWithEmailAndPassword(email, pass);
         await userCred.user.updateProfile({ displayName: name });
+        // CORRECCIÓN CLAVE: Pasamos el modo 'cors' para asegurar que se reciba el resultado correcto de la API si fuera necesario.
         await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } }); 
         alert('Registrado correctamente');
     } catch (err) { alert(err.message); }
@@ -642,7 +719,7 @@ document.getElementById('btnGoogle').addEventListener('click', async () =>
 document.getElementById('btnLogout').addEventListener('click',
     () => auth.signOut());
 
-/* ====== API Helpers (CON CAMBIOS EN POST) ====== */
+/* ====== API Helpers (SIN CAMBIOS) ====== */
 async function getApi(action, params = {}) {
     const q = new URLSearchParams(Object.assign({ action }, params)).toString();
     const res = await fetch(API_URL + '?' + q);
@@ -650,10 +727,11 @@ async function getApi(action, params = {}) {
 }
 async function callApi(action, payload = {}) {
     // MODIFICADO: Ahora incluye 'uploadNews' como una acción sin retorno
-    const isUpload = (action === 'uploadFile' || action === 'addNews'); 
+    const isNoCors = (action === 'uploadFile' || action === 'addNews' || action === 'registerUser'); 
     const body = JSON.stringify(Object.assign({ action }, payload));
-    if (isUpload) {
+    if (isNoCors) {
         // Usamos 'no-cors' para acciones que no necesitan respuesta del App Script
+        // y para evitar problemas de CORS en el registro.
         await fetch(API_URL, { method: 'POST', body, mode: 'no-cors' }); 
         return { ok: true, opaque: true };
     } else
@@ -671,7 +749,7 @@ async function callApi(action, payload = {}) {
 // 👉 NUEVA FUNCIÓN: Maneja el renderizado aplicando el filtro de Centro de Inventario
 function renderInventoryResults() {
     const out = document.getElementById('searchResults');
-    // Usamos 'filterCenter' que es el ID del input que debes usar en tu HTML
+    // Usamos 'filterCenter' que es el ID del input 
     const centroFilter = (document.getElementById('filterCenter')?.value || '').trim().toLowerCase(); 
     
     // Aplicar filtro por Centro_Inventario a los resultados YA OBTENIDOS
@@ -758,6 +836,12 @@ document.getElementById('btnSearch').addEventListener('click', async () =>
 
 // 👉 NUEVO LISTENER: Conecta el botón de filtrar con la función de renderizado
 document.getElementById('btnFilterCenter').addEventListener('click', renderInventoryResults);
+
+// 👉 NUEVO LISTENER: Limpia el filtro de Centro de Inventario y re-renderiza
+document.getElementById('btnResetFilterCenter').addEventListener('click', () => {
+    document.getElementById('filterCenter').value = '';
+    renderInventoryResults();
+});
     
 /* ====== UPLOAD helpers (SIN CAMBIOS EN LA BASE) ====== */
 async function uploadFile(file, filenameOpt) {
@@ -818,7 +902,24 @@ document.getElementById('btnUploadImg').addEventListener('click', async () =>
     }
 });
 
-/* ====== Listado / Render archivos e imágenes (SIN CAMBIOS EN LÓGICA, SOLO UI) ====== */
+/* ====== Listado / Render archivos e imágenes (AGREGADO: Lógica de limpieza) ====== */
+
+// Función auxiliar para limpiar un filtro y re-listar
+function resetFilter(targetId, section) {
+    document.getElementById(targetId).value = '';
+    listUploads(section);
+}
+
+// Listeners de los botones de Limpiar Filtro - Documentos
+document.getElementById('btnResetFilterNameDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));
+document.getElementById('btnResetFilterEmailDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));
+document.getElementById('btnResetFilterDateDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));
+
+// Listeners de los botones de Limpiar Filtro - Imágenes
+document.getElementById('btnResetFilterNameImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));
+document.getElementById('btnResetFilterEmailImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));
+document.getElementById('btnResetFilterDateImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));
+
 
 document.getElementById('btnFilterDoc').addEventListener('click', () => listUploads('documents'));
 document.getElementById('btnFilterImg').addEventListener('click', () => listUploads('images'));
@@ -960,7 +1061,7 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
             const imgName = `NEWS_${Date.now()}_${imgFile.name}`; 
             
             // Llama al Apps Script para subir la imagen a Drive/Sheet de archivos
-            const uploadRes = await uploadFile(imgFile, imgName);
+            await uploadFile(imgFile, imgName);
 
             // Dado que 'uploadFile' usa 'mode: no-cors', necesitamos un paso adicional para obtener el URL
             // Hacemos una nueva llamada a la API para obtener el listado de imágenes y buscar la recién subida
@@ -1084,11 +1185,25 @@ function filterNews() {
 // 4. NEW: Listeners para los filtros y limpieza
 document.getElementById('btnFilterNews').addEventListener('click', filterNews);
 
-document.getElementById('btnResetNewsFilters').addEventListener('click', () => {
+// Limpiar filtro individual de Título
+document.getElementById('btnResetFilterNewsTitle').addEventListener('click', (e) => {
+    document.getElementById(e.target.dataset.target).value = '';
+    filterNews(); 
+});
+
+// Limpiar filtro individual de Fecha
+document.getElementById('btnResetFilterNewsDate').addEventListener('click', (e) => {
+    document.getElementById(e.target.dataset.target).value = '';
+    filterNews(); 
+});
+
+// Limpiar TODOS los filtros de Noticias
+document.getElementById('btnResetNewsAll').addEventListener('click', () => {
     document.getElementById('filterNewsTitle').value = '';
     document.getElementById('filterNewsDate').value = '';
     renderNews(allNewsData); // Muestra todos los resultados almacenados
 });
+
 
 /* ====== Navegación (SIN CAMBIOS EN LÓGICA) ====== */
 document.querySelectorAll('.nav a').forEach(a => {
