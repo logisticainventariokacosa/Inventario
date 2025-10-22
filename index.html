@@ -573,7 +573,7 @@ input[type=file]{color:var(--muted);margin:8px 0}
         </footer>
         </div>
     </div>
-    <script>  
+   <script>  
 /* ====== CONFIG ====== */  
 const API_URL = 'https://script.google.com/macros/s/AKfycbzmHkJQObWrr33_ck-19LXZHLlnwFblr8VVrLh4vOCH1uYy_X-RWhsELANCLrdVD5DI/exec';  
   
@@ -693,7 +693,6 @@ document.getElementById('btnRegister').addEventListener('click', async () =>
     {  
         const userCred = await auth.createUserWithEmailAndPassword(email, pass);  
         await userCred.user.updateProfile({ displayName: name });  
-        // CORRECCIÓN CLAVE: Pasamos el modo 'cors' para asegurar que se reciba el resultado correcto de la API si fuera necesario.  
         await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } });   
         alert('Registrado correctamente');  
     } catch (err) { alert(err.message); }  
@@ -718,7 +717,7 @@ document.getElementById('btnGoogle').addEventListener('click', async () =>
 document.getElementById('btnLogout').addEventListener('click',  
     () => auth.signOut());  
   
-/* ====== API Helpers (MODIFICADO: Lógica para noticias) ====== */  
+/* ====== API Helpers (MODIFICADO: Corrección CORS para noticias) ====== */  
 async function getApi(action, params = {}) {  
     const q = new URLSearchParams(Object.assign({ action }, params)).toString();  
     const res = await fetch(API_URL + '?' + q);  
@@ -726,8 +725,8 @@ async function getApi(action, params = {}) {
 }  
 
 async function callApi(action, payload = {}) {  
-    // MODIFICADO: 'uploadFile' ya no está en no-cors cuando es para noticias
-    const isNoCors = (action === 'addNews' || action === 'registerUser');   
+    // SOLO registerUser usa no-cors porque no necesitamos respuesta
+    const isNoCors = (action === 'registerUser');   
     const body = JSON.stringify(Object.assign({ action }, payload));  
     if (isNoCors) {  
         await fetch(API_URL, { method: 'POST', body, mode: 'no-cors' });   
@@ -863,19 +862,24 @@ async function uploadFile(file, filenameOpt, sheetName, isNewsImage = false) {
         isNewsImage: isNewsImage
     });
 
+    // 👉 CORRECCIÓN CLAVE: Siempre usar CORS para obtener respuesta
+    const res = await fetch(API_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body
+    });
+    
     if (isNewsImage) {
-        // 👉 PARA NOTICIAS: Usamos CORS normal para obtener la respuesta con el URL
-        const res = await fetch(API_URL, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body
-        });
+        // Para imágenes de noticias, necesitamos la respuesta JSON
         const result = await res.json();
-        return result; // Devuelve {ok: true, url: "...", name: "...", mime: "..."}
+        return result;
     } else {
-        // Para archivos normales mantenemos el modo no-cors
-        await fetch(API_URL, { method: 'POST', body, mode: 'no-cors' }); 
-        return { ok: true, opaque: true };
+        // Para otros archivos, solo verificamos que fue exitoso
+        if (res.ok) {
+            return { ok: true };
+        } else {
+            throw new Error('Error al subir archivo');
+        }
     }
 }
   
@@ -1077,7 +1081,6 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
             // Usamos un nombre único para la imagen de noticia  
             const imgName = `NEWS_${Date.now()}_${imgFile.name}`;  
             
-            // 👉 MODIFICACIÓN CLAVE: Ahora uploadFile devuelve la respuesta con el URL
             const uploadResult = await uploadFile(imgFile, imgName, 'Noticias', true); 
             
             if (uploadResult && uploadResult.ok && uploadResult.url) {  
@@ -1098,18 +1101,22 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
             imagenUrl: imageUrl,  
         };  
 
-        // Nueva acción en Apps Script: 'addNews'  
-        await callApi('addNews', { news: newsData });  
+        // Usa callApi en modo CORS para recibir respuesta
+        const result = await callApi('addNews', { news: newsData });
 
-        status.textContent = '✅ Noticia publicada exitosamente. Recargando lista...';  
-          
-        // Limpiar formulario y recargar noticias  
-        document.getElementById('createNewsForm').classList.add('hidden');  
-        await loadNews();  
+        if (result && result.ok) {
+            status.textContent = '✅ Noticia publicada exitosamente. Recargando lista...';  
+              
+            // Limpiar formulario y recargar noticias  
+            document.getElementById('createNewsForm').classList.add('hidden');  
+            await loadNews();
+        } else {
+            throw new Error(result?.error || 'Error desconocido al publicar noticia');
+        }
 
     } catch (e) {  
-        status.textContent = '❌ Error al publicar la noticia.';  
-        console.error(e);  
+        status.textContent = '❌ Error al publicar la noticia: ' + e.message;  
+        console.error('Error completo:', e);  
     }  
 });  
   
