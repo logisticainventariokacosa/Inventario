@@ -815,6 +815,8 @@ document.getElementById('btnSearch').addEventListener('click', async () =>
 {
     const code = document.getElementById('searchCode').value.trim();
     if (!code) return alert('Ingrese un código.');
+
+    document.getElementById('searchResults').innerHTML = '<div class="muted">🔍 Buscando...</div>';
     
     // Eliminamos el filtro de Centro de Inventario de aquí, solo traemos los datos
     
