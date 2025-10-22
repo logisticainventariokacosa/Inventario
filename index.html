@@ -1427,6 +1427,14 @@ document.getElementById('searchCode').addEventListener('input', function() {
         document.getElementById('searchResults').innerHTML = '';
     }
 });
+        // 👉 NUEVO: Limpiar resultados filtrados cuando el filtro de Centro quede vacío
+document.getElementById('filterCenter').addEventListener('input', function() {
+    const filterValue = this.value.trim();
+    if (!filterValue && currentInventoryResults.length > 0) {
+        // Si el filtro está vacío pero hay resultados, mostrar todos los resultados nuevamente
+        renderInventoryResults();
+    }
+});
         
 </script>
 
