@@ -573,9 +573,9 @@ input[type=file]{color:var(--muted);margin:8px 0}
         </footer>
         </div>
     </div>
-<script>  
+    <script>  
 /* ====== CONFIG ====== */  
-const API_URL = 'https://script.google.com/macros/s/AKfycbyjUBWAs45yVpfECXjCknWEWC1TAv5jSHA7rqvDAM5H0_z4Anh0EU420Cikbojs1NxO7A/exec';  
+const API_URL = 'https://script.google.com/macros/s/AKfycbzmHkJQObWrr33_ck-19LXZHLlnwFblr8VVrLh4vOCH1uYy_X-RWhsELANCLrdVD5DI/exec';  
   
 const firebaseConfig = {  
     apiKey:"AIzaSyDpBoHiKKC7MLQHiWV9psdE3eJ4YuR66GU",  
@@ -718,7 +718,7 @@ document.getElementById('btnGoogle').addEventListener('click', async () =>
 document.getElementById('btnLogout').addEventListener('click',  
     () => auth.signOut());  
   
-/* ====== API Helpers (MODIFICADO: Volvemos a la versión original) ====== */  
+/* ====== API Helpers (MODIFICADO: Lógica para noticias) ====== */  
 async function getApi(action, params = {}) {  
     const q = new URLSearchParams(Object.assign({ action }, params)).toString();  
     const res = await fetch(API_URL + '?' + q);  
@@ -726,8 +726,8 @@ async function getApi(action, params = {}) {
 }  
 
 async function callApi(action, payload = {}) {  
-    // MODIFICADO: Volvemos a la versión original que funciona
-    const isNoCors = (action === 'uploadFile' || action === 'addNews' || action === 'registerUser');   
+    // MODIFICADO: 'uploadFile' ya no está en no-cors cuando es para noticias
+    const isNoCors = (action === 'addNews' || action === 'registerUser');   
     const body = JSON.stringify(Object.assign({ action }, payload));  
     if (isNoCors) {  
         await fetch(API_URL, { method: 'POST', body, mode: 'no-cors' });   
@@ -841,7 +841,7 @@ document.getElementById('btnResetFilterCenter').addEventListener('click', () => 
     renderInventoryResults();  
 });  
       
-/* ====== UPLOAD helpers (MODIFICADO: Estrategia diferente para noticias) ====== */  
+/* ====== UPLOAD helpers (MODIFICADO: Para noticias obtener URL directamente) ====== */  
 async function uploadFile(file, filenameOpt, sheetName, isNewsImage = false) {
     const base64 = await new Promise(res => {  
         const r = new FileReader();  
@@ -851,7 +851,7 @@ async function uploadFile(file, filenameOpt, sheetName, isNewsImage = false) {
     const uploaderName = auth.currentUser?.displayName || "";  
     const uploaderEmail = auth.currentUser?.email || "";  
     
-    // Para todas las subidas usamos no-cors (evita problemas de CORS)
+    // 👉 MODIFICACIÓN: Para noticias necesitamos obtener la respuesta
     const body = JSON.stringify({
         action: 'uploadFile',
         filename: filenameOpt || file.name,
@@ -863,20 +863,23 @@ async function uploadFile(file, filenameOpt, sheetName, isNewsImage = false) {
         isNewsImage: isNewsImage
     });
 
-    // 👉 SIEMPRE usamos no-cors para evitar problemas de CORS
-    await fetch(API_URL, { method: 'POST', body, mode: 'no-cors' }); 
-    
-    // Para noticias, construimos el URL manualmente (asumiendo el formato de Google Drive)
     if (isNewsImage) {
-        // El nombre del archivo es único, así que podemos usar esto temporalmente
-        // En una implementación real, necesitaríamos una forma de obtener el fileId
-        return { ok: true, name: filenameOpt || file.name };
+        // 👉 PARA NOTICIAS: Usamos CORS normal para obtener la respuesta con el URL
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body
+        });
+        const result = await res.json();
+        return result; // Devuelve {ok: true, url: "...", name: "...", mime: "..."}
+    } else {
+        // Para archivos normales mantenemos el modo no-cors
+        await fetch(API_URL, { method: 'POST', body, mode: 'no-cors' }); 
+        return { ok: true, opaque: true };
     }
-    
-    return { ok: true, opaque: true };
 }
   
-/* Subir documento (MODIFICADO: Limpiar campos después de subir) */  
+/* Subir documento (SIN CAMBIOS) */  
 document.getElementById('btnUploadDoc').addEventListener('click', async () =>  
 {  
     const f = document.getElementById('docFile');  
@@ -890,18 +893,13 @@ document.getElementById('btnUploadDoc').addEventListener('click', async () =>
         document.getElementById('docStatus').textContent = 'Documento subido. Recargando lista...';  
         await listUploads('documents');  
         document.getElementById('docStatus').textContent = 'Subido: ' + name;  
-        
-        // 👉 LIMPIAR CAMPOS DESPUÉS DE SUBIR
-        document.getElementById('docFile').value = '';
-        document.getElementById('docName').value = '';
-        
     } catch (e) {  
         document.getElementById('docStatus').textContent = 'Error al subir';  
         console.error(e);  
     }  
 });  
   
-/* Subir imagen (MODIFICADO: Limpiar campos después de subir) */  
+/* Subir imagen (SIN CAMBIOS) */  
 document.getElementById('btnUploadImg').addEventListener('click', async () =>  
 {  
     const f = document.getElementById('imgFile');  
@@ -915,11 +913,6 @@ document.getElementById('btnUploadImg').addEventListener('click', async () =>
         document.getElementById('imgStatus').textContent = 'Imagen subida. Recargando lista...';  
         await listUploads('images');  
         document.getElementById('imgStatus').textContent = 'Subido: ' + name;  
-        
-        // 👉 LIMPIAR CAMPOS DESPUÉS DE SUBIR
-        document.getElementById('imgFile').value = '';
-        document.getElementById('imgName').value = '';
-        
     } catch (e) {  
         document.getElementById('imgStatus').textContent = 'Error al subir';  
         console.error(e);  
@@ -1062,7 +1055,7 @@ document.getElementById('btnCancelNews').addEventListener('click', () => {
     document.getElementById('createNewsForm').classList.add('hidden');  
 });  
   
-// 2. Lógica para subir la Noticia - ESTRATEGIA SIMPLIFICADA
+// 2. Lógica para subir la Noticia  
 document.getElementById('btnUploadNews').addEventListener('click', async () =>  
 {  
     const title = document.getElementById('newsTitle').value.trim();  
@@ -1081,44 +1074,42 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
         // 1. Subir la imagen si existe  
         if (imgFile) {  
             status.textContent = 'Subiendo imagen...';  
+            // Usamos un nombre único para la imagen de noticia  
             const imgName = `NEWS_${Date.now()}_${imgFile.name}`;  
             
-            console.log('Iniciando subida de imagen:', imgName);
+            // 👉 MODIFICACIÓN CLAVE: Ahora uploadFile devuelve la respuesta con el URL
+            const uploadResult = await uploadFile(imgFile, imgName, 'Noticias', true); 
             
-            // Subimos la imagen (no-cors)
-            await uploadFile(imgFile, imgName, 'Noticias', true); 
-            
-            // Para noticias, no podemos obtener el URL inmediatamente debido a CORS
-            // Pero la imagen se subirá y estará disponible en Drive
-            // El Google Script se encargará de guardar el URL en la hoja Noticias
-            status.textContent = 'Imagen subida. Publicando noticia...';  
+            if (uploadResult && uploadResult.ok && uploadResult.url) {  
+                imageUrl = uploadResult.url;  
+                status.textContent = 'Imagen subida correctamente. Publicando noticia...';  
+            } else {  
+                status.textContent = 'Error: No se pudo obtener el URL de la imagen. La noticia se publicará sin ella.';  
+                console.warn('Could not retrieve image URL after upload:', uploadResult);  
+            }  
         }  
           
-        // 2. Publicar la noticia  
+        // 2. Publicar la noticia con los datos (y el URL de la imagen)  
         status.textContent = 'Publicando noticia en la hoja de cálculo...';  
           
         const newsData = {  
             titulo: title,  
             contenido: content,  
-            imagenUrl: imageUrl,  // Por ahora vacío, el GS se encargará del URL
+            imagenUrl: imageUrl,  
         };  
 
+        // Nueva acción en Apps Script: 'addNews'  
         await callApi('addNews', { news: newsData });  
 
         status.textContent = '✅ Noticia publicada exitosamente. Recargando lista...';  
-          
-        // 👉 LIMPIAR CAMPOS DESPUÉS DE SUBIR
-        document.getElementById('newsTitle').value = '';  
-        document.getElementById('newsContent').value = '';  
-        document.getElementById('newsImgFile').value = '';  
           
         // Limpiar formulario y recargar noticias  
         document.getElementById('createNewsForm').classList.add('hidden');  
         await loadNews();  
 
     } catch (e) {  
-        console.error('Error completo en publicación:', e);  
         status.textContent = '❌ Error al publicar la noticia.';  
+        console.error(e);  
     }  
 });  
   
@@ -1129,7 +1120,7 @@ function renderNews(newsArray) {
     const list = document.getElementById('newsList');  
   
     if (newsArray.length === 0) {  
-        main.innerHTML = '<p class="muted">No hay noticias que coincidan con el filtro.</p>';  
+        main.innerHTML = '<p class="muted">No hay noticias publicadas.</p>';  
         list.innerHTML = '';  
         return;  
     }  
