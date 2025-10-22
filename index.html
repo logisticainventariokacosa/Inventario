@@ -1417,6 +1417,17 @@ document.getElementById('mailBtn').href = "mailto:derwins.rojas@kacosa.com";
 
 /* ====== Inicial (SIN CAMBIOS) ====== */
 setTimeout(() => {if (auth.currentUser) { listUploads('documents'); listUploads('images'); loadNews(); } }, 800);
+
+        // 👉 NUEVO: Limpiar resultados cuando la barra de búsqueda quede vacía
+document.getElementById('searchCode').addEventListener('input', function() {
+    const code = this.value.trim();
+    if (!code) {
+        // Si la barra de búsqueda está vacía, limpiar los resultados
+        currentInventoryResults = [];
+        document.getElementById('searchResults').innerHTML = '';
+    }
+});
+        
 </script>
 
 </body>
