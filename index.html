@@ -575,7 +575,7 @@ input[type=file]{color:var(--muted);margin:8px 0}
     </div>
  <script>  
 /* ====== CONFIG ====== */  
-const API_URL = 'https://script.google.com/macros/s/AKfycbzmHkJQObWrr33_ck-19LXZHLlnwFblr8VVrLh4vOCH1uYy_X-RWhsELANCLrdVD5DI/exec';  
+const API_URL = 'https://script.google.com/macros/s/AKfycbynQ5hlXUdTY88hYDIEyDeBIM4u4hOkPkiA6hlGTrI70GfSoWJwT445kqfBLThqIyJ-Kw/exec';  
   
 const firebaseConfig = {  
     apiKey:"AIzaSyDpBoHiKKC7MLQHiWV9psdE3eJ4YuR66GU",  
@@ -1065,7 +1065,7 @@ document.getElementById('btnCancelNews').addEventListener('click', () => {
     document.getElementById('createNewsForm').classList.add('hidden');  
 });  
   
-// 2. Lógica para subir la Noticia  
+// 2. Lógica para subir la Noticia - VERSIÓN ROBUSTA CON MANEJO DE ERRORES
 document.getElementById('btnUploadNews').addEventListener('click', async () =>  
 {  
     const title = document.getElementById('newsTitle').value.trim();  
@@ -1084,23 +1084,36 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
         // 1. Subir la imagen si existe  
         if (imgFile) {  
             status.textContent = 'Subiendo imagen...';  
-            // Usamos un nombre único para la imagen de noticia  
             const imgName = `NEWS_${Date.now()}_${imgFile.name}`;  
             
-            // 👉 MODIFICACIÓN CLAVE: Ahora uploadFile devuelve la respuesta con el URL
-            const uploadResult = await uploadFile(imgFile, imgName, 'Noticias', true); 
+            console.log('Iniciando subida de imagen:', imgName);
             
-            if (uploadResult && uploadResult.ok && uploadResult.url) {  
-                imageUrl = uploadResult.url;  
-                status.textContent = 'Imagen subida correctamente. Publicando noticia...';  
-            } else {  
-                status.textContent = 'Error: No se pudo obtener el URL de la imagen. La noticia se publicará sin ella.';  
-                console.warn('Could not retrieve image URL after upload:', uploadResult);  
-            }  
+            try {
+                const uploadResult = await uploadFile(imgFile, imgName, 'Noticias', true); 
+                
+                console.log('Resultado de subida:', uploadResult);
+                
+                if (uploadResult && uploadResult.ok && uploadResult.url) {  
+                    imageUrl = uploadResult.url;  
+                    status.textContent = 'Imagen subida correctamente. Publicando noticia...';  
+                    console.log('URL de imagen obtenida:', imageUrl);
+                } else {  
+                    // Si hay error en la subida de imagen, mostramos más detalles pero continuamos
+                    const errorMsg = uploadResult?.error || 'Error desconocido al subir imagen';
+                    console.error('Error en subida de imagen:', uploadResult);  
+                    status.textContent = `Advertencia: ${errorMsg}. Continuando sin imagen...`;  
+                    // Continuamos sin imagen - no detenemos el proceso
+                }  
+            } catch (uploadError) {
+                console.error('Error al subir imagen:', uploadError);
+                status.textContent = 'Advertencia: Error al subir la imagen. Continuando sin imagen...';  
+                // Continuamos sin imagen
+            }
         }  
           
-        // 2. Publicar la noticia con los datos (y el URL de la imagen)  
+        // 2. Publicar la noticia  
         status.textContent = 'Publicando noticia en la hoja de cálculo...';  
+        console.log('Datos de noticia a publicar:', { titulo: title, contenido: content, imagenUrl });
           
         const newsData = {  
             titulo: title,  
@@ -1108,7 +1121,6 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
             imagenUrl: imageUrl,  
         };  
 
-        // Nueva acción en Apps Script: 'addNews'  
         await callApi('addNews', { news: newsData });  
 
         status.textContent = '✅ Noticia publicada exitosamente. Recargando lista...';  
@@ -1123,8 +1135,8 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
         await loadNews();  
 
     } catch (e) {  
-        status.textContent = '❌ Error al publicar la noticia.';  
-        console.error(e);  
+        console.error('Error completo en publicación:', e);  
+        status.textContent = '❌ Error al publicar la noticia. Verifica la consola para más detalles.';  
     }  
 });  
   
