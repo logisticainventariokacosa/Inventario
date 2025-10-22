@@ -573,7 +573,7 @@ input[type=file]{color:var(--muted);margin:8px 0}
         </footer>
         </div>
     </div>
-   <script>  
+<script>  
 /* ====== CONFIG ====== */  
 const API_URL = 'https://script.google.com/macros/s/AKfycbzmHkJQObWrr33_ck-19LXZHLlnwFblr8VVrLh4vOCH1uYy_X-RWhsELANCLrdVD5DI/exec';  
   
@@ -586,15 +586,12 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);  
 const auth = firebase.auth();  
   
-// 👉 NUEVA VARIABLE GLOBAL: Almacena los resultados de la búsqueda de código  
 let currentInventoryResults = [];  
-// 👉 NUEVA VARIABLE GLOBAL: Almacena las noticias cargadas para poder filtrarlas localmente  
 let allNewsData = [];  
   
-/* ====== Helpers (SIN CAMBIOS EN LA LÓGICA DE URLS) ====== */  
+/* ====== Helpers ====== */  
   
-function getDriveDirectUrl(url)  
-{  
+function getDriveDirectUrl(url) {  
     if (!url) return '';  
     try {  
         if (url.includes('uc?export=view') || url.includes('=export')) return url;  
@@ -644,28 +641,24 @@ function getDriveThumbnailUrl(url, size = 300) {
 function safeString(v){return v === undefined || v === null ? '' : String(v); }  
   
 function getField(obj, ...keys) {  
-    for (const k of keys)  
-    {  
+    for (const k of keys) {  
         if (obj[k] !== undefined && obj[k] !== null) return obj[k];  
     }  
     const lowerMap = {};  
     for (const p in obj) lowerMap[p.toLowerCase().replace(/[\s_]+/g, '')] = obj[p];  
-    for (const k of keys)  
-    {  
+    for (const k of keys) {  
         const low = k.toLowerCase().replace(/[\s_]+/g, '');   
         if (lowerMap[low] !== undefined) return lowerMap[low];  
     }  
     return '';  
 }  
   
-/* ====== AUTH (AGREGADO: Lógica de ver/ocultar contraseña) ====== */  
+/* ====== AUTH ====== */  
   
-// Nuevo listener para el botón de alternar contraseña  
 document.getElementById('togglePasswordBtn').addEventListener('click', function() {  
     const passwordInput = document.getElementById('password');  
     const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';  
     passwordInput.setAttribute('type', type);  
-    // Cambiar el icono  
     this.textContent = type === 'password' ? '👁️' : '🔒';   
 });  
   
@@ -676,48 +669,47 @@ auth.onAuthStateChanged(user => {
         document.getElementById('userEmail').textContent = user.email || user.displayName || '';  
         loadNews();  
         listUploads('documents');  
-    } else  
-    {  
+    } else {  
         document.getElementById('authScreen').classList.remove('hidden');  
         document.getElementById('mainApp').classList.add('hidden');  
     }  
 });  
   
-document.getElementById('btnRegister').addEventListener('click', async () =>  
-{  
+document.getElementById('btnRegister').addEventListener('click', async () => {  
     const name = document.getElementById('name').value.trim();  
     const email = document.getElementById('email').value.trim();  
     const pass = document.getElementById('password').value;  
     if (!name || !email || !pass) return alert('Completa todos los campos.');  
-    try  
-    {  
+    try {  
         const userCred = await auth.createUserWithEmailAndPassword(email, pass);  
         await userCred.user.updateProfile({ displayName: name });  
         await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } });   
         alert('Registrado correctamente');  
     } catch (err) { alert(err.message); }  
 });  
-document.getElementById('btnLogin').addEventListener('click', async () =>  
-{  
+
+document.getElementById('btnLogin').addEventListener('click', async () => {  
     const email = document.getElementById('email').value.trim();  
     const pass = document.getElementById('password').value;  
-    try  
-    { await auth.signInWithEmailAndPassword(email, pass); } catch (err) { alert(err.message); }  
+    try {  
+        await auth.signInWithEmailAndPassword(email, pass); 
+    } catch (err) { 
+        alert(err.message); 
+    }  
 });  
-document.getElementById('btnGoogle').addEventListener('click', async () =>  
-{  
+
+document.getElementById('btnGoogle').addEventListener('click', async () => {  
     const provider = new firebase.auth.GoogleAuthProvider();  
-    try  
-    {  
+    try {  
         const res = await auth.signInWithPopup(provider);  
         const user = res.user;  
         await callApi('registerUser', { user: { nombreDeUsuario: user.displayName, email: user.email, uid: user.uid } });  
     } catch (err) { alert(err.message); }  
 });  
-document.getElementById('btnLogout').addEventListener('click',  
-    () => auth.signOut());  
+
+document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());  
   
-/* ====== API Helpers (MODIFICADO: Corrección CORS para noticias) ====== */  
+/* ====== API Helpers ====== */  
 async function getApi(action, params = {}) {  
     const q = new URLSearchParams(Object.assign({ action }, params)).toString();  
     const res = await fetch(API_URL + '?' + q);  
@@ -725,31 +717,26 @@ async function getApi(action, params = {}) {
 }  
 
 async function callApi(action, payload = {}) {  
-    // SOLO registerUser usa no-cors porque no necesitamos respuesta
+    // SOLO registerUser usa no-cors
     const isNoCors = (action === 'registerUser');   
     const body = JSON.stringify(Object.assign({ action }, payload));  
     if (isNoCors) {  
         await fetch(API_URL, { method: 'POST', body, mode: 'no-cors' });   
         return { ok: true, opaque: true };  
-    } else  
-    {  
-        const res = await fetch(API_URL,  
-            {  
-                method:'POST',  
-                headers: { 'Content-Type': 'application/json' },  
-                body  
-            });  
+    } else {  
+        const res = await fetch(API_URL, {  
+            method:'POST',  
+            headers: { 'Content-Type': 'application/json' },  
+            body  
+        });  
         return res.json();  
     }  
 }
   
-// 👉 NUEVA FUNCIÓN: Maneja el renderizado aplicando el filtro de Centro de Inventario  
 function renderInventoryResults() {  
     const out = document.getElementById('searchResults');  
-    // Usamos 'filterCenter' que es el ID del input   
     const centroFilter = (document.getElementById('filterCenter')?.value || '').trim().toLowerCase();   
       
-    // Aplicar filtro por Centro_Inventario a los resultados YA OBTENIDOS  
     const filtered = centroFilter   
         ? currentInventoryResults.filter(r =>  
             safeString(getField(r, 'Centro_Inventario', 'centroinventario')).toLowerCase().includes(centroFilter))  
@@ -807,40 +794,28 @@ function renderInventoryResults() {
     </table>`;  
 }  
   
-// 👉 MODIFICACIÓN DE LA FUNCIÓN btnSearch  
-document.getElementById('btnSearch').addEventListener('click', async () =>  
-{  
+document.getElementById('btnSearch').addEventListener('click', async () => {  
     const code = document.getElementById('searchCode').value.trim();  
     if (!code) return alert('Ingrese un código.');  
       
-    // Eliminamos el filtro de Centro de Inventario de aquí, solo traemos los datos  
-      
     const data = await getApi('search', { code });  
   
-    if (data && data.results && data.results.length)  
-    {  
-        // 1. GUARDAMOS LOS RESULTADOS ORIGINALES  
+    if (data && data.results && data.results.length) {  
         currentInventoryResults = data.results;  
-          
-        // 2. RENDERIZAMOS (APLICANDO EL FILTRO, si ya tiene valor)  
         renderInventoryResults();  
-          
     } else {  
         currentInventoryResults = [];  
         document.getElementById('searchResults').innerHTML = '<div class="muted">Sin resultados</div>';  
     }  
 });  
   
-// 👉 NUEVO LISTENER: Conecta el botón de filtrar con la función de renderizado  
 document.getElementById('btnFilterCenter').addEventListener('click', renderInventoryResults);  
-  
-// 👉 NUEVO LISTENER: Limpia el filtro de Centro de Inventario y re-renderiza  
 document.getElementById('btnResetFilterCenter').addEventListener('click', () => {  
     document.getElementById('filterCenter').value = '';  
     renderInventoryResults();  
 });  
       
-/* ====== UPLOAD helpers (MODIFICADO: Para noticias obtener URL directamente) ====== */  
+/* ====== UPLOAD helpers ====== */  
 async function uploadFile(file, filenameOpt, sheetName, isNewsImage = false) {
     const base64 = await new Promise(res => {  
         const r = new FileReader();  
@@ -850,7 +825,6 @@ async function uploadFile(file, filenameOpt, sheetName, isNewsImage = false) {
     const uploaderName = auth.currentUser?.displayName || "";  
     const uploaderEmail = auth.currentUser?.email || "";  
     
-    // 👉 MODIFICACIÓN: Para noticias necesitamos obtener la respuesta
     const body = JSON.stringify({
         action: 'uploadFile',
         filename: filenameOpt || file.name,
@@ -862,37 +836,32 @@ async function uploadFile(file, filenameOpt, sheetName, isNewsImage = false) {
         isNewsImage: isNewsImage
     });
 
-    // 👉 CORRECCIÓN CLAVE: Siempre usar CORS para obtener respuesta
-    const res = await fetch(API_URL, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body
-    });
-    
-    if (isNewsImage) {
-        // Para imágenes de noticias, necesitamos la respuesta JSON
+    try {
+        const res = await fetch(API_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body
+        });
+        
+        if (!res.ok) {
+            throw new Error(`HTTP error! status: ${res.status}`);
+        }
+        
         const result = await res.json();
         return result;
-    } else {
-        // Para otros archivos, solo verificamos que fue exitoso
-        if (res.ok) {
-            return { ok: true };
-        } else {
-            throw new Error('Error al subir archivo');
-        }
+    } catch (error) {
+        console.error('Error uploading file:', error);
+        throw error;
     }
 }
   
-/* Subir documento (SIN CAMBIOS) */  
-document.getElementById('btnUploadDoc').addEventListener('click', async () =>  
-{  
+document.getElementById('btnUploadDoc').addEventListener('click', async () => {  
     const f = document.getElementById('docFile');  
     const name = document.getElementById('docName').value.trim();  
     if (!f.files.length) return alert('Selecciona un archivo');  
     if (!name) return alert('El nombre del documento es obligatorio');  
     document.getElementById('docStatus').textContent = 'Subiendo...';  
-    try  
-    {  
+    try {  
         await uploadFile(f.files[0], name);  
         document.getElementById('docStatus').textContent = 'Documento subido. Recargando lista...';  
         await listUploads('documents');  
@@ -903,16 +872,13 @@ document.getElementById('btnUploadDoc').addEventListener('click', async () =>
     }  
 });  
   
-/* Subir imagen (SIN CAMBIOS) */  
-document.getElementById('btnUploadImg').addEventListener('click', async () =>  
-{  
+document.getElementById('btnUploadImg').addEventListener('click', async () => {  
     const f = document.getElementById('imgFile');  
     const name = document.getElementById('imgName').value.trim();  
     if (!f.files.length) return alert('Selecciona una imagen');  
     if (!name) return alert('El nombre de la imagen es obligatorio');  
     document.getElementById('imgStatus').textContent = 'Subiendo...';  
-    try  
-    {  
+    try {  
         await uploadFile(f.files[0], name);  
         document.getElementById('imgStatus').textContent = 'Imagen subida. Recargando lista...';  
         await listUploads('images');  
@@ -923,30 +889,25 @@ document.getElementById('btnUploadImg').addEventListener('click', async () =>
     }  
 });  
   
-/* ====== Listado / Render archivos e imágenes (AGREGADO: Lógica de limpieza) ====== */  
+/* ====== Listado / Render archivos ====== */  
   
-// Función auxiliar para limpiar un filtro y re-listar  
 function resetFilter(targetId, section) {  
     document.getElementById(targetId).value = '';  
     listUploads(section);  
 }  
   
-// Listeners de los botones de Limpiar Filtro - Documentos  
 document.getElementById('btnResetFilterNameDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));  
 document.getElementById('btnResetFilterEmailDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));  
 document.getElementById('btnResetFilterDateDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));  
   
-// Listeners de los botones de Limpiar Filtro - Imágenes  
 document.getElementById('btnResetFilterNameImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));  
 document.getElementById('btnResetFilterEmailImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));  
 document.getElementById('btnResetFilterDateImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));  
   
-  
 document.getElementById('btnFilterDoc').addEventListener('click', () => listUploads('documents'));  
 document.getElementById('btnFilterImg').addEventListener('click', () => listUploads('images'));  
   
-async function listUploads(section = 'documents', findAndShowName = false, findName = '')  
-{  
+async function listUploads(section = 'documents', findAndShowName = false, findName = '') {  
     const res = await getApi('listUploads');  
     const docs = res.docs || [];  
     const imgs = res.imgs || [];  
@@ -981,9 +942,7 @@ async function listUploads(section = 'documents', findAndShowName = false, findN
     const filteredDocs = docs.filter(filterFn);  
     const filteredImgs = imgs.filter(filterFn);  
   
-    // Render documentos  
-    if (filteredDocs.length)  
-    {  
+    if (filteredDocs.length) {  
         docList.innerHTML = filteredDocs.map(d => {  
             const direct = getDriveDirectUrl(d.url);   
             return `<div class="card-item">  
@@ -995,14 +954,11 @@ async function listUploads(section = 'documents', findAndShowName = false, findN
                 </div>  
             </div>`;  
         }).join('');  
-    } else  
-    {  
+    } else {  
         docList.innerHTML = '<p class="muted">Sin documentos</p>';  
     }  
   
-    // Render imágenes (lógica de URL de miniatura se mantiene)  
-    if (filteredImgs.length)  
-    {  
+    if (filteredImgs.length) {  
         imgList.innerHTML = filteredImgs.map(i => {  
             const thumbnail = getDriveThumbnailUrl(i.url, 400);   
             const directUrl = getDriveDirectUrl(i.url);   
@@ -1019,34 +975,15 @@ async function listUploads(section = 'documents', findAndShowName = false, findN
                 </div>  
             </div>`;  
         }).join('');  
-    } else  
-    {  
+    } else {  
         imgList.innerHTML = '<p class="muted">Sin imágenes</p>';  
-    }  
-  
-    if (findAndShowName && findName)  
-    {  
-        const allFiles = [...docs, ...imgs];  
-        const found = allFiles.find(x => x.name === findName);  
-        if (found) {  
-            const directUrl = getDriveDirectUrl(found.url);  
-            const isImg = (found.mime && found.mime.toLowerCase().startsWith('image/')) || /\.(jpg|jpeg|png|gif|webp)$/i.test(found.name);  
-            if (isImg) document.getElementById('imgStatus').innerHTML = `Subida: <a href="${directUrl}" target="_blank">Abrir</a>`;  
-            else document.getElementById('docStatus').innerHTML = `Subido: <a href="${directUrl}" target="_blank">Abrir</a>`;  
-        } else  
-        {  
-            document.getElementById('imgStatus').textContent = '';  
-            document.getElementById('docStatus').textContent = '';  
-        }  
     }  
 }  
   
-/* ====== NEW: News Upload (Formulario) ====== */  
+/* ====== NOTICIAS ====== */  
   
-// 1. Mostrar/Ocultar el formulario de noticias  
 document.getElementById('btnToggleNewsForm').addEventListener('click', () => {  
     document.getElementById('createNewsForm').classList.toggle('hidden');  
-    // Limpiar campos al mostrar  
     if (!document.getElementById('createNewsForm').classList.contains('hidden')) {  
         document.getElementById('newsTitle').value = '';  
         document.getElementById('newsContent').value = '';  
@@ -1059,9 +996,8 @@ document.getElementById('btnCancelNews').addEventListener('click', () => {
     document.getElementById('createNewsForm').classList.add('hidden');  
 });  
   
-// 2. Lógica para subir la Noticia  
-document.getElementById('btnUploadNews').addEventListener('click', async () =>  
-{  
+// FUNCIÓN MEJORADA PARA SUBIR NOTICIAS
+document.getElementById('btnUploadNews').addEventListener('click', async () => {  
     const title = document.getElementById('newsTitle').value.trim();  
     const content = document.getElementById('newsContent').value.trim();  
     const imgFile = document.getElementById('newsImgFile').files[0];  
@@ -1073,12 +1009,10 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
 
     let imageUrl = '';  
 
-    try  
-    {  
+    try {  
         // 1. Subir la imagen si existe  
         if (imgFile) {  
             status.textContent = 'Subiendo imagen...';  
-            // Usamos un nombre único para la imagen de noticia  
             const imgName = `NEWS_${Date.now()}_${imgFile.name}`;  
             
             const uploadResult = await uploadFile(imgFile, imgName, 'Noticias', true); 
@@ -1088,12 +1022,12 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
                 status.textContent = 'Imagen subida correctamente. Publicando noticia...';  
             } else {  
                 status.textContent = 'Error: No se pudo obtener el URL de la imagen. La noticia se publicará sin ella.';  
-                console.warn('Could not retrieve image URL after upload:', uploadResult);  
+                console.warn('No se pudo obtener URL de imagen:', uploadResult);  
             }  
         }  
           
-        // 2. Publicar la noticia con los datos (y el URL de la imagen)  
-        status.textContent = 'Publicando noticia en la hoja de cálculo...';  
+        // 2. Publicar la noticia  
+        status.textContent = 'Publicando noticia...';  
           
         const newsData = {  
             titulo: title,  
@@ -1101,13 +1035,10 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
             imagenUrl: imageUrl,  
         };  
 
-        // Usa callApi en modo CORS para recibir respuesta
         const result = await callApi('addNews', { news: newsData });
 
         if (result && result.ok) {
             status.textContent = '✅ Noticia publicada exitosamente. Recargando lista...';  
-              
-            // Limpiar formulario y recargar noticias  
             document.getElementById('createNewsForm').classList.add('hidden');  
             await loadNews();
         } else {
@@ -1120,8 +1051,6 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
     }  
 });  
   
-/* ====== Noticias (LÓGICA MEJORADA PARA MOSTRAR Y FILTRAR) ====== */  
-  
 function renderNews(newsArray) {  
     const main = document.getElementById('mainNews');  
     const list = document.getElementById('newsList');  
@@ -1132,7 +1061,7 @@ function renderNews(newsArray) {
         return;  
     }  
   
-    // 1. Renderizado de la NOTICIA PRINCIPAL (si hay resultados)  
+    // NOTICIA PRINCIPAL
     const n = newsArray[0];  
     const imgUrl = getDriveThumbnailUrl(safeString(n.imagenUrl), 300);   
     const directLink = getDriveDirectUrl(safeString(n.imagenUrl));  
@@ -1153,7 +1082,7 @@ function renderNews(newsArray) {
         </div>  
         `;   
   
-    // 2. Renderizado de la LISTA DE NOTICIAS  
+    // LISTA DE NOTICIAS
     list.innerHTML = newsArray.map(x => {  
         const thumb = getDriveThumbnailUrl(safeString(x.imagenUrl), 200);   
         const directLinkItem = getDriveDirectUrl(safeString(x.imagenUrl));  
@@ -1175,16 +1104,16 @@ function renderNews(newsArray) {
 }  
   
 async function loadNews(){  
-    const res = await getApi('listNews');  
-      
-    // Almacena los resultados originales de la API  
-    allNewsData = (res && res.news && res.news.length) ? res.news : [];  
-      
-    // Renderiza la lista completa inicialmente  
-    renderNews(allNewsData);  
+    try {
+        const res = await getApi('listNews');  
+        allNewsData = (res && res.news && res.news.length) ? res.news : [];  
+        renderNews(allNewsData);  
+    } catch (error) {
+        console.error('Error loading news:', error);
+        document.getElementById('mainNews').innerHTML = '<p class="muted">Error al cargar noticias</p>';
+    }
 }  
   
-// 3. NEW: News Filtering Logic  
 function filterNews() {  
     const titleFilter = (document.getElementById('filterNewsTitle')?.value || '').trim().toLowerCase();  
     const dateFilter = (document.getElementById('filterNewsDate')?.value || '').trim();  
@@ -1195,7 +1124,6 @@ function filterNews() {
           
         return (  
             (!titleFilter || title.includes(titleFilter)) &&   
-            // Buscamos si la fecha empieza con el filtro (útil para buscar por dd/mm o dd/mm/yyyy)  
             (!dateFilter || date.startsWith(dateFilter))  
         );  
     });  
@@ -1203,33 +1131,24 @@ function filterNews() {
     renderNews(filteredNews);  
 }  
   
-// 4. NEW: Listeners para los filtros y limpieza  
 document.getElementById('btnFilterNews').addEventListener('click', filterNews);  
-  
-// Limpiar filtro individual de Título  
 document.getElementById('btnResetFilterNewsTitle').addEventListener('click', (e) => {  
     document.getElementById(e.target.dataset.target).value = '';  
     filterNews();   
 });  
-  
-// Limpiar filtro individual de Fecha  
 document.getElementById('btnResetFilterNewsDate').addEventListener('click', (e) => {  
     document.getElementById(e.target.dataset.target).value = '';  
     filterNews();   
 });  
-  
-// Limpiar TODOS los filtros de Noticias  
 document.getElementById('btnResetNewsAll').addEventListener('click', () => {  
     document.getElementById('filterNewsTitle').value = '';  
     document.getElementById('filterNewsDate').value = '';  
-    renderNews(allNewsData); // Muestra todos los resultados almacenados  
+    renderNews(allNewsData);  
 });  
   
-  
-/* ====== Navegación (SIN CAMBIOS EN LÓGICA) ====== */  
+/* ====== NAVEGACIÓN ====== */  
 document.querySelectorAll('.nav a').forEach(a => {  
-    a.addEventListener('click', e =>  
-    {  
+    a.addEventListener('click', e => {  
         e.preventDefault();  
         document.querySelectorAll('.nav a').forEach(n => n.classList.remove('active'));  
         a.classList.add('active');  
@@ -1240,12 +1159,18 @@ document.querySelectorAll('.nav a').forEach(a => {
     });  
 });  
   
-/* ====== Contacto (SIN CAMBIOS) */  
+/* ====== CONTACTO ====== */  
 document.getElementById('waBtn').href = "https://wa.me/4129915255?text=Hola%20";  
 document.getElementById('mailBtn').href = "mailto:derwins.rojas@kacosa.com";  
   
-/* ====== Inicial (SIN CAMBIOS) ====== */  
-setTimeout(() => {if (auth.currentUser) { listUploads('documents'); listUploads('images'); loadNews(); } }, 800);  
+/* ====== INICIAL ====== */  
+setTimeout(() => {
+    if (auth.currentUser) { 
+        listUploads('documents'); 
+        listUploads('images'); 
+        loadNews(); 
+    } 
+}, 800);  
 </script>
     </body>
      </html>
