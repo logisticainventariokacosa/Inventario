@@ -573,9 +573,9 @@ input[type=file]{color:var(--muted);margin:8px 0}
         </footer>
         </div>
     </div>
-    <script>  
+ <script>  
 /* ====== CONFIG ====== */  
-const API_URL = 'https://script.google.com/macros/s/AKfycbzmHkJQObWrr33_ck-19LXZHLlnwFblr8VVrLh4vOCH1uYy_X-RWhsELANCLrdVD5DI/exec';  
+const API_URL = 'https://script.google.com/macros/s/AKfycbynQ5hlXUdTY88hYDIEyDeBIM4u4hOkPkiA6hlGTrI70GfSoWJwT445kqfBLThqIyJ-Kw/exec';  
   
 const firebaseConfig = {  
     apiKey:"AIzaSyDpBoHiKKC7MLQHiWV9psdE3eJ4YuR66GU",  
@@ -879,7 +879,7 @@ async function uploadFile(file, filenameOpt, sheetName, isNewsImage = false) {
     }
 }
   
-/* Subir documento (SIN CAMBIOS) */  
+/* Subir documento (MODIFICADO: Limpiar campos después de subir) */  
 document.getElementById('btnUploadDoc').addEventListener('click', async () =>  
 {  
     const f = document.getElementById('docFile');  
@@ -893,13 +893,18 @@ document.getElementById('btnUploadDoc').addEventListener('click', async () =>
         document.getElementById('docStatus').textContent = 'Documento subido. Recargando lista...';  
         await listUploads('documents');  
         document.getElementById('docStatus').textContent = 'Subido: ' + name;  
+        
+        // 👉 LIMPIAR CAMPOS DESPUÉS DE SUBIR
+        document.getElementById('docFile').value = '';
+        document.getElementById('docName').value = '';
+        
     } catch (e) {  
         document.getElementById('docStatus').textContent = 'Error al subir';  
         console.error(e);  
     }  
 });  
   
-/* Subir imagen (SIN CAMBIOS) */  
+/* Subir imagen (MODIFICADO: Limpiar campos después de subir) */  
 document.getElementById('btnUploadImg').addEventListener('click', async () =>  
 {  
     const f = document.getElementById('imgFile');  
@@ -913,6 +918,11 @@ document.getElementById('btnUploadImg').addEventListener('click', async () =>
         document.getElementById('imgStatus').textContent = 'Imagen subida. Recargando lista...';  
         await listUploads('images');  
         document.getElementById('imgStatus').textContent = 'Subido: ' + name;  
+        
+        // 👉 LIMPIAR CAMPOS DESPUÉS DE SUBIR
+        document.getElementById('imgFile').value = '';
+        document.getElementById('imgName').value = '';
+        
     } catch (e) {  
         document.getElementById('imgStatus').textContent = 'Error al subir';  
         console.error(e);  
@@ -1102,6 +1112,11 @@ document.getElementById('btnUploadNews').addEventListener('click', async () =>
         await callApi('addNews', { news: newsData });  
 
         status.textContent = '✅ Noticia publicada exitosamente. Recargando lista...';  
+          
+        // 👉 LIMPIAR CAMPOS DESPUÉS DE SUBIR
+        document.getElementById('newsTitle').value = '';  
+        document.getElementById('newsContent').value = '';  
+        document.getElementById('newsImgFile').value = '';  
           
         // Limpiar formulario y recargar noticias  
         document.getElementById('createNewsForm').classList.add('hidden');  
