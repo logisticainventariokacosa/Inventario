@@ -340,31 +340,203 @@ input[type=file]{color:var(--muted);margin:8px 0}
     resize: vertical;
 }
 
-/* === MOBILE ADJUSTMENTS === */
-@media(max-width:640px){
-    .nav{flex-direction:column;align-items:flex-start;gap:8px}
-    .nav.menu{flex-wrap:wrap;justify-content:center;width:100%;gap:10px}
-    .nav.user-info{width:100%;justify-content:space-between;margin-top:10px}
-    .card-item{min-height:160px;padding:14px}
-    .results th{font-size:13px}
-    .news-card-wrapper{
-        grid-template-columns: 1fr; 
+/* === MOBILE ADJUSTMENTS - MEJORADO === */
+@media(max-width:768px){
+    .container {
+        padding: 15px;
+        grid-template-columns: 1fr;
     }
-    .news-image-area img{
-          max-width:100%;
-          height:auto;
+    
+    /* NAVEGACIÓN MEJORADA PARA MÓVIL */
+    .topbar {
+        padding: 10px 15px;
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
     }
-    .news-list .item img{
-        float:none;
+    
+    .nav {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px;
     }
-    .filter-controls{flex-direction:column}
-    .filter-controls > button { /* Botones de acción principal (Filtrar) */
+    
+    .nav.menu {
+        order: 2;
+        justify-content: flex-start;
+        gap: 8px;
         width: 100%;
     }
-    /* El grupo de filtro se mantendrá en línea, pero con flex-wrap en el padre (filter-controls) */
-    .filter-input-group{
-        width: 100%; 
-        min-width: auto;
+    
+    .nav.user-info {
+        order: 1;
+        width: 100%;
+        justify-content: space-between;
+        margin-top: 0;
+    }
+    
+    .brand {
+        font-size: 1rem;
+        margin-right: 0;
+    }
+    
+    /* MENÚ DE NAVEGACIÓN MÁS COMPACTO */
+    .nav .menu a {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+    }
+    
+    /* CONTENIDO PRINCIPAL */
+    .search-card {
+        padding: 15px;
+    }
+    
+    .search-card.row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .search-card input {
+        width: 100%;
+    }
+    
+    /* TABLA DE RESULTADOS MEJORADA */
+    .results {
+        overflow-x: auto;
+        font-size: 0.8rem;
+    }
+    
+    .results th, .results td {
+        padding: 6px 4px;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+    
+    /* GRID PARA MÓVIL */
+    .grid {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .card-item {
+        min-height: 140px;
+        padding: 12px;
+    }
+    
+    .card-item img {
+        height: 120px;
+    }
+    
+    /* NOTICIAS EN MÓVIL */
+    .news-card-wrapper {
+        padding: 12px;
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .news-image-area {
+        align-items: center;
+        text-align: center;
+    }
+    
+    .news-image-area img {
+        max-width: 100%;
+        max-height: 150px;
+    }
+    
+    .news-list .item {
+        padding: 12px;
+        grid-template-columns: 1fr;
+        gap: 8px;
+    }
+    
+    .news-list .item img {
+        max-width: 100%;
+        height: auto;
+        margin: 0 auto 8px;
+        display: block;
+    }
+    
+    /* FILTROS MEJORADOS */
+    .filter-controls {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .filter-input-group {
+        width: 100%;
+    }
+    
+    .filter-input-group input {
+        min-width: 0;
+    }
+    
+    /* BOTONES EN MÓVIL */
+    button {
+        padding: 8px 12px;
+        font-size: 0.9rem;
+    }
+    
+    .row {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    /* FORMULARIOS */
+    input, textarea {
+        font-size: 16px; /* Previene zoom en iOS */
+    }
+    
+    /* FOOTER */
+    .main-footer {
+        padding: 10px 15px;
+        font-size: 0.8rem;
+        text-align: center;
+    }
+}
+
+/* AJUSTES EXTRA PARA PANTALLAS MUY PEQUEÑAS */
+@media(max-width:480px){
+    .auth-card {
+        padding: 20px;
+        margin: 10px;
+    }
+    
+    .nav .menu a {
+        padding: 5px 8px;
+        font-size: 0.85rem;
+    }
+    
+    .user-info span {
+        max-width: 150px;
+        font-size: 0.85rem;
+    }
+    
+    .card-item {
+        padding: 10px;
+    }
+    
+    .news-card-wrapper h3 {
+        font-size: 1.2rem;
+    }
+}
+
+/* MEJORAS PARA TABLETS */
+@media(min-width:769px) and (max-width:1024px){
+    .container {
+        padding: 20px;
+    }
+    
+    .grid {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
+    
+    .nav .menu a {
+        padding: 6px 10px;
+        font-size: 0.9rem;
     }
 }
 
