@@ -757,7 +757,8 @@ input[type=file]{color:var(--muted);margin:8px 0}
         </footer>
         </div>
     </div>
-<script>
+
+    <script>
 /* ====== CONFIG ====== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzGoWmn4doU1_vDqQvWYbqg4WzW8WD6y64lI96xKYn_bGd-L1THgt3HVJJl_BprqpysTA/exec';
 
@@ -1102,7 +1103,7 @@ document.getElementById('btnUploadImg').addEventListener('click', async () =>
 // Función auxiliar para limpiar un filtro y re-listar
 function resetFilter(targetId, section) {
     document.getElementById(targetId).value = '';
-    listUploads(section);
+    listUploads(section, false, '', true);
 }
 
 // Listeners de los botones de Limpiar Filtro - Documentos
@@ -1117,11 +1118,23 @@ document.getElementById('btnResetFilterEmailImg').addEventListener('click', (e) 
 document.getElementById('btnResetFilterDateImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));
 document.getElementById('btnResetFilterFileNameImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));
 
-document.getElementById('btnFilterDoc').addEventListener('click', () => listUploads('documents'));
-document.getElementById('btnFilterImg').addEventListener('click', () => listUploads('images'));
+document.getElementById('btnFilterDoc').addEventListener('click', () => listUploads('documents', false, '', true));
+document.getElementById('btnFilterImg').addEventListener('click', () => listUploads('images', false, '', true));
 
-async function listUploads(section = 'documents', findAndShowName = false, findName = '')
+async function listUploads(section = 'documents', findAndShowName = false, findName = '', showLoading = false)
 {
+    const docList = document.getElementById('docList');
+    const imgList = document.getElementById('imgList');
+
+    // 👉 NUEVO: Mostrar "Filtrando..." si se solicita
+    if (showLoading) {
+        if (section === 'documents') {
+            docList.innerHTML = '<div class="muted">🔍 Filtrando documentos...</div>';
+        } else if (section === 'images') {
+            imgList.innerHTML = '<div class="muted">🔍 Filtrando imágenes...</div>';
+        }
+    }
+
     const res = await getApi('listUploads');
     const docs = res.docs || [];
     const imgs = res.imgs || [];
@@ -1153,9 +1166,6 @@ async function listUploads(section = 'documents', findAndShowName = false, findN
             (!fileNameFilter || f.includes(fileNameFilter))
         );
     };
-
-    const docList = document.getElementById('docList');
-    const imgList = document.getElementById('imgList');
 
     const filteredDocs = docs.filter(filterFn);
     
@@ -1457,14 +1467,14 @@ document.getElementById('filterCenter').addEventListener('input', function() {
 document.getElementById('filterFileNameDoc').addEventListener('input', function() {
     const filterValue = this.value.trim();
     if (!filterValue) {
-        listUploads('documents');
+        listUploads('documents', false, '', true);
     }
 });
 
 document.getElementById('filterFileNameImg').addEventListener('input', function() {
     const filterValue = this.value.trim();
     if (!filterValue) {
-        listUploads('images');
+        listUploads('images', false, '', true);
     }
 });
 
