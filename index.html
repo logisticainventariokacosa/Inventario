@@ -653,6 +653,12 @@ input[type=file]{color:var(--muted);margin:8px 0}
                         <input id="filterDateDoc" placeholder="Filtrar por fecha (dd/mm/yyyy)" />
                         <button id="btnResetFilterDateDoc" class="alt" data-target="filterDateDoc">Limpiar</button>
                     </div>
+
+                  <div class="filter-input-group">
+                    <input type="text" id="filterFileNameDoc" placeholder="Filtrar por nombre de documento">
+                     <button class="alt" id="btnResetFilterFileNameDoc" data-target="filterFileNameDoc">Limpiar</button>
+                </div>
+
                     <button id="btnFilterDoc">Aplicar Filtros</button>
                 </div>
                 <div id="docList" class="grid"></div>
@@ -681,6 +687,12 @@ input[type=file]{color:var(--muted);margin:8px 0}
                         <input id="filterDateImg" placeholder="Filtrar por fecha (dd/mm/yyyy)" />
                         <button id="btnResetFilterDateImg" class="alt" data-target="filterDateImg">Limpiar</button>
                     </div>
+
+                 <div class="filter-input-group">
+                    <input type="text" id="filterFileNameImg" placeholder="Filtrar por nombre de imagen">
+                    <button class="alt" id="btnResetFilterFileNameImg" data-target="filterFileNameImg">Limpiar</button>
+                </div>
+
                     <button id="btnFilterImg">Aplicar Filtros</button>
                 </div>
                 <div id="imgList" class="grid"></div>
@@ -745,8 +757,7 @@ input[type=file]{color:var(--muted);margin:8px 0}
         </footer>
         </div>
     </div>
-
-    <script>
+<script>
 /* ====== CONFIG ====== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzGoWmn4doU1_vDqQvWYbqg4WzW8WD6y64lI96xKYn_bGd-L1THgt3HVJJl_BprqpysTA/exec';
 
@@ -1098,12 +1109,13 @@ function resetFilter(targetId, section) {
 document.getElementById('btnResetFilterNameDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));
 document.getElementById('btnResetFilterEmailDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));
 document.getElementById('btnResetFilterDateDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));
+document.getElementById('btnResetFilterFileNameDoc').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'documents'));
 
 // Listeners de los botones de Limpiar Filtro - Imágenes
 document.getElementById('btnResetFilterNameImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));
 document.getElementById('btnResetFilterEmailImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));
 document.getElementById('btnResetFilterDateImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));
-
+document.getElementById('btnResetFilterFileNameImg').addEventListener('click', (e) => resetFilter(e.target.dataset.target, 'images'));
 
 document.getElementById('btnFilterDoc').addEventListener('click', () => listUploads('documents'));
 document.getElementById('btnFilterImg').addEventListener('click', () => listUploads('images'));
@@ -1114,27 +1126,31 @@ async function listUploads(section = 'documents', findAndShowName = false, findN
     const docs = res.docs || [];
     const imgs = res.imgs || [];
 
-    let nameFilter, emailFilter, dateFilter;
+    let nameFilter, emailFilter, dateFilter, fileNameFilter;
 
     if (section === 'documents') {
         nameFilter = (document.getElementById('filterNameDoc')?.value || '').trim().toLowerCase();
         emailFilter = (document.getElementById('filterEmailDoc')?.value || '').trim().toLowerCase();
         dateFilter = (document.getElementById('filterDateDoc')?.value || '').trim();
+        fileNameFilter = (document.getElementById('filterFileNameDoc')?.value || '').trim().toLowerCase();
     } else if (section === 'images') {
         nameFilter = (document.getElementById('filterNameImg')?.value || '').trim().toLowerCase();
         emailFilter = (document.getElementById('filterEmailImg')?.value || '').trim().toLowerCase();
         dateFilter = (document.getElementById('filterDateImg')?.value || '').trim();
+        fileNameFilter = (document.getElementById('filterFileNameImg')?.value || '').trim().toLowerCase();
     } else {
-        nameFilter = ''; emailFilter = ''; dateFilter = '';
+        nameFilter = ''; emailFilter = ''; dateFilter = ''; fileNameFilter = '';
     }
     
     const filterFn = x => {
         const n = (x.uploaderName || '').toString().toLowerCase();
         const e = (x.uploaderEmail || '').toString().toLowerCase();
+        const f = (x.name || '').toString().toLowerCase();
         return (
             (!nameFilter || n.includes(nameFilter)) && 
             (!emailFilter || e.includes(emailFilter)) && 
-            (!dateFilter || x.date === dateFilter)
+            (!dateFilter || x.date === dateFilter) &&
+            (!fileNameFilter || f.includes(fileNameFilter))
         );
     };
 
@@ -1418,7 +1434,7 @@ document.getElementById('mailBtn').href = "mailto:derwins.rojas@kacosa.com";
 /* ====== Inicial (SIN CAMBIOS) ====== */
 setTimeout(() => {if (auth.currentUser) { listUploads('documents'); listUploads('images'); loadNews(); } }, 800);
 
-        // 👉 NUEVO: Limpiar resultados cuando la barra de búsqueda quede vacía
+// 👉 NUEVO: Limpiar resultados cuando la barra de búsqueda quede vacía
 document.getElementById('searchCode').addEventListener('input', function() {
     const code = this.value.trim();
     if (!code) {
@@ -1427,7 +1443,8 @@ document.getElementById('searchCode').addEventListener('input', function() {
         document.getElementById('searchResults').innerHTML = '';
     }
 });
-        // 👉 NUEVO: Limpiar resultados filtrados cuando el filtro de Centro quede vacío
+
+// 👉 NUEVO: Limpiar resultados filtrados cuando el filtro de Centro quede vacío
 document.getElementById('filterCenter').addEventListener('input', function() {
     const filterValue = this.value.trim();
     if (!filterValue && currentInventoryResults.length > 0) {
@@ -1435,7 +1452,22 @@ document.getElementById('filterCenter').addEventListener('input', function() {
         renderInventoryResults();
     }
 });
-        
+
+// 👉 NUEVO: Limpiar resultados cuando los filtros de nombre de archivo queden vacíos
+document.getElementById('filterFileNameDoc').addEventListener('input', function() {
+    const filterValue = this.value.trim();
+    if (!filterValue) {
+        listUploads('documents');
+    }
+});
+
+document.getElementById('filterFileNameImg').addEventListener('input', function() {
+    const filterValue = this.value.trim();
+    if (!filterValue) {
+        listUploads('images');
+    }
+});
+
 </script>
 
 </body>
