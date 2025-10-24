@@ -1027,8 +1027,22 @@ document.getElementById('btnSearch').addEventListener('click', async () =>
     }
 });
 
+// 👉 NUEVO: Buscar con Enter en el campo de código
+document.getElementById('searchCode').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('btnSearch').click();
+    }
+});
+
 // 👉 NUEVO LISTENER: Conecta el botón de filtrar con la función de renderizado
 document.getElementById('btnFilterCenter').addEventListener('click', renderInventoryResults);
+
+// 👉 NUEVO: Filtrar con Enter en el campo de Centro de Inventario
+document.getElementById('filterCenter').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        renderInventoryResults();
+    }
+});
 
 // 👉 NUEVO LISTENER: Limpia el filtro de Centro de Inventario y re-renderiza
 document.getElementById('btnResetFilterCenter').addEventListener('click', () => {
@@ -1127,6 +1141,50 @@ document.getElementById('btnResetFilterFileNameImg').addEventListener('click', (
 
 document.getElementById('btnFilterDoc').addEventListener('click', () => listUploads('documents', false, '', true));
 document.getElementById('btnFilterImg').addEventListener('click', () => listUploads('images', false, '', true));
+
+// 👉 NUEVO: Aplicar filtros con Enter en todos los campos de filtro de Documentos
+document.getElementById('filterNameDoc').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        listUploads('documents', false, '', true);
+    }
+});
+document.getElementById('filterEmailDoc').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        listUploads('documents', false, '', true);
+    }
+});
+document.getElementById('filterDateDoc').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        listUploads('documents', false, '', true);
+    }
+});
+document.getElementById('filterFileNameDoc').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        listUploads('documents', false, '', true);
+    }
+});
+
+// 👉 NUEVO: Aplicar filtros con Enter en todos los campos de filtro de Imágenes
+document.getElementById('filterNameImg').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        listUploads('images', false, '', true);
+    }
+});
+document.getElementById('filterEmailImg').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        listUploads('images', false, '', true);
+    }
+});
+document.getElementById('filterDateImg').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        listUploads('images', false, '', true);
+    }
+});
+document.getElementById('filterFileNameImg').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        listUploads('images', false, '', true);
+    }
+});
 
 async function listUploads(section = 'documents', findAndShowName = false, findName = '', showLoading = false)
 {
@@ -1409,6 +1467,18 @@ function filterNews() {
 
 // 4. NEW: Listeners para los filtros y limpieza
 document.getElementById('btnFilterNews').addEventListener('click', filterNews);
+
+// 👉 NUEVO: Filtrar noticias con Enter
+document.getElementById('filterNewsTitle').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        filterNews();
+    }
+});
+document.getElementById('filterNewsDate').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        filterNews();
+    }
+});
 
 // Limpiar filtro individual de Título
 document.getElementById('btnResetFilterNewsTitle').addEventListener('click', (e) => {
