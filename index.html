@@ -2342,21 +2342,15 @@ document.getElementById('filterFileNameImg').addEventListener('input', function(
     }
 });
 
-    /* === AUTO-FOCUS FORZADO EN MÓVIL === */
+/* === AUTO-FOCUS FORZADO EN MÓVIL === */
 function focusSearchField() {
     const searchCodeInput = document.getElementById('searchCode');
     if (searchCodeInput && document.getElementById('home').classList.contains('active-section')) {
         searchCodeInput.focus();
         
-        // Intentar forzar el teclado en móvil
         setTimeout(() => {
             searchCodeInput.focus();
         }, 500);
-        
-        // Otro intento por si las moscas
-        setTimeout(() => {
-            searchCodeInput.focus();
-        }, 1000);
     }
 }
 
@@ -2370,18 +2364,12 @@ document.querySelectorAll('.nav a').forEach(a => {
     a.addEventListener('click', function(e) {
         // ... el código de navegación que ya tienes ...
         
-        // Después de cambiar de sección, verificar si es "home"
         setTimeout(function() {
             if (this.dataset.section === 'home') {
                 focusSearchField();
             }
         }.bind(this), 100);
     });
-});
-
-// Enfocar cuando se haga clic en cualquier parte de la sección home (útil para móvil)
-document.getElementById('home').addEventListener('click', function() {
-    setTimeout(focusSearchField, 100);
 });
 
 </script>
