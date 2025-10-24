@@ -1316,7 +1316,7 @@ button:disabled {
         </div>
 
         <div class="row" style="margin-top:12px">
-            <input id="searchCode" placeholder="Ingrese código..." />
+            <input id="searchCode" placeholder="Ingrese código..." autofocus />
             <button id="btnSearch">Buscar</button>
         </div>
         <div id="searchResults" class="results"></div>
@@ -2254,17 +2254,50 @@ document.getElementById('btnResetNewsAll').addEventListener('click', () => {
 });
 
 
-/* ====== Navegación (SIN CAMBIOS EN LÓGICA) ====== */
+/* ====== NAVEGACIÓN CON RESETEO DE SCROLL ====== */
 document.querySelectorAll('.nav a').forEach(a => {
-    a.addEventListener('click', e =>
-    {
+    a.addEventListener('click', e => {
         e.preventDefault();
+        
+        // Remover active de todos los enlaces
         document.querySelectorAll('.nav a').forEach(n => n.classList.remove('active'));
+        // Agregar active al enlace clickeado
         a.classList.add('active');
+        
         const target = a.dataset.section;
-        document.querySelectorAll('.section').forEach(s => s.id === target ? s.classList.add('active-section') : s.classList.remove('active-section'));
+        // Ocultar todas las secciones
+        document.querySelectorAll('.section').forEach(s => {
+            s.classList.remove('active-section');
+        });
+        // Mostrar solo la sección objetivo
+        document.getElementById(target).classList.add('active-section');
+        
+        // 🔥 RESETEAR EL SCROLL A LA PARTE SUPERIOR
+        window.scrollTo({
+            top: 0,
+            behavior: 'smooth'
+        });
+        
+        // También resetear el scroll del contenedor principal si es necesario
+        const container = document.querySelector('.container');
+        if (container) {
+            container.scrollTop = 0;
+        }
+        
+        // Cargar contenido específico de cada sección
         if (target === 'documents') listUploads('documents'); 
-        if (target === 'images') listUploads('images'); 
+        if (target === 'images') listUploads('images');
+        if (target === 'home') loadNews();
+        
+        // Si la sección es "home", enfocar el campo de código
+        if (target === 'home') {
+            setTimeout(function() {
+                const searchCodeInput = document.getElementById('searchCode');
+                if (searchCodeInput) {
+                    searchCodeInput.focus();
+                }
+            }, 100);
+        }
     });
 });
 
