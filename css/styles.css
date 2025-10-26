@@ -201,7 +201,7 @@ button.alt{
     transform: scale(1.1);
 }
 
-/* Animación de la luz recorriendo el borde */
+/* Animación de la luz recorriendo el borde - ESTO ES ESENCIAL */
 @keyframes lightBorder {
     0% {
         background-position: 0% 50%;
@@ -213,17 +213,6 @@ button.alt{
         background-position: 0% 50%;
     }
 }
-
-button:hover{
-    transform:translateY(-3px);
-    box-shadow:0 10px 20px rgba(198,40,40,0.3);
-}
-button.alt:hover{
-    background:rgba(255,255,255,0.05);
-    box-shadow:0 5px 15px rgba(0,0,0,0.2);
-    border-color:var(--blue-accent);
-}
-.hidden{display:none}
 
 /* === TOPBAR / NAV MODIFICADO === */
 .topbar{
