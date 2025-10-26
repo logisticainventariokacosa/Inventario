@@ -127,7 +127,7 @@ button.alt{
     color:var(--text);
 }
 
-/* BOTÓN GOOGLE CON EFECTO DE LUZ EN EL BORDE */
+/* BOTÓN GOOGLE COMO MUSICSTREAM CON PULSO SUTIL */
 .btn-google {
     background: #fff;
     color: #3c4043;
@@ -147,42 +147,13 @@ button.alt{
     max-width: 300px;
     margin: 0 auto;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Efecto de luz recorriendo SOLO el borde */
-.btn-google::before {
-    content: '';
-    position: absolute;
-    top: -2px;
-    left: -2px;
-    right: -2px;
-    bottom: -2px;
-    background: linear-gradient(45deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4);
-    background-size: 400%;
-    z-index: -1;
-    border-radius: 6px;
-    animation: lightBorder 3s linear infinite;
-    opacity: 1;
-}
-
-/* Crear el "marco" recortando el interior */
-.btn-google::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: white;
-    border-radius: 4px;
-    z-index: -1;
+    animation: subtlePulse 3s ease-in-out infinite;
 }
 
 .btn-google:hover {
     background: #f8f9fa;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    animation: none;
     transform: translateY(-1px);
 }
 
@@ -201,27 +172,30 @@ button.alt{
     transform: scale(1.1);
 }
 
-/* Animación de la luz recorriendo el borde - ESTO ES ESENCIAL */
-@keyframes lightBorder {
-    0% {
-        background-position: 0% 50%;
+/* Animación de pulso sutil */
+@keyframes subtlePulse {
+    0%, 100% {
+        transform: scale(1);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
     }
     50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
+        transform: scale(1.02);
+        box-shadow: 0 3px 8px rgba(0,0,0,0.15);
     }
 }
-button:hover{
+
+/* MODIFICA este estilo general */
+button:not(.btn-google):hover{
     transform:translateY(-3px);
     box-shadow:0 10px 20px rgba(198,40,40,0.3);
 }
+
 button.alt:hover{
     background:rgba(255,255,255,0.05);
     box-shadow:0 5px 15px rgba(0,0,0,0.2);
     border-color:var(--blue-accent);
 }
+
 .hidden{display:none}
 
 /* === TOPBAR / NAV MODIFICADO === */
