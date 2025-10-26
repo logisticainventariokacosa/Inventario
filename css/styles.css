@@ -128,67 +128,90 @@ button.alt{
 }
 
 /* === BOTÓN GOOGLE MEJORADO CON EFECTO PULSANTE Y MARCO === */
-button.google{
-    background:#fff;
-    color:#222;
-    border:1px solid rgba(255,255,255,0.1);
-    position:relative;
-    overflow:hidden;
-    animation: pulse 2s infinite;
-    box-shadow:0 0 0 0 rgba(33, 150, 243, 0.7);
+/* BOTÓN GOOGLE CON EFECTO DE LUZ */
+.btn-google {
+    background: #fff;
+    color: #3c4043;
+    border: 1px solid #dadce0;
+    border-radius: 4px;
+    padding: 12px 24px;
+    font-family: 'Roboto', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    width: 100%;
+    max-width: 300px;
+    margin: 0 auto;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    position: relative;
+    overflow: hidden;
 }
 
-/* Efecto de marco animado - Colores azules y verdes */
-button.google::before {
+/* Efecto de luz recorriendo alrededor */
+.btn-google::before {
     content: '';
     position: absolute;
     top: -2px;
     left: -2px;
     right: -2px;
     bottom: -2px;
-    background: linear-gradient(45deg, #2196F3, #1976D2, #0D47A1, #00695C, #004D40, #00796B);
+    background: linear-gradient(45deg, #4285F4, #34A853, #FBBC05, #EA4335, #4285F4);
     background-size: 400%;
     z-index: -1;
-    border-radius: 12px;
-    animation: steam 20s linear infinite;
+    border-radius: 6px;
+    animation: lightBorder 3s linear infinite;
     opacity: 0;
     transition: opacity 0.3s ease;
 }
 
-button.google:hover::before {
+.btn-google:hover::before {
     opacity: 1;
 }
 
-button.google:hover {
-    animation: none;
-    transform: translateY(-3px);
-    box-shadow: 0 10px 25px rgba(33, 150, 243, 0.4);
+.btn-google:hover {
+    background: #f8f9fa;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: translateY(-1px);
 }
 
-@keyframes steam {
+.btn-google:active {
+    background: #f1f3f4;
+    transform: translateY(0);
+}
+
+.btn-google img {
+    width: 18px;
+    height: 18px;
+    transition: transform 0.3s ease;
+}
+
+.btn-google:hover img {
+    transform: scale(1.1);
+}
+
+/* Animación de la luz recorriendo */
+@keyframes lightBorder {
     0% {
-        background-position: 0 0;
+        background-position: 0% 50%;
     }
     50% {
-        background-position: 400% 0;
+        background-position: 100% 50%;
     }
     100% {
-        background-position: 0 0;
+        background-position: 0% 50%;
     }
 }
 
-@keyframes pulse {
-    0% {
-        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0.7);
-    }
-    70% {
-        box-shadow: 0 0 0 10px rgba(33, 150, 243, 0);
-    }
-    100% {
-        box-shadow: 0 0 0 0 rgba(33, 150, 243, 0);
-    }
+/* Versión más sutil del efecto (opcional) */
+.btn-google.alternative::before {
+    background: linear-gradient(45deg, #4285F4, #34A853, #4285F4);
+    animation: lightBorder 2s linear infinite;
 }
-
 button:hover{
     transform:translateY(-3px);
     box-shadow:0 10px 20px rgba(198,40,40,0.3);
