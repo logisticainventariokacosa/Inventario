@@ -127,8 +127,7 @@ button.alt{
     color:var(--text);
 }
 
-/* === BOTÓN GOOGLE MEJORADO CON EFECTO PULSANTE Y MARCO === */
-/* BOTÓN GOOGLE CON EFECTO DE LUZ */
+/* BOTÓN GOOGLE CON EFECTO DE LUZ EN EL BORDE */
 .btn-google {
     background: #fff;
     color: #3c4043;
@@ -152,7 +151,7 @@ button.alt{
     overflow: hidden;
 }
 
-/* Efecto de luz recorriendo alrededor */
+/* Efecto de luz recorriendo SOLO el borde */
 .btn-google::before {
     content: '';
     position: absolute;
@@ -165,12 +164,20 @@ button.alt{
     z-index: -1;
     border-radius: 6px;
     animation: lightBorder 3s linear infinite;
-    opacity: 0;
-    transition: opacity 0.3s ease;
+    opacity: 1;
 }
 
-.btn-google:hover::before {
-    opacity: 1;
+/* Crear el "marco" recortando el interior */
+.btn-google::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: white;
+    border-radius: 4px;
+    z-index: -1;
 }
 
 .btn-google:hover {
@@ -194,7 +201,7 @@ button.alt{
     transform: scale(1.1);
 }
 
-/* Animación de la luz recorriendo */
+/* Animación de la luz recorriendo el borde */
 @keyframes lightBorder {
     0% {
         background-position: 0% 50%;
@@ -207,11 +214,6 @@ button.alt{
     }
 }
 
-/* Versión más sutil del efecto (opcional) */
-.btn-google.alternative::before {
-    background: linear-gradient(45deg, #4285F4, #34A853, #4285F4);
-    animation: lightBorder 2s linear infinite;
-}
 button:hover{
     transform:translateY(-3px);
     box-shadow:0 10px 20px rgba(198,40,40,0.3);
