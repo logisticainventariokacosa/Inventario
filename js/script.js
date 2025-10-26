@@ -254,14 +254,11 @@ function initializeApp() {
     });
 
     document.getElementById('btnFilterCenter').addEventListener('click', renderInventoryResults);
-    
     document.getElementById('filterCenter').addEventListener('keypress', function(e) {
         if (e.key === 'Enter') {
             renderInventoryResults();
         }
     });
-
-    // ELIMINADO: Referencia al botón btnResetFilterCenter que ya no existe
 
     /* ====== UPLOAD ====== */
     async function uploadFile(file, filenameOpt) {
