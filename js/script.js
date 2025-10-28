@@ -22,6 +22,41 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
+    /* ====== ALERT PERSONALIZADO ====== */
+    function showAlert(message) {
+        const alertModal = document.getElementById('customAlert');
+        const alertMessage = document.getElementById('customAlertMessage');
+        const alertButton = document.getElementById('customAlertButton');
+        
+        alertMessage.textContent = message;
+        alertModal.classList.remove('hidden');
+        
+        // Enfocar el botón para mejor accesibilidad
+        setTimeout(() => alertButton.focus(), 100);
+        
+        // Retornar una promesa para simular alert()
+        return new Promise(resolve => {
+            const handleClose = () => {
+                alertModal.classList.add('hidden');
+                alertButton.removeEventListener('click', handleClose);
+                resolve();
+            };
+            
+            alertButton.addEventListener('click', handleClose);
+            
+            // También cerrar con Escape
+            const handleEscape = (e) => {
+                if (e.key === 'Escape') handleClose();
+            };
+            document.addEventListener('keydown', handleEscape);
+            
+            // Remover el event listener cuando se cierre
+            alertButton.addEventListener('click', () => {
+                document.removeEventListener('keydown', handleEscape);
+            });
+        });
+    }
+
     /* ====== Helpers ====== */
     function getDriveDirectUrl(url) {
         if (!url) return '';
@@ -86,95 +121,57 @@ function initializeApp() {
     }
 
     /* ====== AUTH ====== */
-/* ====== ALERT PERSONALIZADO ====== */
-function showAlert(message) {
-    const alertModal = document.getElementById('customAlert');
-    const alertMessage = document.getElementById('customAlertMessage');
-    const alertButton = document.getElementById('customAlertButton');
-    
-    alertMessage.textContent = message;
-    alertModal.classList.remove('hidden');
-    
-    // Enfocar el botón para mejor accesibilidad
-    setTimeout(() => alertButton.focus(), 100);
-    
-    // Retornar una promesa para simular alert()
-    return new Promise(resolve => {
-        const handleClose = () => {
-            alertModal.classList.add('hidden');
-            alertButton.removeEventListener('click', handleClose);
-            resolve();
-        };
-        
-        alertButton.addEventListener('click', handleClose);
-        
-        // También cerrar con Escape
-        const handleEscape = (e) => {
-            if (e.key === 'Escape') handleClose();
-        };
-        document.addEventListener('keydown', handleEscape);
-        
-        // Remover el event listener cuando se cierre
-        alertButton.addEventListener('click', () => {
-            document.removeEventListener('keydown', handleEscape);
-        });
+    document.getElementById('togglePasswordBtn').addEventListener('click', function() {
+        const passwordInput = document.getElementById('password');
+        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+        passwordInput.setAttribute('type', type);
+        this.textContent = type === 'password' ? '👁️' : '🔒'; 
     });
-}
 
-/* ====== AUTH ====== */
-document.getElementById('togglePasswordBtn').addEventListener('click', function() {
-    const passwordInput = document.getElementById('password');
-    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-    passwordInput.setAttribute('type', type);
-    this.textContent = type === 'password' ? '👁️' : '🔒'; 
-});
+    auth.onAuthStateChanged(user => {
+        if (user) {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('mainApp').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = user.email || user.displayName || '';
+            loadNews();
+            listUploads('documents');
+        } else {
+            document.getElementById('authScreen').classList.remove('hidden');
+            document.getElementById('mainApp').classList.add('hidden');
+        }
+    });
 
-auth.onAuthStateChanged(user => {
-    if (user) {
-        document.getElementById('authScreen').classList.add('hidden');
-        document.getElementById('mainApp').classList.remove('hidden');
-        document.getElementById('userEmail').textContent = user.email || user.displayName || '';
-        loadNews();
-        listUploads('documents');
-    } else {
-        document.getElementById('authScreen').classList.remove('hidden');
-        document.getElementById('mainApp').classList.add('hidden');
-    }
-});
+    document.getElementById('btnRegister').addEventListener('click', async () => {
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const pass = document.getElementById('password').value;
+        if (!name || !email || !pass) {
+            await showAlert('Completa todos los campos.');
+            return;
+        }
+        try {
+            const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+            await userCred.user.updateProfile({ displayName: name });
+            await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } }); 
+            await showAlert('Registrado correctamente');
+        } catch (err) { await showAlert(err.message); }
+    });
 
-document.getElementById('btnRegister').addEventListener('click', async () => {
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const pass = document.getElementById('password').value;
-    if (!name || !email || !pass) {
-        await showAlert('Completa todos los campos.');
-        return;
-    }
-    try {
-        const userCred = await auth.createUserWithEmailAndPassword(email, pass);
-        await userCred.user.updateProfile({ displayName: name });
-        await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } }); 
-        await showAlert('Registrado correctamente');
-    } catch (err) { await showAlert(err.message); }
-});
+    document.getElementById('btnLogin').addEventListener('click', async () => {
+        const email = document.getElementById('email').value.trim();
+        const pass = document.getElementById('password').value;
+        try { 
+            await auth.signInWithEmailAndPassword(email, pass); 
+        } catch (err) { await showAlert(err.message); }
+    });
 
-document.getElementById('btnLogin').addEventListener('click', async () => {
-    const email = document.getElementById('email').value.trim();
-    const pass = document.getElementById('password').value;
-    try { 
-        await auth.signInWithEmailAndPassword(email, pass); 
-    } catch (err) { await showAlert(err.message); }
-});
-
-      /* ====== hASTA AQUI NUEVO aLERT ====== */
-    
     document.getElementById('btnGoogle').addEventListener('click', async () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
             const res = await auth.signInWithPopup(provider);
             const user = res.user;
             await callApi('registerUser', { user: { nombreDeUsuario: user.displayName, email: user.email, uid: user.uid } });
-        } catch (err) { alert(err.message); }
+        } catch (err) { await showAlert(err.message); }
     });
 
     document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
@@ -272,13 +269,13 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
     }
 
     document.getElementById('btnSearch').addEventListener('click', async () => {
-    const code = document.getElementById('searchCode').value.trim();
-    if (!code) {
-        await showAlert('Ingrese un código.');
-        return;
-    }
-   
-       document.getElementById('searchResults').innerHTML = '<div class="loading-results">🔍 Buscando en el inventario...</div>';
+        const code = document.getElementById('searchCode').value.trim();
+        if (!code) {
+            await showAlert('Ingrese un código.');
+            return;
+        }
+
+        document.getElementById('searchResults').innerHTML = '<div class="loading-results">🔍 Buscando en el inventario...</div>';
         
         const data = await getApi('search', { code });
 
@@ -325,8 +322,14 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
     document.getElementById('btnUploadDoc').addEventListener('click', async () => {
         const f = document.getElementById('docFile');
         const name = document.getElementById('docName').value.trim();
-        if (!f.files.length) return alert('Selecciona un archivo');
-        if (!name) return alert('El nombre del documento es obligatorio');
+        if (!f.files.length) {
+            await showAlert('Selecciona un archivo');
+            return;
+        }
+        if (!name) {
+            await showAlert('El nombre del documento es obligatorio');
+            return;
+        }
         document.getElementById('docStatus').textContent = 'Subiendo...';
         try {
             await uploadFile(f.files[0], name);
@@ -344,8 +347,14 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
     document.getElementById('btnUploadImg').addEventListener('click', async () => {
         const f = document.getElementById('imgFile');
         const name = document.getElementById('imgName').value.trim();
-        if (!f.files.length) return alert('Selecciona una imagen');
-        if (!name) return alert('El nombre de la imagen es obligatorio');
+        if (!f.files.length) {
+            await showAlert('Selecciona una imagen');
+            return;
+        }
+        if (!name) {
+            await showAlert('El nombre de la imagen es obligatorio');
+            return;
+        }
         document.getElementById('imgStatus').textContent = 'Subiendo...';
         try {
             await uploadFile(f.files[0], name);
@@ -557,7 +566,10 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
         const imgFile = document.getElementById('newsImgFile').files[0];
         const status = document.getElementById('newsStatus');
 
-        if (!title || !content) return alert('El Título y el Contenido son obligatorios.');
+        if (!title || !content) {
+            await showAlert('El Título y el Contenido son obligatorios.');
+            return;
+        }
 
         status.textContent = 'Subiendo noticia...';
         let imageUrl = '';
@@ -758,5 +770,4 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
         const filterValue = this.value.trim();
         if (!filterValue) listUploads('images', false, '', true);
     });
-}
 }
