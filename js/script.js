@@ -24,36 +24,30 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     /* ====== ALERT PERSONALIZADO ====== */
     function showAlert(message) {
-        const alertModal = document.getElementById('customAlert');
-        const alertMessage = document.getElementById('customAlertMessage');
-        const alertButton = document.getElementById('customAlertButton');
-        
-        alertMessage.textContent = message;
-        alertModal.classList.remove('hidden');
-        
-        // Enfocar el botón para mejor accesibilidad
-        setTimeout(() => alertButton.focus(), 100);
-        
-        // Retornar una promesa para simular alert()
-        return new Promise(resolve => {
+        return new Promise((resolve) => {
+            const alertModal = document.getElementById('customAlert');
+            const alertMessage = document.getElementById('customAlertMessage');
+            const alertButton = document.getElementById('customAlertButton');
+            
+            alertMessage.textContent = message;
+            alertModal.classList.remove('hidden');
+            
+            // Enfocar el botón para mejor accesibilidad
+            setTimeout(() => alertButton.focus(), 100);
+            
             const handleClose = () => {
                 alertModal.classList.add('hidden');
                 alertButton.removeEventListener('click', handleClose);
+                document.removeEventListener('keydown', handleEscape);
                 resolve();
             };
             
-            alertButton.addEventListener('click', handleClose);
-            
-            // También cerrar con Escape
             const handleEscape = (e) => {
                 if (e.key === 'Escape') handleClose();
             };
-            document.addEventListener('keydown', handleEscape);
             
-            // Remover el event listener cuando se cierre
-            alertButton.addEventListener('click', () => {
-                document.removeEventListener('keydown', handleEscape);
-            });
+            alertButton.addEventListener('click', handleClose);
+            document.addEventListener('keydown', handleEscape);
         });
     }
 
@@ -145,24 +139,87 @@ function initializeApp() {
         const name = document.getElementById('name').value.trim();
         const email = document.getElementById('email').value.trim();
         const pass = document.getElementById('password').value;
+        
         if (!name || !email || !pass) {
             await showAlert('Completa todos los campos.');
             return;
         }
+        
+        if (pass.length < 6) {
+            await showAlert('La contraseña debe tener al menos 6 caracteres.');
+            return;
+        }
+
         try {
+            console.log('Intentando registrar usuario...');
             const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+            console.log('Usuario creado exitosamente');
+            
+            // Actualizar perfil
             await userCred.user.updateProfile({ displayName: name });
-            await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } }); 
+            
+            // Llamar a la API sin await para no bloquear
+            callApi('registerUser', { 
+                user: { 
+                    nombreDeUsuario: name, 
+                    email: email, 
+                    uid: userCred.user.uid 
+                } 
+            }).catch(err => console.warn('Error en API:', err));
+            
             await showAlert('Registrado correctamente');
-        } catch (err) { await showAlert(err.message); }
+            
+        } catch (err) { 
+            console.error('Error en registro:', err);
+            let errorMessage = 'Error al registrar: ';
+            
+            if (err.code === 'auth/email-already-in-use') {
+                errorMessage += 'Este email ya está registrado.';
+            } else if (err.code === 'auth/invalid-email') {
+                errorMessage += 'Email inválido.';
+            } else if (err.code === 'auth/weak-password') {
+                errorMessage += 'La contraseña es muy débil.';
+            } else if (err.code === 'auth/operation-not-allowed') {
+                errorMessage += 'La autenticación por email/contraseña no está habilitada.';
+            } else {
+                errorMessage += err.message;
+            }
+            
+            await showAlert(errorMessage); 
+        }
     });
 
     document.getElementById('btnLogin').addEventListener('click', async () => {
         const email = document.getElementById('email').value.trim();
         const pass = document.getElementById('password').value;
+        
+        if (!email || !pass) {
+            await showAlert('Completa todos los campos.');
+            return;
+        }
+
         try { 
-            await auth.signInWithEmailAndPassword(email, pass); 
-        } catch (err) { await showAlert(err.message); }
+            console.log('Intentando iniciar sesión...');
+            await auth.signInWithEmailAndPassword(email, pass);
+            console.log('Inicio de sesión exitoso');
+        } catch (err) { 
+            console.error('Error en login:', err);
+            let errorMessage = 'Error al iniciar sesión: ';
+            
+            if (err.code === 'auth/user-not-found') {
+                errorMessage += 'Usuario no encontrado.';
+            } else if (err.code === 'auth/wrong-password') {
+                errorMessage += 'Contraseña incorrecta.';
+            } else if (err.code === 'auth/invalid-email') {
+                errorMessage += 'Email inválido.';
+            } else if (err.code === 'auth/user-disabled') {
+                errorMessage += 'Usuario deshabilitado.';
+            } else {
+                errorMessage += err.message;
+            }
+            
+            await showAlert(errorMessage); 
+        }
     });
 
     document.getElementById('btnGoogle').addEventListener('click', async () => {
