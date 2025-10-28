@@ -135,99 +135,66 @@ function initializeApp() {
         }
     });
 
-document.getElementById('btnRegister').addEventListener('click', async () => {
-    const name = document.getElementById('name').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const pass = document.getElementById('password').value;
-    
-    if (!name || !email || !pass) {
-        showAlert('Completa todos los campos.'); // Sin await
-        return;
-    }
-    
-    if (pass.length < 6) {
-        showAlert('La contraseña debe tener al menos 6 caracteres.'); // Sin await
-        return;
-    }
-
-    try {
-        console.log('Intentando registrar usuario...');
-        const userCred = await auth.createUserWithEmailAndPassword(email, pass);
-        console.log('Usuario creado exitosamente');
+    document.getElementById('btnRegister').addEventListener('click', async () => {
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const pass = document.getElementById('password').value;
         
-        // Actualizar perfil
-        await userCred.user.updateProfile({ displayName: name });
-        
-        // Llamar a la API sin await para no bloquear
-        callApi('registerUser', { 
-            user: { 
-                nombreDeUsuario: name, 
-                email: email, 
-                uid: userCred.user.uid 
-            } 
-        }).catch(err => console.warn('Error en API:', err));
-        
-        showAlert('Registrado correctamente'); // Sin await
-        
-    } catch (err) { 
-        console.error('Error en registro:', err);
-        let errorMessage = 'Error al registrar: ';
-        
-        if (err.code === 'auth/email-already-in-use') {
-            errorMessage = 'Este email ya está registrado.';
-        } else if (err.code === 'auth/invalid-email') {
-            errorMessage = 'Email inválido.';
-        } else if (err.code === 'auth/weak-password') {
-            errorMessage = 'La contraseña es muy débil.';
-        } else if (err.code === 'auth/operation-not-allowed') {
-            errorMessage = 'La autenticación por email/contraseña no está habilitada.';
-        } else {
-            errorMessage = err.message;
+        if (!name || !email || !pass) {
+            showAlert('Completa todos los campos.');
+            return;
         }
         
-        showAlert(errorMessage); // Sin await
-    }
-});
-
-document.getElementById('btnLogin').addEventListener('click', async () => {
-    const email = document.getElementById('email').value.trim();
-    const pass = document.getElementById('password').value;
-    
-    if (!email || !pass) {
-        showAlert('Completa todos los campos.'); // Sin await
-        return;
-    }
-
-    try { 
-        console.log('Intentando iniciar sesión...');
-        await auth.signInWithEmailAndPassword(email, pass);
-        console.log('Inicio de sesión exitoso');
-    } catch (err) { 
-        console.error('Error en login:', err);
-        let errorMessage = 'Error al iniciar sesión: ';
-        
-        if (err.code === 'auth/user-not-found') {
-            errorMessage = 'Usuario no encontrado.';
-        } else if (err.code === 'auth/wrong-password') {
-            errorMessage = 'Contraseña incorrecta.';
-        } else if (err.code === 'auth/invalid-email') {
-            errorMessage = 'Email inválido.';
-        } else if (err.code === 'auth/user-disabled') {
-            errorMessage = 'Usuario deshabilitado.';
-        } else {
-            errorMessage = err.message;
+        if (pass.length < 6) {
+            showAlert('La contraseña debe tener al menos 6 caracteres.');
+            return;
         }
-        
-        showAlert(errorMessage); // Sin await
-    }
-});
+
+        try {
+            console.log('Intentando registrar usuario...');
+            const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+            console.log('Usuario creado exitosamente');
+            
+            // Actualizar perfil
+            await userCred.user.updateProfile({ displayName: name });
+            
+            // Llamar a la API sin await para no bloquear
+            callApi('registerUser', { 
+                user: { 
+                    nombreDeUsuario: name, 
+                    email: email, 
+                    uid: userCred.user.uid 
+                } 
+            }).catch(err => console.warn('Error en API:', err));
+            
+            showAlert('Registrado correctamente');
+            
+        } catch (err) { 
+            console.error('Error en registro:', err);
+            let errorMessage = 'Error al registrar: ';
+            
+            if (err.code === 'auth/email-already-in-use') {
+                errorMessage = 'Este email ya está registrado.';
+            } else if (err.code === 'auth/invalid-email') {
+                errorMessage = 'Email inválido.';
+            } else if (err.code === 'auth/weak-password') {
+                errorMessage = 'La contraseña es muy débil.';
+            } else if (err.code === 'auth/operation-not-allowed') {
+                errorMessage = 'La autenticación por email/contraseña no está habilitada.';
+            } else {
+                errorMessage = err.message;
+            }
+            
+            showAlert(errorMessage);
+        }
+    });
 
     document.getElementById('btnLogin').addEventListener('click', async () => {
         const email = document.getElementById('email').value.trim();
         const pass = document.getElementById('password').value;
         
         if (!email || !pass) {
-            await showAlert('Completa todos los campos.');
+            showAlert('Completa todos los campos.');
             return;
         }
 
@@ -240,18 +207,18 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
             let errorMessage = 'Error al iniciar sesión: ';
             
             if (err.code === 'auth/user-not-found') {
-                errorMessage += 'Usuario no encontrado.';
+                errorMessage = 'Usuario no encontrado.';
             } else if (err.code === 'auth/wrong-password') {
-                errorMessage += 'Contraseña incorrecta.';
+                errorMessage = 'Contraseña incorrecta.';
             } else if (err.code === 'auth/invalid-email') {
-                errorMessage += 'Email inválido.';
+                errorMessage = 'Email inválido.';
             } else if (err.code === 'auth/user-disabled') {
-                errorMessage += 'Usuario deshabilitado.';
+                errorMessage = 'Usuario deshabilitado.';
             } else {
-                errorMessage += err.message;
+                errorMessage = err.message;
             }
             
-            await showAlert(errorMessage); 
+            showAlert(errorMessage);
         }
     });
 
@@ -261,7 +228,7 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
             const res = await auth.signInWithPopup(provider);
             const user = res.user;
             await callApi('registerUser', { user: { nombreDeUsuario: user.displayName, email: user.email, uid: user.uid } });
-        } catch (err) { await showAlert(err.message); }
+        } catch (err) { showAlert(err.message); }
     });
 
     document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
@@ -330,7 +297,7 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
                 <td>${um}</td>
                 <td>${ubic}</td>
                 <td>${cantidad}</td>
-                <td>${ubicExhib}</td>
+                <td>${ubicExhib</td>
                 <td>${conteo}</td>
                 <td>${fechaUlt}</td>
                 <td>${auditor}</td>
@@ -361,7 +328,7 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
     document.getElementById('btnSearch').addEventListener('click', async () => {
         const code = document.getElementById('searchCode').value.trim();
         if (!code) {
-            await showAlert('Ingrese un código.');
+            showAlert('Ingrese un código.');
             return;
         }
 
@@ -413,11 +380,11 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
         const f = document.getElementById('docFile');
         const name = document.getElementById('docName').value.trim();
         if (!f.files.length) {
-            await showAlert('Selecciona un archivo');
+            showAlert('Selecciona un archivo');
             return;
         }
         if (!name) {
-            await showAlert('El nombre del documento es obligatorio');
+            showAlert('El nombre del documento es obligatorio');
             return;
         }
         document.getElementById('docStatus').textContent = 'Subiendo...';
@@ -438,11 +405,11 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
         const f = document.getElementById('imgFile');
         const name = document.getElementById('imgName').value.trim();
         if (!f.files.length) {
-            await showAlert('Selecciona una imagen');
+            showAlert('Selecciona una imagen');
             return;
         }
         if (!name) {
-            await showAlert('El nombre de la imagen es obligatorio');
+            showAlert('El nombre de la imagen es obligatorio');
             return;
         }
         document.getElementById('imgStatus').textContent = 'Subiendo...';
@@ -657,7 +624,7 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
         const status = document.getElementById('newsStatus');
 
         if (!title || !content) {
-            await showAlert('El Título y el Contenido son obligatorios.');
+            showAlert('El Título y el Contenido son obligatorios.');
             return;
         }
 
@@ -857,7 +824,4 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
     });
 
     document.getElementById('filterFileNameImg').addEventListener('input', function() {
-        const filterValue = this.value.trim();
-        if (!filterValue) listUploads('images', false, '', true);
-    });
-}
+        const filterValue = this.value
