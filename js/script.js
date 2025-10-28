@@ -714,3 +714,4 @@ function initializeApp() {
         const filterValue = this.value.trim();
         if (!filterValue) listUploads('images', false, '', true);
     });
+}
