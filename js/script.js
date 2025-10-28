@@ -277,10 +277,8 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
         await showAlert('Ingrese un código.');
         return;
     }
-    // ... resto del código
-});
-
-        document.getElementById('searchResults').innerHTML = '<div class="loading-results">🔍 Buscando en el inventario...</div>';
+   
+       document.getElementById('searchResults').innerHTML = '<div class="loading-results">🔍 Buscando en el inventario...</div>';
         
         const data = await getApi('search', { code });
 
