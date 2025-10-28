@@ -22,35 +22,6 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
-    /* ====== ALERT PERSONALIZADO ====== */
-    function showAlert(message) {
-        return new Promise((resolve) => {
-            const alertModal = document.getElementById('customAlert');
-            const alertMessage = document.getElementById('customAlertMessage');
-            const alertButton = document.getElementById('customAlertButton');
-            
-            alertMessage.textContent = message;
-            alertModal.classList.remove('hidden');
-            
-            // Enfocar el botón para mejor accesibilidad
-            setTimeout(() => alertButton.focus(), 100);
-            
-            const handleClose = () => {
-                alertModal.classList.add('hidden');
-                alertButton.removeEventListener('click', handleClose);
-                document.removeEventListener('keydown', handleEscape);
-                resolve();
-            };
-            
-            const handleEscape = (e) => {
-                if (e.key === 'Escape') handleClose();
-            };
-            
-            alertButton.addEventListener('click', handleClose);
-            document.addEventListener('keydown', handleEscape);
-        });
-    }
-
     /* ====== Helpers ====== */
     function getDriveDirectUrl(url) {
         if (!url) return '';
@@ -139,87 +110,21 @@ function initializeApp() {
         const name = document.getElementById('name').value.trim();
         const email = document.getElementById('email').value.trim();
         const pass = document.getElementById('password').value;
-        
-        if (!name || !email || !pass) {
-            showAlert('Completa todos los campos.');
-            return;
-        }
-        
-        if (pass.length < 6) {
-            showAlert('La contraseña debe tener al menos 6 caracteres.');
-            return;
-        }
-
+        if (!name || !email || !pass) return alert('Completa todos los campos.');
         try {
-            console.log('Intentando registrar usuario...');
             const userCred = await auth.createUserWithEmailAndPassword(email, pass);
-            console.log('Usuario creado exitosamente');
-            
-            // Actualizar perfil
             await userCred.user.updateProfile({ displayName: name });
-            
-            // Llamar a la API sin await para no bloquear
-            callApi('registerUser', { 
-                user: { 
-                    nombreDeUsuario: name, 
-                    email: email, 
-                    uid: userCred.user.uid 
-                } 
-            }).catch(err => console.warn('Error en API:', err));
-            
-            showAlert('Registrado correctamente');
-            
-        } catch (err) { 
-            console.error('Error en registro:', err);
-            let errorMessage = 'Error al registrar: ';
-            
-            if (err.code === 'auth/email-already-in-use') {
-                errorMessage = 'Este email ya está registrado.';
-            } else if (err.code === 'auth/invalid-email') {
-                errorMessage = 'Email inválido.';
-            } else if (err.code === 'auth/weak-password') {
-                errorMessage = 'La contraseña es muy débil.';
-            } else if (err.code === 'auth/operation-not-allowed') {
-                errorMessage = 'La autenticación por email/contraseña no está habilitada.';
-            } else {
-                errorMessage = err.message;
-            }
-            
-            showAlert(errorMessage);
-        }
+            await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } }); 
+            alert('Registrado correctamente');
+        } catch (err) { alert(err.message); }
     });
 
     document.getElementById('btnLogin').addEventListener('click', async () => {
         const email = document.getElementById('email').value.trim();
         const pass = document.getElementById('password').value;
-        
-        if (!email || !pass) {
-            showAlert('Completa todos los campos.');
-            return;
-        }
-
         try { 
-            console.log('Intentando iniciar sesión...');
-            await auth.signInWithEmailAndPassword(email, pass);
-            console.log('Inicio de sesión exitoso');
-        } catch (err) { 
-            console.error('Error en login:', err);
-            let errorMessage = 'Error al iniciar sesión: ';
-            
-            if (err.code === 'auth/user-not-found') {
-                errorMessage = 'Usuario no encontrado.';
-            } else if (err.code === 'auth/wrong-password') {
-                errorMessage = 'Contraseña incorrecta.';
-            } else if (err.code === 'auth/invalid-email') {
-                errorMessage = 'Email inválido.';
-            } else if (err.code === 'auth/user-disabled') {
-                errorMessage = 'Usuario deshabilitado.';
-            } else {
-                errorMessage = err.message;
-            }
-            
-            showAlert(errorMessage);
-        }
+            await auth.signInWithEmailAndPassword(email, pass); 
+        } catch (err) { alert(err.message); }
     });
 
     document.getElementById('btnGoogle').addEventListener('click', async () => {
@@ -228,7 +133,7 @@ function initializeApp() {
             const res = await auth.signInWithPopup(provider);
             const user = res.user;
             await callApi('registerUser', { user: { nombreDeUsuario: user.displayName, email: user.email, uid: user.uid } });
-        } catch (err) { showAlert(err.message); }
+        } catch (err) { alert(err.message); }
     });
 
     document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
@@ -297,7 +202,7 @@ function initializeApp() {
                 <td>${um}</td>
                 <td>${ubic}</td>
                 <td>${cantidad}</td>
-                <td>${ubicExhib</td>
+                <td>${ubicExhib}</td>
                 <td>${conteo}</td>
                 <td>${fechaUlt}</td>
                 <td>${auditor}</td>
@@ -327,10 +232,7 @@ function initializeApp() {
 
     document.getElementById('btnSearch').addEventListener('click', async () => {
         const code = document.getElementById('searchCode').value.trim();
-        if (!code) {
-            showAlert('Ingrese un código.');
-            return;
-        }
+        if (!code) return alert('Ingrese un código.');
 
         document.getElementById('searchResults').innerHTML = '<div class="loading-results">🔍 Buscando en el inventario...</div>';
         
@@ -379,14 +281,8 @@ function initializeApp() {
     document.getElementById('btnUploadDoc').addEventListener('click', async () => {
         const f = document.getElementById('docFile');
         const name = document.getElementById('docName').value.trim();
-        if (!f.files.length) {
-            showAlert('Selecciona un archivo');
-            return;
-        }
-        if (!name) {
-            showAlert('El nombre del documento es obligatorio');
-            return;
-        }
+        if (!f.files.length) return alert('Selecciona un archivo');
+        if (!name) return alert('El nombre del documento es obligatorio');
         document.getElementById('docStatus').textContent = 'Subiendo...';
         try {
             await uploadFile(f.files[0], name);
@@ -404,14 +300,8 @@ function initializeApp() {
     document.getElementById('btnUploadImg').addEventListener('click', async () => {
         const f = document.getElementById('imgFile');
         const name = document.getElementById('imgName').value.trim();
-        if (!f.files.length) {
-            showAlert('Selecciona una imagen');
-            return;
-        }
-        if (!name) {
-            showAlert('El nombre de la imagen es obligatorio');
-            return;
-        }
+        if (!f.files.length) return alert('Selecciona una imagen');
+        if (!name) return alert('El nombre de la imagen es obligatorio');
         document.getElementById('imgStatus').textContent = 'Subiendo...';
         try {
             await uploadFile(f.files[0], name);
@@ -623,10 +513,7 @@ function initializeApp() {
         const imgFile = document.getElementById('newsImgFile').files[0];
         const status = document.getElementById('newsStatus');
 
-        if (!title || !content) {
-            showAlert('El Título y el Contenido son obligatorios.');
-            return;
-        }
+        if (!title || !content) return alert('El Título y el Contenido son obligatorios.');
 
         status.textContent = 'Subiendo noticia...';
         let imageUrl = '';
@@ -824,4 +711,7 @@ function initializeApp() {
     });
 
     document.getElementById('filterFileNameImg').addEventListener('input', function() {
-        const filterValue = this.value
+        const filterValue = this.value.trim();
+        if (!filterValue) listUploads('images', false, '', true);
+    });
+}
