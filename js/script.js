@@ -86,47 +86,88 @@ function initializeApp() {
     }
 
     /* ====== AUTH ====== */
-    document.getElementById('togglePasswordBtn').addEventListener('click', function() {
-        const passwordInput = document.getElementById('password');
-        const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-        passwordInput.setAttribute('type', type);
-        this.textContent = type === 'password' ? '👁️' : '🔒'; 
+/* ====== ALERT PERSONALIZADO ====== */
+function showAlert(message) {
+    const alertModal = document.getElementById('customAlert');
+    const alertMessage = document.getElementById('customAlertMessage');
+    const alertButton = document.getElementById('customAlertButton');
+    
+    alertMessage.textContent = message;
+    alertModal.classList.remove('hidden');
+    
+    // Enfocar el botón para mejor accesibilidad
+    setTimeout(() => alertButton.focus(), 100);
+    
+    // Retornar una promesa para simular alert()
+    return new Promise(resolve => {
+        const handleClose = () => {
+            alertModal.classList.add('hidden');
+            alertButton.removeEventListener('click', handleClose);
+            resolve();
+        };
+        
+        alertButton.addEventListener('click', handleClose);
+        
+        // También cerrar con Escape
+        const handleEscape = (e) => {
+            if (e.key === 'Escape') handleClose();
+        };
+        document.addEventListener('keydown', handleEscape);
+        
+        // Remover el event listener cuando se cierre
+        alertButton.addEventListener('click', () => {
+            document.removeEventListener('keydown', handleEscape);
+        });
     });
+}
 
-    auth.onAuthStateChanged(user => {
-        if (user) {
-            document.getElementById('authScreen').classList.add('hidden');
-            document.getElementById('mainApp').classList.remove('hidden');
-            document.getElementById('userEmail').textContent = user.email || user.displayName || '';
-            loadNews();
-            listUploads('documents');
-        } else {
-            document.getElementById('authScreen').classList.remove('hidden');
-            document.getElementById('mainApp').classList.add('hidden');
-        }
-    });
+/* ====== AUTH ====== */
+document.getElementById('togglePasswordBtn').addEventListener('click', function() {
+    const passwordInput = document.getElementById('password');
+    const type = passwordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    passwordInput.setAttribute('type', type);
+    this.textContent = type === 'password' ? '👁️' : '🔒'; 
+});
 
-    document.getElementById('btnRegister').addEventListener('click', async () => {
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const pass = document.getElementById('password').value;
-        if (!name || !email || !pass) return alert('Completa todos los campos.');
-        try {
-            const userCred = await auth.createUserWithEmailAndPassword(email, pass);
-            await userCred.user.updateProfile({ displayName: name });
-            await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } }); 
-            alert('Registrado correctamente');
-        } catch (err) { alert(err.message); }
-    });
+auth.onAuthStateChanged(user => {
+    if (user) {
+        document.getElementById('authScreen').classList.add('hidden');
+        document.getElementById('mainApp').classList.remove('hidden');
+        document.getElementById('userEmail').textContent = user.email || user.displayName || '';
+        loadNews();
+        listUploads('documents');
+    } else {
+        document.getElementById('authScreen').classList.remove('hidden');
+        document.getElementById('mainApp').classList.add('hidden');
+    }
+});
 
-    document.getElementById('btnLogin').addEventListener('click', async () => {
-        const email = document.getElementById('email').value.trim();
-        const pass = document.getElementById('password').value;
-        try { 
-            await auth.signInWithEmailAndPassword(email, pass); 
-        } catch (err) { alert(err.message); }
-    });
+document.getElementById('btnRegister').addEventListener('click', async () => {
+    const name = document.getElementById('name').value.trim();
+    const email = document.getElementById('email').value.trim();
+    const pass = document.getElementById('password').value;
+    if (!name || !email || !pass) {
+        await showAlert('Completa todos los campos.');
+        return;
+    }
+    try {
+        const userCred = await auth.createUserWithEmailAndPassword(email, pass);
+        await userCred.user.updateProfile({ displayName: name });
+        await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } }); 
+        await showAlert('Registrado correctamente');
+    } catch (err) { await showAlert(err.message); }
+});
 
+document.getElementById('btnLogin').addEventListener('click', async () => {
+    const email = document.getElementById('email').value.trim();
+    const pass = document.getElementById('password').value;
+    try { 
+        await auth.signInWithEmailAndPassword(email, pass); 
+    } catch (err) { await showAlert(err.message); }
+});
+
+      /* ====== hASTA AQUI NUEVO aLERT ====== */
+    
     document.getElementById('btnGoogle').addEventListener('click', async () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
@@ -231,8 +272,13 @@ function initializeApp() {
     }
 
     document.getElementById('btnSearch').addEventListener('click', async () => {
-        const code = document.getElementById('searchCode').value.trim();
-        if (!code) return alert('Ingrese un código.');
+    const code = document.getElementById('searchCode').value.trim();
+    if (!code) {
+        await showAlert('Ingrese un código.');
+        return;
+    }
+    // ... resto del código
+});
 
         document.getElementById('searchResults').innerHTML = '<div class="loading-results">🔍 Buscando en el inventario...</div>';
         
