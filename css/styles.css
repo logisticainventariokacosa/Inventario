@@ -1277,3 +1277,95 @@ button:disabled {
     width: 100%;
     max-width: 500px;
 }
+
+/* === CENTRAR Y ESTILIZAR FORMULARIOS DE SUBIDA EN DOCUMENTOS E IMÁGENES === */
+#documents .upload-form,
+#images .upload-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 20px auto;
+    gap: 12px;
+}
+
+#documents input[type="file"],
+#documents input[type="text"],
+#documents button,
+#images input[type="file"],
+#images input[type="text"],
+#images button {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    display: block;
+}
+
+/* Asegurar que los botones de subida estén centrados */
+#documents button[type="submit"],
+#images button[type="submit"] {
+    width: 100%;
+    max-width: 500px;
+}
+
+/* === ESTILOS PARA LOS INPUTS DE SUBIDA (IGUAL QUE LOS FILTROS) === */
+#documents input[type="text"],
+#images input[type="text"] {
+    width: 100%;
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    color: var(--text);
+    transition: all 0.3s ease;
+    font-size: 1rem;
+}
+
+#documents input[type="text"]:focus,
+#images input[type="text"]:focus {
+    border-color: var(--blue-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+    background: rgba(255,255,255,0.05);
+}
+
+/* Estilo para el input de archivo (file) */
+#documents input[type="file"],
+#images input[type="file"] {
+    padding: 12px 16px;
+    border-radius: 10px;
+    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255,255,255,0.03);
+    color: var(--muted);
+    transition: all 0.3s ease;
+    font-size: 0.9rem;
+}
+
+#documents input[type="file"]:focus,
+#images input[type="file"]:focus {
+    border-color: var(--blue-accent);
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(33, 150, 243, 0.2);
+    background: rgba(255,255,255,0.05);
+}
+
+/* Estilo para el placeholder del input file */
+#documents input[type="file"]::file-selector-button,
+#images input[type="file"]::file-selector-button {
+    background: var(--gradient);
+    border: 0;
+    padding: 8px 16px;
+    border-radius: 6px;
+    color: white;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 500;
+    margin-right: 12px;
+}
+
+#documents input[type="file"]::file-selector-button:hover,
+#images input[type="file"]::file-selector-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(198,40,40,0.3);
+}
