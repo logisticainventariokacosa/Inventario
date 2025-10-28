@@ -1246,3 +1246,34 @@ button:disabled {
 * {
     transition: color 0.3s ease, background-color 0.3s ease, border-color 0.3s ease;
 }
+
+/* === CENTRAR FORMULARIOS DE SUBIDA EN DOCUMENTOS E IMÁGENES === */
+#documents .upload-form,
+#images .upload-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto 20px auto;
+    gap: 12px;
+}
+
+#documents input[type="file"],
+#documents input[type="text"],
+#documents button,
+#images input[type="file"],
+#images input[type="text"],
+#images button {
+    width: 100%;
+    max-width: 500px;
+    margin: 0 auto;
+    display: block;
+}
+
+/* Asegurar que los botones de subida estén centrados */
+#documents button[type="submit"],
+#images button[type="submit"] {
+    width: 100%;
+    max-width: 500px;
+}
