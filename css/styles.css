@@ -1277,12 +1277,19 @@ button:disabled {
     width: 100%;
     max-width: 500px;
 }
-/* === CORREGIR MODAL DE NOTICIAS - DEBE ESTAR OCULTO POR DEFECTO === */
+/* === FORMULARIO DE NOTICIAS - USAR CLASE HIDDEN ORIGINAL === */
 #createNewsForm {
+    max-width: 800px;
+    width: 100%;
+    margin: 0 auto 30px auto;
+}
+
+/* Asegurar que la clase hidden funcione como antes */
+#createNewsForm.hidden {
     display: none !important;
 }
 
-#createNewsForm.active-form {
+#createNewsForm:not(.hidden) {
     display: block !important;
 }
 
