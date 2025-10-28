@@ -759,3 +759,4 @@ document.getElementById('btnLogin').addEventListener('click', async () => {
         if (!filterValue) listUploads('images', false, '', true);
     });
 }
+}
