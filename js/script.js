@@ -715,3 +715,4 @@ function initializeApp() {
         if (!filterValue) listUploads('images', false, '', true);
     });
 }
+}
