@@ -22,6 +22,40 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
+    /* ====== FUNCIÓN PARA ALERTAS PERSONALIZADAS ====== */
+    function showAlert(message, type = 'info', duration = 5000) {
+        // Crear elemento de alerta
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert-custom alert-${type}`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button class="close-btn">&times;</button>
+        `;
+        
+        // Encontrar la sección activa para colocar la alerta
+        const activeSection = document.querySelector('.active-section');
+        
+        // Insertar al inicio de la sección activa
+        if (activeSection) {
+            activeSection.insertBefore(alertDiv, activeSection.firstChild);
+            
+            // Configurar botón de cierre
+            const closeBtn = alertDiv.querySelector('.close-btn');
+            closeBtn.addEventListener('click', () => {
+                alertDiv.remove();
+            });
+            
+            // Auto-eliminar después del tiempo especificado
+            if (duration > 0) {
+                setTimeout(() => {
+                    if (alertDiv.parentNode) {
+                        alertDiv.remove();
+                    }
+                }, duration);
+            }
+        }
+    }
+
     /* ====== Helpers ====== */
     function getDriveDirectUrl(url) {
         if (!url) return '';
@@ -110,13 +144,18 @@ function initializeApp() {
         const name = document.getElementById('name').value.trim();
         const email = document.getElementById('email').value.trim();
         const pass = document.getElementById('password').value;
-        if (!name || !email || !pass) return alert('Completa todos los campos.');
+        if (!name || !email || !pass) {
+            showAlert('Completa todos los campos.', 'warning', 4000);
+            return;
+        }
         try {
             const userCred = await auth.createUserWithEmailAndPassword(email, pass);
             await userCred.user.updateProfile({ displayName: name });
             await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } }); 
-            alert('Registrado correctamente');
-        } catch (err) { alert(err.message); }
+            showAlert('Registrado correctamente', 'success', 3000);
+        } catch (err) { 
+            showAlert(err.message, 'error', 5000);
+        }
     });
 
     document.getElementById('btnLogin').addEventListener('click', async () => {
@@ -124,7 +163,9 @@ function initializeApp() {
         const pass = document.getElementById('password').value;
         try { 
             await auth.signInWithEmailAndPassword(email, pass); 
-        } catch (err) { alert(err.message); }
+        } catch (err) { 
+            showAlert(err.message, 'error', 5000);
+        }
     });
 
     document.getElementById('btnGoogle').addEventListener('click', async () => {
@@ -133,7 +174,9 @@ function initializeApp() {
             const res = await auth.signInWithPopup(provider);
             const user = res.user;
             await callApi('registerUser', { user: { nombreDeUsuario: user.displayName, email: user.email, uid: user.uid } });
-        } catch (err) { alert(err.message); }
+        } catch (err) { 
+            showAlert(err.message, 'error', 5000);
+        }
     });
 
     document.getElementById('btnLogout').addEventListener('click', () => auth.signOut());
@@ -232,7 +275,10 @@ function initializeApp() {
 
     document.getElementById('btnSearch').addEventListener('click', async () => {
         const code = document.getElementById('searchCode').value.trim();
-        if (!code) return alert('Ingrese un código.');
+        if (!code) {
+            showAlert('Ingrese un código.', 'warning', 3000);
+            return;
+        }
 
         document.getElementById('searchResults').innerHTML = '<div class="loading-results">🔍 Buscando en el inventario...</div>';
         
@@ -281,8 +327,14 @@ function initializeApp() {
     document.getElementById('btnUploadDoc').addEventListener('click', async () => {
         const f = document.getElementById('docFile');
         const name = document.getElementById('docName').value.trim();
-        if (!f.files.length) return alert('Selecciona un archivo');
-        if (!name) return alert('El nombre del documento es obligatorio');
+        if (!f.files.length) {
+            showAlert('Selecciona un archivo', 'warning', 3000);
+            return;
+        }
+        if (!name) {
+            showAlert('El nombre del documento es obligatorio', 'warning', 3000);
+            return;
+        }
         document.getElementById('docStatus').textContent = 'Subiendo...';
         try {
             await uploadFile(f.files[0], name);
@@ -300,8 +352,14 @@ function initializeApp() {
     document.getElementById('btnUploadImg').addEventListener('click', async () => {
         const f = document.getElementById('imgFile');
         const name = document.getElementById('imgName').value.trim();
-        if (!f.files.length) return alert('Selecciona una imagen');
-        if (!name) return alert('El nombre de la imagen es obligatorio');
+        if (!f.files.length) {
+            showAlert('Selecciona una imagen', 'warning', 3000);
+            return;
+        }
+        if (!name) {
+            showAlert('El nombre de la imagen es obligatorio', 'warning', 3000);
+            return;
+        }
         document.getElementById('imgStatus').textContent = 'Subiendo...';
         try {
             await uploadFile(f.files[0], name);
@@ -513,7 +571,10 @@ function initializeApp() {
         const imgFile = document.getElementById('newsImgFile').files[0];
         const status = document.getElementById('newsStatus');
 
-        if (!title || !content) return alert('El Título y el Contenido son obligatorios.');
+        if (!title || !content) {
+            showAlert('El Título y el Contenido son obligatorios.', 'warning', 4000);
+            return;
+        }
 
         status.textContent = 'Subiendo noticia...';
         let imageUrl = '';
