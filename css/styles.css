@@ -1401,20 +1401,25 @@ button:disabled {
     box-shadow: 0 5px 15px rgba(198,40,40,0.3);
 }
 
-/* ====== ESTILOS PARA ALERTAS ====== */
+/* ====== ESTILOS PARA ALERTAS PERSONALIZADAS ====== */
 /* Aplica solo a las secciones específicas que quieres estilizar */
 #home .alert-custom,
 #images .alert-custom,
 #documents .alert-custom,
 #news .alert-custom,
 #contact .alert-custom {
-    padding: 12px 16px;
-    border-radius: 8px;
-    margin: 12px 0;
-    font-weight: 500;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border-left: 4px solid;
-    animation: fadeIn 0.3s ease-in-out;
+    padding: 15px 20px;
+    border-radius: 12px;
+    margin: 15px 0;
+    font-weight: 600;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.15);
+    border: 2px solid;
+    border-left: 6px solid;
+    animation: slideIn 0.3s ease-out;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    position: relative;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
 }
 
 /* Estilo para alertas de éxito */
@@ -1423,8 +1428,9 @@ button:disabled {
 #documents .alert-success,
 #news .alert-success,
 #contact .alert-success {
-    background-color: #d4edda;
+    background: linear-gradient(135deg, #e8f5e8 0%, #d4edda 100%);
     color: #155724;
+    border-color: #28a745;
     border-left-color: #28a745;
 }
 
@@ -1434,8 +1440,9 @@ button:disabled {
 #documents .alert-error,
 #news .alert-error,
 #contact .alert-error {
-    background-color: #f8d7da;
+    background: linear-gradient(135deg, #fde8e8 0%, #f8d7da 100%);
     color: #721c24;
+    border-color: #dc3545;
     border-left-color: #dc3545;
 }
 
@@ -1445,8 +1452,9 @@ button:disabled {
 #documents .alert-warning,
 #news .alert-warning,
 #contact .alert-warning {
-    background-color: #fff3cd;
+    background: linear-gradient(135deg, #fff8e8 0%, #fff3cd 100%);
     color: #856404;
+    border-color: #ffc107;
     border-left-color: #ffc107;
 }
 
@@ -1456,35 +1464,92 @@ button:disabled {
 #documents .alert-info,
 #news .alert-info,
 #contact .alert-info {
-    background-color: #d1ecf1;
+    background: linear-gradient(135deg, #e8f4f8 0%, #d1ecf1 100%);
     color: #0c5460;
+    border-color: #17a2b8;
     border-left-color: #17a2b8;
 }
 
-/* Animación para mostrar las alertas */
-@keyframes fadeIn {
+/* Animación mejorada para mostrar las alertas */
+@keyframes slideIn {
     from {
         opacity: 0;
-        transform: translateY(-10px);
+        transform: translateY(-20px) scale(0.95);
     }
     to {
         opacity: 1;
-        transform: translateY(0);
+        transform: translateY(0) scale(1);
     }
 }
 
-/* Botón de cierre para alertas */
+/* Botón de cierre mejorado para alertas */
 .alert-custom .close-btn {
-    float: right;
-    background: none;
+    position: absolute;
+    top: 12px;
+    right: 15px;
+    background: rgba(0, 0, 0, 0.1);
     border: none;
-    font-size: 18px;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    font-size: 16px;
+    font-weight: bold;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
     color: inherit;
-    opacity: 0.7;
-    transition: opacity 0.2s;
 }
 
 .alert-custom .close-btn:hover {
-    opacity: 1;
+    background: rgba(0, 0, 0, 0.2);
+    transform: scale(1.1);
+}
+
+.alert-custom .close-btn:active {
+    transform: scale(0.95);
+}
+
+/* Iconos para diferentes tipos de alertas */
+.alert-custom::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    background-size: contain;
+    background-repeat: no-repeat;
+    margin-right: 10px;
+}
+
+.alert-success::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2328a745'%3E%3Cpath d='M9 16.17L4.83 12l-1.42 1.41L9 19 21 7l-1.41-1.41z'/%3E%3C/svg%3E");
+}
+
+.alert-error::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23dc3545'%3E%3Cpath d='M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z'/%3E%3C/svg%3E");
+}
+
+.alert-warning::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%23ffc107'%3E%3Cpath d='M1 21h22L12 2 1 21zm12-3h-2v-2h2v2zm0-4h-2v-4h2v4z'/%3E%3C/svg%3E");
+}
+
+.alert-info::before {
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%2317a2b8'%3E%3Cpath d='M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z'/%3E%3C/svg%3E");
+}
+
+/* Ajustar el padding para acomodar el icono */
+.alert-custom {
+    padding-left: 55px !important;
+    padding-right: 50px !important;
+}
+
+/* Efecto de hover sutil */
+.alert-custom:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.2);
+    transition: all 0.3s ease;
 }
