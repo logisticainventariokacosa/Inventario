@@ -96,8 +96,8 @@ function showAlert(message, type = 'info', duration = 0) {
     }
     
     // Limpiar event listener cuando se cierra
-    overlay.addEventListener('click', closeAlert);
-}
+  //  overlay.addEventListener('click', closeAlert);
+
 
 // Función helper para títulos
 function getAlertTitle(type) {
