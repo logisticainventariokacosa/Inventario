@@ -24,6 +24,14 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeApp() {
     /* ====== FUNCIÓN PARA ALERTAS PERSONALIZADAS ====== */
     function showAlert(message, type = 'info', duration = 5000) {
+        // NO mostrar alertas personalizadas en la sección de login/auth
+        const authScreen = document.getElementById('authScreen');
+        if (authScreen && !authScreen.classList.contains('hidden')) {
+            // Usar alert normal para el login
+            alert(message);
+            return;
+        }
+        
         // Crear elemento de alerta
         const alertDiv = document.createElement('div');
         alertDiv.className = `alert-custom alert-${type}`;
