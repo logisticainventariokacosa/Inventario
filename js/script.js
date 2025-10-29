@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
-   /* ====== FUNCIÓN PARA ALERTAS PERSONALIZADAS ====== */
-function showAlert(message, type = 'info', duration = 5000) {
+ /* ====== FUNCIÓN PARA ALERTAS PERSONALIZADAS - MODAL STYLE ====== */
+function showAlert(message, type = 'info', duration = 0) {
     // NO mostrar alertas personalizadas en la sección de login/auth
     const authScreen = document.getElementById('authScreen');
     if (authScreen && !authScreen.classList.contains('hidden')) {
@@ -32,36 +32,82 @@ function showAlert(message, type = 'info', duration = 5000) {
         return;
     }
     
-    // Crear elemento de alerta
-    const alertDiv = document.createElement('div');
-    alertDiv.className = `alert-custom alert-${type}`;
-    alertDiv.innerHTML = `
-        ${message}
-        <button class="close-btn">&times;</button>
+    // Crear overlay y modal
+    const overlay = document.createElement('div');
+    overlay.className = 'alert-overlay';
+    
+    const modal = document.createElement('div');
+    modal.className = `alert-modal alert-${type}`;
+    
+    // Iconos para cada tipo
+    const icons = {
+        'success': '✓',
+        'error': '✕',
+        'warning': '⚠',
+        'info': 'ℹ'
+    };
+    
+    modal.innerHTML = `
+        <div class="alert-icon">${icons[type] || icons.info}</div>
+        <div class="alert-content">
+            <div class="alert-title">${getAlertTitle(type)}</div>
+            <div class="alert-message">${message}</div>
+        </div>
+        <div class="alert-actions">
+            <button class="alert-btn alert-btn-primary" id="alertAcceptBtn">Aceptar</button>
+        </div>
     `;
     
-    // Encontrar la sección activa para colocar la alerta
-    const activeSection = document.querySelector('.active-section');
+    overlay.appendChild(modal);
+    document.body.appendChild(overlay);
     
-    // Insertar al inicio de la sección activa
-    if (activeSection) {
-        activeSection.insertBefore(alertDiv, activeSection.firstChild);
-        
-        // Configurar botón de cierre
-        const closeBtn = alertDiv.querySelector('.close-btn');
-        closeBtn.addEventListener('click', () => {
-            alertDiv.remove();
-        });
-        
-        // Auto-eliminar después del tiempo especificado
-        if (duration > 0) {
-            setTimeout(() => {
-                if (alertDiv.parentNode) {
-                    alertDiv.remove();
-                }
-            }, duration);
+    // Configurar botón de aceptar
+    const acceptBtn = document.getElementById('alertAcceptBtn');
+    const closeAlert = () => {
+        modal.classList.add('closing');
+        setTimeout(() => {
+            if (overlay.parentNode) {
+                overlay.remove();
+            }
+        }, 300);
+    };
+    
+    acceptBtn.addEventListener('click', closeAlert);
+    
+    // Cerrar al hacer clic fuera del modal
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            closeAlert();
         }
+    });
+    
+    // Cerrar con tecla Escape
+    const handleEscape = (e) => {
+        if (e.key === 'Escape') {
+            closeAlert();
+            document.removeEventListener('keydown', handleEscape);
+        }
+    };
+    document.addEventListener('keydown', handleEscape);
+    
+    // Auto-cierre si se especifica duración
+    if (duration > 0) {
+        setTimeout(closeAlert, duration);
     }
+    
+    // Limpiar event listener cuando se cierra
+    overlay.addEventListener('click', closeAlert);
+}
+
+// Función helper para títulos
+function getAlertTitle(type) {
+    const titles = {
+        'success': 'Éxito',
+        'error': 'Error',
+        'warning': 'Advertencia',
+        'info': 'Información'
+    };
+    return titles[type] || 'Información';
 }
 
     /* ====== Helpers ====== */
