@@ -22,47 +22,47 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
-    /* ====== FUNCIÓN PARA ALERTAS PERSONALIZADAS ====== */
-    function showAlert(message, type = 'info', duration = 5000) {
-        // NO mostrar alertas personalizadas en la sección de login/auth
-        const authScreen = document.getElementById('authScreen');
-        if (authScreen && !authScreen.classList.contains('hidden')) {
-            // Usar alert normal para el login
-            alert(message);
-            return;
-        }
+   /* ====== FUNCIÓN PARA ALERTAS PERSONALIZADAS ====== */
+function showAlert(message, type = 'info', duration = 5000) {
+    // NO mostrar alertas personalizadas en la sección de login/auth
+    const authScreen = document.getElementById('authScreen');
+    if (authScreen && !authScreen.classList.contains('hidden')) {
+        // Usar alert normal para el login
+        alert(message);
+        return;
+    }
+    
+    // Crear elemento de alerta
+    const alertDiv = document.createElement('div');
+    alertDiv.className = `alert-custom alert-${type}`;
+    alertDiv.innerHTML = `
+        ${message}
+        <button class="close-btn">&times;</button>
+    `;
+    
+    // Encontrar la sección activa para colocar la alerta
+    const activeSection = document.querySelector('.active-section');
+    
+    // Insertar al inicio de la sección activa
+    if (activeSection) {
+        activeSection.insertBefore(alertDiv, activeSection.firstChild);
         
-        // Crear elemento de alerta
-        const alertDiv = document.createElement('div');
-        alertDiv.className = `alert-custom alert-${type}`;
-        alertDiv.innerHTML = `
-            ${message}
-            <button class="close-btn">&times;</button>
-        `;
+        // Configurar botón de cierre
+        const closeBtn = alertDiv.querySelector('.close-btn');
+        closeBtn.addEventListener('click', () => {
+            alertDiv.remove();
+        });
         
-        // Encontrar la sección activa para colocar la alerta
-        const activeSection = document.querySelector('.active-section');
-        
-        // Insertar al inicio de la sección activa
-        if (activeSection) {
-            activeSection.insertBefore(alertDiv, activeSection.firstChild);
-            
-            // Configurar botón de cierre
-            const closeBtn = alertDiv.querySelector('.close-btn');
-            closeBtn.addEventListener('click', () => {
-                alertDiv.remove();
-            });
-            
-            // Auto-eliminar después del tiempo especificado
-            if (duration > 0) {
-                setTimeout(() => {
-                    if (alertDiv.parentNode) {
-                        alertDiv.remove();
-                    }
-                }, duration);
-            }
+        // Auto-eliminar después del tiempo especificado
+        if (duration > 0) {
+            setTimeout(() => {
+                if (alertDiv.parentNode) {
+                    alertDiv.remove();
+                }
+            }, duration);
         }
     }
+}
 
     /* ====== Helpers ====== */
     function getDriveDirectUrl(url) {
