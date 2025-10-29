@@ -326,7 +326,7 @@ function getAlertTitle(type) {
     document.getElementById('btnSearch').addEventListener('click', async () => {
         const code = document.getElementById('searchCode').value.trim();
         if (!code) {
-            showAlert('Ingrese un código.', 'warning', 3000);
+            showAlert('Ingrese un código.', 'warning');
             return;
         }
 
@@ -378,11 +378,11 @@ function getAlertTitle(type) {
         const f = document.getElementById('docFile');
         const name = document.getElementById('docName').value.trim();
         if (!f.files.length) {
-            showAlert('Selecciona un archivo', 'warning', 3000);
+            showAlert('Selecciona un archivo', 'warning');
             return;
         }
         if (!name) {
-            showAlert('El nombre del documento es obligatorio', 'warning', 3000);
+            showAlert('El nombre del documento es obligatorio', 'warning');
             return;
         }
         document.getElementById('docStatus').textContent = 'Subiendo...';
@@ -403,11 +403,11 @@ function getAlertTitle(type) {
         const f = document.getElementById('imgFile');
         const name = document.getElementById('imgName').value.trim();
         if (!f.files.length) {
-            showAlert('Selecciona una imagen', 'warning', 3000);
+            showAlert('Selecciona una imagen', 'warning');
             return;
         }
         if (!name) {
-            showAlert('El nombre de la imagen es obligatorio', 'warning', 3000);
+            showAlert('El nombre de la imagen es obligatorio', 'warning');
             return;
         }
         document.getElementById('imgStatus').textContent = 'Subiendo...';
@@ -622,7 +622,7 @@ function getAlertTitle(type) {
         const status = document.getElementById('newsStatus');
 
         if (!title || !content) {
-            showAlert('El Título y el Contenido son obligatorios.', 'warning', 4000);
+            showAlert('El Título y el Contenido son obligatorios.', 'warning');
             return;
         }
 
