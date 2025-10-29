@@ -22,8 +22,8 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function initializeApp() {
- /* ====== FUNCIÓN PARA ALERTAS PERSONALIZADAS - MODAL STYLE ====== */
-function showAlert(message, type = 'info', duration = 6000) {
+/* ====== FUNCIÓN PARA ALERTAS PERSONALIZADAS - MODAL STYLE ====== */
+function showAlert(message, type = 'info', duration = 8000) {
     // NO mostrar alertas personalizadas en la sección de login/auth
     const authScreen = document.getElementById('authScreen');
     if (authScreen && !authScreen.classList.contains('hidden')) {
@@ -96,8 +96,8 @@ function showAlert(message, type = 'info', duration = 6000) {
     }
     
     // Limpiar event listener cuando se cierra
-     overlay.addEventListener('click', closeAlert);
-   }
+    overlay.addEventListener('click', closeAlert);
+}
 
 // Función helper para títulos
 function getAlertTitle(type) {
