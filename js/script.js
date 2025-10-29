@@ -23,7 +23,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeApp() {
 /* ====== FUNCIÓN PARA ALERTAS PERSONALIZADAS - MODAL STYLE ====== */
-function showAlert(message, type = 'info', duration = 8000) {
+function showAlert(message, type = 'info', duration = 0) {
     // NO mostrar alertas personalizadas en la sección de login/auth
     const authScreen = document.getElementById('authScreen');
     if (authScreen && !authScreen.classList.contains('hidden')) {
