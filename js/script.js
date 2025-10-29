@@ -90,13 +90,10 @@ function showAlert(message, type = 'info', duration = 0) {
     };
     document.addEventListener('keydown', handleEscape);
     
-    // Auto-cierre si se especifica duración
+    // Auto-cierre si se especifica duración (COMENTADO PARA QUE NO SE CIERRE SOLO)
     if (duration > 0) {
         setTimeout(closeAlert, duration);
     }
-    
-    // Limpiar event listener cuando se cierra
-    overlay.addEventListener('click', closeAlert);
 }
 
 // Función helper para títulos
@@ -109,7 +106,6 @@ function getAlertTitle(type) {
     };
     return titles[type] || 'Información';
 }
-
     /* ====== Helpers ====== */
     function getDriveDirectUrl(url) {
         if (!url) return '';
