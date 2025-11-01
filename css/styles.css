@@ -1592,19 +1592,40 @@ button:disabled {
     }
 }
 
-/* ====== FOOTER FIJO AL FONDO - SOLUCIÓN SIMPLE ====== */
-.main-footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
+/* ====== FOOTER AL FINAL DEL CONTENIDO ====== */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+#mainApp {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    flex: 1;
+}
+
+.container {
+    flex: 1;
     width: 100%;
-    z-index: 100;
+}
+
+.main-footer {
+    width: 100%;
+    /* Quitamos position: fixed y bottom: 0 */
     background: linear-gradient(90deg, rgba(20,20,20,0.95), rgba(26,26,26,0.98));
     border-top: 1px solid rgba(255,255,255,0.05);
     backdrop-filter: blur(10px);
 }
 
-/* Añadir padding al final del contenido para que no quede tapado por el footer */
+/* Quitamos el padding-bottom del container */
 .container {
-    padding-bottom: 80px !important;
+    padding-bottom: 24px !important; /* Solo el padding normal */
 }
