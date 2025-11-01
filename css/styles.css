@@ -1592,7 +1592,7 @@ button:disabled {
     }
 }
 
-/* ====== FOOTER AL FINAL DEL CONTENIDO ====== */
+/* ====== FOOTER AL FINAL - SOLO VISIBLE CON SCROLL ====== */
 html, body {
     height: 100%;
     margin: 0;
@@ -1609,23 +1609,22 @@ body {
     display: flex;
     flex-direction: column;
     min-height: 100vh;
-    flex: 1;
 }
 
 .container {
     flex: 1;
-    width: 100%;
+    min-height: calc(100vh - 200px); /* Fuerza que el contenido ocupe más altura */
 }
 
 .main-footer {
     width: 100%;
-    /* Quitamos position: fixed y bottom: 0 */
     background: linear-gradient(90deg, rgba(20,20,20,0.95), rgba(26,26,26,0.98));
     border-top: 1px solid rgba(255,255,255,0.05);
     backdrop-filter: blur(10px);
-}
-
-/* Quitamos el padding-bottom del container */
-.container {
-    padding-bottom: 24px !important; /* Solo el padding normal */
+    padding: 16px 24px;
+    
+    /* ELIMINAR POSICIÓN FIJA */
+    position: relative !important;
+    bottom: auto !important;
+    left: auto !important;
 }
