@@ -254,108 +254,108 @@ function getAlertTitle(type) {
         }
     }
 
-    /* ====== INVENTARIO ====== */
-    function renderInventoryResults() {
-        const out = document.getElementById('searchResults');
-        const centroFilter = (document.getElementById('filterCenter')?.value || '').trim().toLowerCase(); 
-        
-        const filtered = centroFilter 
-            ? currentInventoryResults.filter(r =>
-                safeString(getField(r, 'Centro_Inventario', 'centroinventario')).toLowerCase().includes(centroFilter))
-            : currentInventoryResults;
 
-        if (!filtered.length) {
-            out.innerHTML = '<div class="no-results">🔍 Sin resultados para este filtro</div>';
-            return;
-        }
+/* ====== INVENTARIO ====== */
+function renderInventoryResults() {
+    const out = document.getElementById('searchResults');
+    const centroFilter = (document.getElementById('filterCenter')?.value || '').trim().toLowerCase(); 
+    
+    const filtered = centroFilter 
+        ? currentInventoryResults.filter(r =>
+            safeString(getField(r, 'Centro_Inventario', 'centroinventario')).toLowerCase().includes(centroFilter))
+        : currentInventoryResults;
 
-        const rows = filtered.map(r => {
-            const codigo = safeString(getField(r, 'codigo', 'Código', 'code')) || '';
-            const nombre = safeString(getField(r, 'nombre', 'Nombre', 'name')) || '';
-            const descripcion = safeString(getField(r, 'descripcion', 'Descripción', 'description')) || '';
-            const um = safeString(getField(r, 'um', 'UM')) || '';
-            const ubic = safeString(getField(r, 'ubicacionFisicaGeneral', 'ubicacion')) || '';
-            const cantidad = safeString(getField(r, 'cantidad', 'Cant')) || '';
-            const ubicExhib = safeString(getField(r, 'ubicacionExhib', 'ubicacion exhib')) || '';
-            const conteo = safeString(getField(r, 'conteoExhb', 'conteo exhb')) || '';
-            const fechaUlt = safeString(getField(r, 'fechaUltimoConteo', 'fecha')) || '';
-            const auditor = safeString(getField(r, 'ultimoAuditor', 'auditor')) || '';
-            const difG = safeString(getField(r, 'difGeneral', 'dif_general')) || '';
-            const difE = safeString(getField(r, 'difExhib', 'dif_exhib')) || '';
-            const centro = safeString(getField(r, 'Centro_Inventario', 'centroinventario')) || '';
-            const nombreDoc = safeString(getField(r, 'Nombre_Documento', 'nombredocumento')) || '';
-
-            const claseDifG = difG.startsWith('-') ? 'class="negative-diff"' : '';
-            const claseDifE = difE.startsWith('-') ? 'class="negative-diff"' : '';
-
-            return `<tr>
-                <td>${codigo}</td>
-                <td>${nombre}</td>
-                <td>${descripcion}</td>
-                <td>${um}</td>
-                <td>${ubic}</td>
-                <td>${cantidad}</td>
-                <td>${ubicExhib}</td>
-                <td>${conteo}</td>
-                <td>${fechaUlt}</td>
-                <td>${auditor}</td>
-                <td ${claseDifG}>${difG}</td>
-                <td ${claseDifE}>${difE}</td>
-                <td>${centro}</td>
-                <td>${nombreDoc}</td>
-            </tr>`;
-        }).join('');
-
-        out.innerHTML = `<div class="table-container">
-        <div class="results-table-container">
-            <table class="inventory-table">
-                <thead>
-                    <tr>
-                        <th>Código</th><th>Nombre</th><th>Descripción</th><th>UM</th>
-                        <th>Ubicación Física</th><th>Cantidad</th><th>Ubicación Exhib</th><th>Conteo Exhib</th>
-                        <th>Fecha Último Conteo</th><th>Auditor</th><th>DIF General</th><th>DIF Exhib</th>
-                        <th>Centro Inventario</th><th>Nombre Documento</th>
-                    </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>
-        </div>
-    </div>`;
+    if (!filtered.length) {
+        out.innerHTML = '<div class="no-results">🔍 Sin resultados para este filtro</div>';
+        return;
     }
 
-    document.getElementById('btnSearch').addEventListener('click', async () => {
-        const code = document.getElementById('searchCode').value.trim();
-        if (!code) {
-            showAlert('Ingrese un código.', 'warning');
-            return;
-        }
+    const rows = filtered.map(r => {
+        const codigo = safeString(getField(r, 'codigo', 'Código', 'code')) || '';
+        const nombre = safeString(getField(r, 'nombre', 'Nombre', 'name')) || '';
+        const descripcion = safeString(getField(r, 'descripcion', 'Descripción', 'description')) || '';
+        const um = safeString(getField(r, 'um', 'UM')) || '';
+        const ubic = safeString(getField(r, 'ubicacionFisicaGeneral', 'ubicacion')) || '';
+        const cantidad = safeString(getField(r, 'cantidad', 'Cant')) || '';
+        const ubicExhib = safeString(getField(r, 'ubicacionExhib', 'ubicacion exhib')) || '';
+        const conteo = safeString(getField(r, 'conteoExhb', 'conteo exhb')) || '';
+        const fechaUlt = safeString(getField(r, 'fechaUltimoConteo', 'fecha')) || '';
+        const auditor = safeString(getField(r, 'ultimoAuditor', 'auditor')) || '';
+        const difG = safeString(getField(r, 'difGeneral', 'dif_general')) || '';
+        const difE = safeString(getField(r, 'difExhib', 'dif_exhib')) || '';
+        const centro = safeString(getField(r, 'Centro_Inventario', 'centroinventario')) || '';
+        const nombreDoc = safeString(getField(r, 'Nombre_Documento', 'nombredocumento')) || '';
 
-        document.getElementById('searchResults').innerHTML = '<div class="loading-results">🔍 Buscando en el inventario...</div>';
-        
-        const data = await getApi('search', { code });
+        const claseDifG = difG.startsWith('-') ? 'class="negative-diff"' : '';
+        const claseDifE = difE.startsWith('-') ? 'class="negative-diff"' : '';
 
-        if (data && data.results && data.results.length) {
-            currentInventoryResults = data.results;
-            renderInventoryResults();
-        } else {
-            currentInventoryResults = [];
-            document.getElementById('searchResults').innerHTML = '<div class="no-results">🔍 Sin resultados</div>';
-        }
-    });
+        return `<tr>
+            <td>${codigo}</td>
+            <td>${nombre}</td>
+            <td>${descripcion}</td>
+            <td>${um}</td>
+            <td>${ubic}</td>
+            <td>${cantidad}</td>
+            <td>${ubicExhib}</td>
+            <td>${conteo}</td>
+            <td>${fechaUlt}</td>
+            <td>${auditor}</td>
+            <td ${claseDifG}>${difG}</td>
+            <td ${claseDifE}>${difE}</td>
+            <td>${centro}</td>
+            <td>${nombreDoc}</td>
+        </tr>`;
+    }).join('');
 
-    document.getElementById('searchCode').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            document.getElementById('btnSearch').click();
-        }
-    });
+    out.innerHTML = `<div class="table-container">
+    <div class="results-table-container">
+        <table class="inventory-table">
+            <thead>
+                <tr>
+                    <th>Código</th><th>Nombre</th><th>Descripción</th><th>UM</th>
+                    <th>Ubicación Física</th><th>Cantidad</th><th>Ubicación Exhib</th><th>Conteo Exhib</th>
+                    <th>Fecha Último Conteo</th><th>Auditor</th><th>DIF General</th><th>DIF Exhib</th>
+                    <th>Centro Inventario</th><th>Nombre Documento</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>
+    </div>
+</div>`;
+}
 
-    document.getElementById('btnFilterCenter').addEventListener('click', renderInventoryResults);
-    document.getElementById('filterCenter').addEventListener('keypress', function(e) {
-        if (e.key === 'Enter') {
-            renderInventoryResults();
-        }
-    });
+document.getElementById('btnSearch').addEventListener('click', async () => {
+    const code = document.getElementById('searchCode').value.trim();
+    if (!code) {
+        showAlert('Ingrese un código.', 'warning');
+        return;
+    }
 
+    document.getElementById('searchResults').innerHTML = '<div class="loading-results">🔍 Buscando en el inventario...</div>';
+    
+    const data = await getApi('search', { code });
+
+    if (data && data.results && data.results.length) {
+        currentInventoryResults = data.results;
+        renderInventoryResults();
+    } else {
+        currentInventoryResults = [];
+        document.getElementById('searchResults').innerHTML = '<div class="no-results">🔍 Sin resultados</div>';
+    }
+});
+
+document.getElementById('searchCode').addEventListener('keypress', function(e) {
+    if (e.key === 'Enter') {
+        document.getElementById('btnSearch').click();
+    }
+});
+
+// Filtro automático al cambiar selección del centro
+document.getElementById('filterCenter').addEventListener('change', function() {
+    if (currentInventoryResults.length > 0) {
+        renderInventoryResults();
+    }
+});
     /* ====== UPLOAD ====== */
     async function uploadFile(file, filenameOpt) {
         const base64 = await new Promise(res => {
