@@ -1591,3 +1591,29 @@ button:disabled {
         width: 100%;
     }
 }
+
+/* ====== FOOTER SIEMPRE AL FINAL ====== */
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* El contenido principal crece para empujar el footer hacia abajo */
+.container {
+    flex: 1;
+    width: 100%;
+}
+
+/* Footer siempre en la parte inferior */
+.main-footer {
+    margin-top: auto;
+    width: 100%;
+    flex-shrink: 0;
+}
