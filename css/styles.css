@@ -1658,12 +1658,23 @@ body {
     border-color: rgba(255,255,255,0.15);
 }
 
-/* Estilo para las opciones */
+/* Estilo para las opciones - FONDO OSCURO */
 .custom-select option {
     background: var(--card-bg);
     color: var(--text);
-    padding: 10px;
+    padding: 12px;
     border: none;
+    font-size: 0.95rem;
+}
+
+/* Para navegadores WebKit (Chrome, Safari) */
+.custom-select option:checked {
+    background: var(--blue-accent);
+    color: white;
+}
+
+.custom-select option:hover {
+    background: rgba(33, 150, 243, 0.3);
 }
 
 /* Contenedor del select para mejor alineación */
