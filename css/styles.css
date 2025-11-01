@@ -1592,32 +1592,19 @@ button:disabled {
     }
 }
 
-/* ====== FOOTER FIJO AL FINAL DE LA PÁGINA ====== */
-html, body {
-    height: 100%;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    display: flex;
-    flex-direction: column;
-    min-height: 100vh;
-    position: relative;
-}
-
-/* El contenido principal ocupa todo el espacio disponible */
-.main-content {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-}
-
-/* Footer siempre al fondo de la ventana */
+/* ====== FOOTER FIJO AL FONDO - SOLUCIÓN SIMPLE ====== */
 .main-footer {
-    margin-top: auto;
-    width: 100%;
-    position: relative;
+    position: fixed;
     bottom: 0;
     left: 0;
+    width: 100%;
+    z-index: 100;
+    background: linear-gradient(90deg, rgba(20,20,20,0.95), rgba(26,26,26,0.98));
+    border-top: 1px solid rgba(255,255,255,0.05);
+    backdrop-filter: blur(10px);
+}
+
+/* Añadir padding al final del contenido para que no quede tapado por el footer */
+.container {
+    padding-bottom: 80px !important;
 }
