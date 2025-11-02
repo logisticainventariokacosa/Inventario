@@ -1727,3 +1727,26 @@ body {
     pointer-events: none;
     z-index: 1;
 }
+/* ====== GARANTIZAR OCULTAMIENTO AL CERRAR SESIÓN ====== */
+#mainApp.hidden {
+    display: none !important;
+}
+
+.auth-screen.hidden {
+    display: none !important;
+}
+
+.auth-screen:not(.hidden) {
+    display: flex !important;
+}
+
+/* Asegurar que el body ocupe toda la altura */
+html, body, #app {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    overflow-x: hidden;
+}
