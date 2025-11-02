@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Ocultar loader cuando todo esté listo
     window.addEventListener('load', function() {
-        setTimeout(hideLoader, 500); // Pequeño delay para mejor UX
+        setTimeout(hideLoader, 1000); // Pequeño delay para mejor UX
     });
     
     // Inicializar la app
