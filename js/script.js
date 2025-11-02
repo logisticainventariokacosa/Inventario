@@ -32,7 +32,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Ocultar loader cuando todo esté listo
     window.addEventListener('load', function() {
-        setTimeout(hideLoader, 1000); // Pequeño delay para mejor UX
+        setTimeout(hideLoader, 1500); // Pequeño delay para mejor UX
     });
     
     // Inicializar la app
@@ -41,7 +41,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 // También ocultar loader si hay error
 window.addEventListener('error', function() {
-    setTimeout(hideLoader, 1000);
+    setTimeout(hideLoader, 1500);
 });
 
 function initializeApp() {
