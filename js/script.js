@@ -15,10 +15,33 @@ const auth = firebase.auth();
 // Variables globales
 let currentInventoryResults = [];
 let allNewsData = [];
+// ====== LOADER GLOBAL ======
+function showLoader() {
+    const loader = document.getElementById('globalLoader');
+    if (loader) loader.classList.remove('hidden');
+}
 
-// Esperar a que el DOM esté listo
+function hideLoader() {
+    const loader = document.getElementById('globalLoader');
+    if (loader) loader.classList.add('hidden');
+}
+
+// Mostrar loader al cargar la página
 document.addEventListener('DOMContentLoaded', function() {
+    showLoader();
+    
+    // Ocultar loader cuando todo esté listo
+    window.addEventListener('load', function() {
+        setTimeout(hideLoader, 500); // Pequeño delay para mejor UX
+    });
+    
+    // Inicializar la app
     initializeApp();
+});
+
+// También ocultar loader si hay error
+window.addEventListener('error', function() {
+    setTimeout(hideLoader, 1000);
 });
 
 function initializeApp() {
