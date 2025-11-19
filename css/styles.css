@@ -2471,3 +2471,55 @@ body {
     transform: none !important;
     box-shadow: none !important;
 }
+/* === MEJORAS PARA GRÁFICOS CON TEXTO BLANCO === */
+.chart-wrapper {
+    position: relative;
+    height: 350px;
+    width: 100%;
+    margin: 0 auto;
+    background: rgba(0, 0, 0, 0.3); /* Fondo oscuro para contraste */
+    border-radius: 12px;
+    padding: 15px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Asegurar que el canvas ocupe todo el espacio disponible */
+.chart-wrapper canvas {
+    width: 100% !important;
+    height: 100% !important;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.3));
+}
+
+/* Específico para el gráfico de dona - asegurar que sea visible completo */
+.chart-card:last-child .chart-wrapper {
+    height: 350px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Mejoras responsive para gráficos */
+@media (max-width: 768px) {
+    .chart-wrapper {
+        height: 300px;
+        padding: 10px;
+    }
+    
+    .chart-card:last-child .chart-wrapper {
+        height: 300px;
+    }
+}
+
+/* === MEJORAS PARA EL MODAL === */
+.modal-overlay {
+    z-index: 10000; /* Asegurar que esté por encima de todo */
+}
+
+.modal-content {
+    z-index: 10001;
+}
+
+/* Prevenir scroll del body cuando el modal está abierto */
+body.modal-open {
+    overflow: hidden;
+}
