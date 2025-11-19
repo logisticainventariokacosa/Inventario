@@ -854,80 +854,22 @@ document.querySelectorAll('.nav a').forEach(a => {
         if (!filterValue) listUploads('images', false, '', true);
     });
 }
+
 /* ====== SISTEMA DE REPORTES ====== */
 function initializeReportsSystem() {
     const reportContent = document.getElementById('report-content');
     if (reportContent) {
-        // Limpiar contenido previo
-        reportContent.innerHTML = `
-            <div class="reports-menu">
-                <div class="report-option" data-report="trazabilidad">
-                    <div class="report-icon">📊</div>
-                    <h3>Trazabilidad</h3>
-                    <p>Análisis de movimientos de inventario</p>
-                </div>
-                
-                <div class="report-option" data-report="analisis-pedidos">
-                    <div class="report-icon">📦</div>
-                    <h3>Análisis de Pedidos</h3>
-                    <p>Próximamente...</p>
-                </div>
-            </div>
-        `;
-
-        // Configurar eventos para las opciones de reportes
-        document.querySelectorAll('.report-option').forEach(option => {
-            option.addEventListener('click', (e) => {
-                const reportType = e.currentTarget.dataset.report;
-                loadReport(reportType);
-            });
-        });
-    }
-}
-
-function loadReport(reportType) {
-    const reportContent = document.getElementById('report-content');
-    
-    if (reportType === 'trazabilidad') {
-        reportContent.innerHTML = `
-            <button class="back-button" id="backToReports">← Volver a Reportes</button>
-            <div class="trazabilidad-container">
-                <div class="trazabilidad-header">
-                    <h3>Analizador de Trazabilidad de Mercancía</h3>
-                    <p>Sube un archivo Excel para analizar la trazabilidad de los materiales</p>
-                </div>
-                <div style="text-align: center; padding: 40px; color: var(--muted);">
-                    <p>🔧 La funcionalidad de Trazabilidad se está cargando...</p>
-                    <p>Para usar esta función, necesitas cargar el archivo trazabilidad.js</p>
-                </div>
-            </div>
-        `;
-
-        // Configurar botón de volver
-        document.getElementById('backToReports').addEventListener('click', () => {
-            initializeReportsSystem();
-        });
-
-        // Aquí puedes cargar el JS de trazabilidad dinámicamente si lo deseas
-        // loadTrazabilidadJS();
-        
-    } else {
-        showAlert('Esta funcionalidad estará disponible próximamente', 'info');
-    }
-}
-
-// Función opcional para cargar el JS de trazabilidad dinámicamente
-function loadTrazabilidadJS() {
-    if (!window.trazabilidadLoaded) {
-        const script = document.createElement('script');
-        script.src = 'js/trazabilidad.js';
-        script.onload = function() {
-            window.trazabilidadLoaded = true;
-            // Inicializar el sistema de trazabilidad aquí
-            if (window.TrazabilidadSystem) {
-                new window.TrazabilidadSystem(document.getElementById('report-content'));
-            }
-        };
-        document.head.appendChild(script);
+        // Solo cargar el JS de trazabilidad cuando sea necesario
+        if (!window.trazabilidadLoaded) {
+            const script = document.createElement('script');
+            script.src = 'js/trazabilidad.js';
+            script.onload = function() {
+                window.trazabilidadLoaded = true;
+                window.reportsSystem = new TrazabilidadSystem(reportContent);
+            };
+            document.head.appendChild(script);
+        } else {
+            window.reportsSystem.showReportsMenu();
+        }
     }
 }
