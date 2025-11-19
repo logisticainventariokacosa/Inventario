@@ -1902,7 +1902,7 @@ body {
         padding: 20px 15px;
     }
 }
-/* === ESTILOS ADICIONALES PARA TRAZABILIDAD === */
+/* === ESTILOS ADICIONALES PARA TRAZABILIDAD - CORREGIDOS === */
 .materials-list {
     display: flex;
     flex-direction: column;
@@ -1927,6 +1927,7 @@ body {
     border-color: rgba(255,255,255,0.1);
 }
 
+/* MODAL CORREGIDO - ELIMINAR DISPLAY: FLEX DEL ESTILO INLINE */
 .modal-overlay {
     position: fixed;
     top: 0;
@@ -1934,11 +1935,15 @@ body {
     width: 100%;
     height: 100%;
     background: rgba(0,0,0,0.8);
+    z-index: 1000;
+    backdrop-filter: blur(5px);
+    /* QUITAR display: flex de aquí - se controla con la clase hidden */
+}
+
+.modal-overlay:not(.hidden) {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1000;
-    backdrop-filter: blur(5px);
 }
 
 .modal-content {
@@ -1951,6 +1956,7 @@ body {
     overflow-y: auto;
     border: 1px solid rgba(255,255,255,0.1);
     box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+    margin: 20px; /* Para móviles */
 }
 
 .modal-header {
@@ -2015,6 +2021,11 @@ body {
     .modal-content {
         width: 95%;
         margin: 20px;
+    }
+    
+    .modal-overlay:not(.hidden) {
+        align-items: flex-start;
+        padding-top: 20px;
     }
 }
 
