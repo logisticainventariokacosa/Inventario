@@ -350,14 +350,27 @@ class TrazabilidadSystem {
 
     // Función para abrir modal (maneja estado del body)
     openModal() {
-        document.getElementById('stockModal').classList.remove('hidden');
-        document.body.classList.add('modal-open');
+        const modal = document.getElementById('stockModal');
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        document.body.style.overflow = 'hidden'; // Prevenir scroll del body
+        
+        // Forzar reflow y luego agregar clase de animación
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 10);
     }
 
     // Función para cerrar modal (maneja estado del body)
     closeModal() {
-        document.getElementById('stockModal').classList.add('hidden');
-        document.body.classList.remove('modal-open');
+        const modal = document.getElementById('stockModal');
+        modal.style.opacity = '0';
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
+            document.body.style.overflow = ''; // Restaurar scroll del body
+        }, 300);
     }
 
     initializeTrazabilidadLogic() {
@@ -366,54 +379,75 @@ class TrazabilidadSystem {
         const initializeModalEvents = () => {
             if (modalEventsInitialized) return;
             
-            // Eventos del modal de stock
-            document.addEventListener('click', function(e) {
-                // Cerrar modal
-                if (e.target.id === 'closeStockBtn' || e.target.id === 'closeStockBtnTop' || e.target.id === 'stockModal') {
-                    this.closeModal();
-                }
+            // Eventos del modal de stock - CORREGIDOS CON EVENT LISTENERS DIRECTOS
+            document.getElementById('closeStockBtnTop').addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closeModal();
+            }.bind(this));
+
+            document.getElementById('closeStockBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                this.closeModal();
+            }.bind(this));
+
+            document.getElementById('saveStockBtn').addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('Botón Guardar clickeado'); // Debug
                 
-                // Guardar stock - CORREGIDO PARA EVITAR DUPLICADOS
-                if (e.target.id === 'saveStockBtn') {
-                    const wrappers = document.getElementById('stockModalBody').querySelectorAll('div[data-key]');
-                    let hasChanges = false;
+                const wrappers = document.getElementById('stockModalBody').querySelectorAll('div[data-key]');
+                let hasChanges = false;
+                
+                wrappers.forEach(w => {
+                    const key = w.dataset.key;
+                    const dateInput = w.querySelector('input[type="date"]');
+                    const stockInput = w.querySelector('input[type="number"]');
                     
-                    wrappers.forEach(w => {
-                        const key = w.dataset.key;
-                        const dateInput = w.querySelector('input[type="date"]');
-                        const stockInput = w.querySelector('input[type="number"]');
-                        
-                        if (!key) return;
-                        
-                        const newDate = dateInput.value;
-                        const newStock = parseFloat(stockInput.value || 0);
-                        
-                        // Solo actualizar si hay cambios
-                        if (!this.core.initialStocks[key] || 
-                            this.core.initialStocks[key].date !== newDate || 
-                            this.core.initialStocks[key].stock !== newStock) {
-                            
-                            this.core.initialStocks[key] = { 
-                                date: newDate, 
-                                stock: newStock 
-                            };
-                            hasChanges = true;
-                        }
-                    });
+                    if (!key) return;
                     
-                    this.closeModal();
+                    const newDate = dateInput.value;
+                    const newStock = parseFloat(stockInput.value || 0);
                     
-                    // Mostrar mensaje solo si hubo cambios
-                    if (hasChanges) {
-                        this.showCustomAlert('Stocks iniciales guardados correctamente.', 'success');
+                    // Solo actualizar si hay cambios
+                    if (!this.core.initialStocks[key] || 
+                        this.core.initialStocks[key].date !== newDate || 
+                        this.core.initialStocks[key].stock !== newStock) {
+                        
+                        this.core.initialStocks[key] = { 
+                            date: newDate, 
+                            stock: newStock 
+                        };
+                        hasChanges = true;
+                        console.log(`Stock actualizado para ${key}:`, {date: newDate, stock: newStock}); // Debug
                     }
+                });
+                
+                this.closeModal();
+                
+                // Mostrar mensaje solo si hubo cambios
+                if (hasChanges) {
+                    this.showCustomAlert('Stocks iniciales guardados correctamente.', 'success');
+                } else {
+                    this.showCustomAlert('No se detectaron cambios en los stocks.', 'info');
+                }
+            }.bind(this));
+
+            // Cerrar modal al hacer click fuera del contenido
+            document.getElementById('stockModal').addEventListener('click', function(e) {
+                if (e.target.id === 'stockModal') {
+                    this.closeModal();
                 }
             }.bind(this));
             
             // Prevenir que el clic dentro del modal cierre el modal
-            document.getElementById('stockModal').addEventListener('click', function(e) {
-                e.stopPropagation();
-            });
+            const modalContent = document.querySelector('.modal-content');
+            if (modalContent) {
+                modalContent.addEventListener('click', function(e) {
+                    e.stopPropagation();
+                });
+            }
             
             modalEventsInitialized = true;
         };
@@ -615,11 +649,12 @@ class TrazabilidadSystem {
 
         toEdit.forEach(m => {
             const wrapper = document.createElement('div');
-            wrapper.style.cssText = 'margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 8px;';
+            wrapper.style.cssText = 'margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);';
+            wrapper.dataset.key = m.key;
             
             const h = document.createElement('h6');
             h.textContent = `${m.material} — ${m.texto} (${m.centro})`;
-            h.style.cssText = 'color: var(--text); margin-bottom: 10px;';
+            h.style.cssText = 'color: var(--text); margin-bottom: 15px; font-size: 1rem;';
             
             const dateLabel = document.createElement('label');
             dateLabel.textContent = 'Fecha del stock inicial:';
@@ -627,7 +662,7 @@ class TrazabilidadSystem {
             
             const dateInput = document.createElement('input');
             dateInput.type = 'date';
-            dateInput.style.cssText = 'width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); margin-bottom: 10px;';
+            dateInput.style.cssText = 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: var(--text); margin-bottom: 15px; font-size: 1rem;';
             
             const oldest = this.core.getOldestDateForKey(m.key);
             dateInput.value = oldest ? oldest.toISOString().slice(0,10) : new Date().toISOString().slice(0,10);
@@ -639,11 +674,14 @@ class TrazabilidadSystem {
             const stockInput = document.createElement('input');
             stockInput.type = 'number';
             stockInput.step = '0.01';
-            stockInput.style.cssText = 'width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text);';
+            stockInput.min = '0';
+            stockInput.style.cssText = 'width: 100%; padding: 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.2); background: rgba(255,255,255,0.05); color: var(--text); font-size: 1rem;';
             
             if (this.core.initialStocks[m.key]) { 
                 stockInput.value = this.core.initialStocks[m.key].stock; 
                 dateInput.value = this.core.initialStocks[m.key].date; 
+            } else {
+                stockInput.value = '0';
             }
             
             wrapper.appendChild(h);
@@ -651,7 +689,6 @@ class TrazabilidadSystem {
             wrapper.appendChild(dateInput);
             wrapper.appendChild(stockLabel);
             wrapper.appendChild(stockInput);
-            wrapper.dataset.key = m.key;
             stockModalBody.appendChild(wrapper);
         });
 
