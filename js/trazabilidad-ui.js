@@ -348,37 +348,72 @@ class TrazabilidadSystem {
         ).toString(16).slice(1);
     }
 
+    // Función para abrir modal (maneja estado del body)
+    openModal() {
+        document.getElementById('stockModal').classList.remove('hidden');
+        document.body.classList.add('modal-open');
+    }
+
+    // Función para cerrar modal (maneja estado del body)
+    closeModal() {
+        document.getElementById('stockModal').classList.add('hidden');
+        document.body.classList.remove('modal-open');
+    }
+
     initializeTrazabilidadLogic() {
         let modalEventsInitialized = false;
 
         const initializeModalEvents = () => {
             if (modalEventsInitialized) return;
             
+            // Eventos del modal de stock
             document.addEventListener('click', function(e) {
-                if (e.target.id === 'closeStockBtn' || e.target.id === 'closeStockBtnTop') {
-                    document.getElementById('stockModal').classList.add('hidden');
+                // Cerrar modal
+                if (e.target.id === 'closeStockBtn' || e.target.id === 'closeStockBtnTop' || e.target.id === 'stockModal') {
+                    this.closeModal();
                 }
                 
+                // Guardar stock - CORREGIDO PARA EVITAR DUPLICADOS
                 if (e.target.id === 'saveStockBtn') {
-                    const wrappers = document.getElementById('stockModalBody').querySelectorAll('div');
+                    const wrappers = document.getElementById('stockModalBody').querySelectorAll('div[data-key]');
+                    let hasChanges = false;
+                    
                     wrappers.forEach(w => {
                         const key = w.dataset.key;
                         const dateInput = w.querySelector('input[type="date"]');
                         const stockInput = w.querySelector('input[type="number"]');
+                        
                         if (!key) return;
-                        this.core.initialStocks[key] = { 
-                            date: dateInput.value, 
-                            stock: parseFloat(stockInput.value || 0) 
-                        };
+                        
+                        const newDate = dateInput.value;
+                        const newStock = parseFloat(stockInput.value || 0);
+                        
+                        // Solo actualizar si hay cambios
+                        if (!this.core.initialStocks[key] || 
+                            this.core.initialStocks[key].date !== newDate || 
+                            this.core.initialStocks[key].stock !== newStock) {
+                            
+                            this.core.initialStocks[key] = { 
+                                date: newDate, 
+                                stock: newStock 
+                            };
+                            hasChanges = true;
+                        }
                     });
-                    document.getElementById('stockModal').classList.add('hidden');
-                    this.showCustomAlert('Stocks iniciales guardados localmente.', 'success');
-                }
-                
-                if (e.target.id === 'stockModal') {
-                    document.getElementById('stockModal').classList.add('hidden');
+                    
+                    this.closeModal();
+                    
+                    // Mostrar mensaje solo si hubo cambios
+                    if (hasChanges) {
+                        this.showCustomAlert('Stocks iniciales guardados correctamente.', 'success');
+                    }
                 }
             }.bind(this));
+            
+            // Prevenir que el clic dentro del modal cierre el modal
+            document.getElementById('stockModal').addEventListener('click', function(e) {
+                e.stopPropagation();
+            });
             
             modalEventsInitialized = true;
         };
@@ -620,7 +655,7 @@ class TrazabilidadSystem {
             stockModalBody.appendChild(wrapper);
         });
 
-        document.getElementById('stockModal').classList.remove('hidden');
+        this.openModal();
     }
 
     renderResults(resultsArr) {
@@ -678,7 +713,15 @@ class TrazabilidadSystem {
         if (this.chart1) this.chart1.destroy();
         if (this.chart2) this.chart2.destroy();
 
-        // Gráfico 1: Tipos de Movimiento por Destino (Barras 3D)
+        // Configuración común para texto blanco
+        const whiteTextConfig = {
+            color: '#ffffff',
+            font: {
+                family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
+            }
+        };
+
+        // Gráfico 1: Tipos de Movimiento por Destino (Barras 3D) - MEJORADO
         const movementTypesData = this.core.getMovementTypesData(resultsArr);
         const ctx1 = document.getElementById('chartMovimientos');
         if (ctx1 && movementTypesData.length > 0) {
@@ -692,7 +735,7 @@ class TrazabilidadSystem {
                         {
                             label: 'Salidas Tienda',
                             data: topMovements.map(m => m.tienda),
-                            backgroundColor: 'rgba(33, 150, 243, 0.8)',
+                            backgroundColor: 'rgba(33, 150, 243, 0.9)',
                             borderColor: 'rgba(33, 150, 243, 1)',
                             borderWidth: 2,
                             borderRadius: 8,
@@ -701,7 +744,7 @@ class TrazabilidadSystem {
                         {
                             label: 'Salidas Clientes',
                             data: topMovements.map(m => m.cliente),
-                            backgroundColor: 'rgba(76, 175, 80, 0.8)',
+                            backgroundColor: 'rgba(76, 175, 80, 0.9)',
                             borderColor: 'rgba(76, 175, 80, 1)',
                             borderWidth: 2,
                             borderRadius: 8,
@@ -721,14 +764,33 @@ class TrazabilidadSystem {
                                     size: 12,
                                     weight: 'bold'
                                 },
-                                color: 'var(--text)',
+                                color: '#ffffff', // Texto blanco
                                 padding: 15
                             }
                         },
+                        title: {
+                            display: true,
+                            text: 'TIPOS DE MOVIMIENTO POR DESTINO',
+                            color: '#ffffff', // Texto blanco
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                bottom: 20
+                            }
+                        },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
+                            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                            titleFont: { 
+                                size: 13, 
+                                weight: 'bold',
+                                color: '#ffffff'
+                            },
+                            bodyFont: { 
+                                size: 12,
+                                color: '#ffffff'
+                            },
                             padding: 12,
                             cornerRadius: 8,
                             callbacks: {
@@ -751,7 +813,7 @@ class TrazabilidadSystem {
                                     size: 11,
                                     weight: 'bold'
                                 },
-                                color: 'var(--text)',
+                                color: '#ffffff', // Texto blanco
                                 maxRotation: 45,
                                 minRotation: 45
                             }
@@ -762,8 +824,10 @@ class TrazabilidadSystem {
                                 color: 'rgba(255, 255, 255, 0.1)'
                             },
                             ticks: { 
-                                font: { size: 11 },
-                                color: 'var(--text)',
+                                font: { 
+                                    size: 11 
+                                },
+                                color: '#ffffff', // Texto blanco
                                 callback: function(value) {
                                     return value.toLocaleString();
                                 }
@@ -778,7 +842,7 @@ class TrazabilidadSystem {
             });
         }
 
-        // Gráfico 2: Distribución Total de Salidas (Dona 3D) - MEJORADO
+        // Gráfico 2: Distribución Total de Salidas (Dona 3D) - COMPLETAMENTE VISIBLE
         const ctx2 = document.getElementById('chartDistribucion');
         if (ctx2) {
             const totalSalidasTienda = resultsArr.reduce((sum, r) => sum + Math.abs(r.totalSalidasTienda), 0);
@@ -800,13 +864,14 @@ class TrazabilidadSystem {
                         ],
                         borderWidth: 3,
                         borderRadius: 6,
-                        spacing: 2
+                        spacing: 2,
+                        borderAlign: 'inner'
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true, // Cambiado a true para mantener proporción
-                    cutout: '65%', // Más pequeño para que quepa mejor
+                    maintainAspectRatio: true,
+                    cutout: '50%', // Reducido para que el anillo sea más grueso y visible
                     plugins: {
                         legend: {
                             position: 'bottom',
@@ -816,7 +881,7 @@ class TrazabilidadSystem {
                                     size: 12,
                                     weight: 'bold'
                                 },
-                                color: 'var(--text)',
+                                color: '#ffffff', // Texto blanco
                                 padding: 15,
                                 generateLabels: function(chart) {
                                     const data = chart.data;
@@ -840,10 +905,29 @@ class TrazabilidadSystem {
                                 }
                             }
                         },
+                        title: {
+                            display: true,
+                            text: 'DISTRIBUCIÓN TOTAL DE SALIDAS',
+                            color: '#ffffff', // Texto blanco
+                            font: {
+                                size: 14,
+                                weight: 'bold'
+                            },
+                            padding: {
+                                bottom: 20
+                            }
+                        },
                         tooltip: {
-                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            titleFont: { size: 13, weight: 'bold' },
-                            bodyFont: { size: 12 },
+                            backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                            titleFont: { 
+                                size: 13, 
+                                weight: 'bold',
+                                color: '#ffffff'
+                            },
+                            bodyFont: { 
+                                size: 12,
+                                color: '#ffffff'
+                            },
                             padding: 12,
                             cornerRadius: 8,
                             callbacks: {
