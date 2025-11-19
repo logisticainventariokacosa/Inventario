@@ -467,12 +467,13 @@ if (group.centro === '1000/3000') {
     });
 }
 
-// REGLA 2: 101 en centro 1000 sin 673 (solo para centros 1000/3000, excepto usuario YLARA)
+// REGLA 2 CORREGIDA: 101 en centro 1000 sin 673 en centro 3000
 if (group.centro === '1000/3000') {
     const entries101in100 = filtered.filter(r => 
         String(r['Clase de movimiento']) === this.entry101 && 
         String(r['Centro']).trim() === '1000' &&
-        Number(r['Ctd.en UM entrada']) > 0
+        Number(r['Ctd.en UM entrada']) > 0 &&
+        !pairedIgnore.has(filtered.indexOf(r)) // EXCLUIR LOS QUE YA ESTÁN EMPAREJADOS
     );
     
     entries101in100.forEach(en => {
@@ -481,22 +482,35 @@ if (group.centro === '1000/3000') {
         
         const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
         const user = enUserNorm;
-        const fecha = en._dateKey || this.getDateKeyFromRow(en);
+        const fecha = en['Fe.contabilización'];
         const fechaFormateada = this.formatDate(fecha);
         
-        const found673 = filtered.find(r => 
-            String(r['Clase de movimiento']) === '673' && 
-            Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
-            this.normalizeUser(r['Nombre del usuario']) === user &&
-            !pairedIgnore.has(filtered.indexOf(r))
-        );
+        // BUSCAR 673 CORRESPONDIENTE en CENTRO 3000 (no en el mismo centro 1000)
+        const fechaEn = this.startOfDay(fecha);
+        const found673 = filtered.find(r => {
+            if (pairedIgnore.has(filtered.indexOf(r))) return false;
+            
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Math.abs(Number(r['Ctd.en UM entrada']||0));
+            const usuario = this.normalizeUser(r['Nombre del usuario']);
+            const centro = String(r['Centro']||'').trim();
+            const fechaR = r['Fe.contabilización'];
+            const fechaRDay = this.startOfDay(fechaR);
+            
+            // BUSCAR ESPECÍFICAMENTE EN CENTRO 3000
+            return movimiento === '673' && 
+                   cantidad === qty &&
+                   usuario === user &&
+                   centro === '3000' && // ← CLAVE: Buscar en centro 3000
+                   fechaRDay >= fechaEn; // 673 debe ser el mismo día o posterior
+        });
         
         if (!found673) {
             irregularidades.push({ 
                 tipo:'101_en_1000_sin_673', 
                 usuario: en['Nombre del usuario']||'', 
                 fecha: fechaFormateada,
-                descripcion:`Entrada 101 en centro 1000 de ${qty} sin salida 673 correspondiente - Fecha: ${fechaFormateada}`
+                descripcion:`Entrada 101 en centro 1000 de ${qty} sin salida 673 correspondiente en centro 3000 - Fecha: ${fechaFormateada}`
             });
         }
     });
