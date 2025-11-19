@@ -428,62 +428,72 @@ class TrazabilidadSystem {
             }
         });
 
-        function openStockModalForKeys(keys) {
-            const stockModalBody = document.getElementById('stockModalBody');
-            stockModalBody.innerHTML = '';
-            
-            const toEdit = keys.map(k => uniqueMaterials.find(u => u.key === k)).filter(Boolean);
-            if (toEdit.length === 0) { 
-                showAlert('No hay materiales seleccionados.', 'warning');
-                return; 
-            }
+       function openStockModalForKeys(keys) {
+    const stockModalBody = document.getElementById('stockModalBody');
+    stockModalBody.innerHTML = '';
+    
+    const toEdit = keys.map(k => uniqueMaterials.find(u => u.key === k)).filter(Boolean);
+    if (toEdit.length === 0) { 
+        showAlert('No hay materiales seleccionados.', 'warning');
+        return; 
+    }
 
-            toEdit.forEach(m => {
-                const wrapper = document.createElement('div');
-                wrapper.style.cssText = 'margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 8px;';
-                
-                const h = document.createElement('h6');
-                h.textContent = `${m.material} — ${m.texto} (${m.centro})`;
-                h.style.cssText = 'color: var(--text); margin-bottom: 10px;';
-                
-                const dateLabel = document.createElement('label');
-                dateLabel.textContent = 'Fecha del stock inicial:';
-                dateLabel.style.cssText = 'display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 5px;';
-                
-                const dateInput = document.createElement('input');
-                dateInput.type = 'date';
-                dateInput.style.cssText = 'width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); margin-bottom: 10px;';
-                
-                const oldest = getOldestDateForKey(m.key);
-                dateInput.value = oldest ? oldest.toISOString().slice(0,10) : new Date().toISOString().slice(0,10);
-                
-                const stockLabel = document.createElement('label');
-                stockLabel.textContent = 'Stock inicial:';
-                stockLabel.style.cssText = 'display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 5px;';
-                
-                const stockInput = document.createElement('input');
-                stockInput.type = 'number';
-                stockInput.step = '0.01';
-                stockInput.style.cssText = 'width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text);';
-                
-                if (initialStocks[m.key]) { 
-                    stockInput.value = initialStocks[m.key].stock; 
-                    dateInput.value = initialStocks[m.key].date; 
-                }
-                
-                wrapper.appendChild(h);
-                wrapper.appendChild(dateLabel);
-                wrapper.appendChild(dateInput);
-                wrapper.appendChild(stockLabel);
-                wrapper.appendChild(stockInput);
-                wrapper.dataset.key = m.key;
-                stockModalBody.appendChild(wrapper);
-            });
-
-            document.getElementById('stockModal').classList.remove('hidden');
+    toEdit.forEach(m => {
+        const wrapper = document.createElement('div');
+        wrapper.style.cssText = 'margin-bottom: 20px; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 8px;';
+        
+        const h = document.createElement('h6');
+        h.textContent = `${m.material} — ${m.texto} (${m.centro})`;
+        h.style.cssText = 'color: var(--text); margin-bottom: 10px;';
+        
+        const dateLabel = document.createElement('label');
+        dateLabel.textContent = 'Fecha del stock inicial:';
+        dateLabel.style.cssText = 'display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 5px;';
+        
+        const dateInput = document.createElement('input');
+        dateInput.type = 'date';
+        dateInput.style.cssText = 'width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text); margin-bottom: 10px;';
+        
+        const oldest = getOldestDateForKey(m.key);
+        dateInput.value = oldest ? oldest.toISOString().slice(0,10) : new Date().toISOString().slice(0,10);
+        
+        const stockLabel = document.createElement('label');
+        stockLabel.textContent = 'Stock inicial:';
+        stockLabel.style.cssText = 'display: block; color: var(--muted); font-size: 0.85rem; margin-bottom: 5px;';
+        
+        const stockInput = document.createElement('input');
+        stockInput.type = 'number';
+        stockInput.step = '0.01';
+        stockInput.style.cssText = 'width: 100%; padding: 8px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.1); background: rgba(255,255,255,0.05); color: var(--text);';
+        
+        if (initialStocks[m.key]) { 
+            stockInput.value = initialStocks[m.key].stock; 
+            dateInput.value = initialStocks[m.key].date; 
         }
+        
+        wrapper.appendChild(h);
+        wrapper.appendChild(dateLabel);
+        wrapper.appendChild(dateInput);
+        wrapper.appendChild(stockLabel);
+        wrapper.appendChild(stockInput);
+        wrapper.dataset.key = m.key;
+        stockModalBody.appendChild(wrapper);
+    });
 
-        // Modal events
+    document.getElementById('stockModal').classList.remove('hidden');
+}
+
+// MOVER LOS EVENT LISTENERS FUERA de initializeTrazabilidadLogic
+// Y usar event delegation o verificar que solo se registren una vez
+
+let modalEventsInitialized = false;
+
+function initializeTrazabilidadLogic() {
+    // ... resto del código ...
+    
+    // Solo inicializar los event listeners del modal una vez
+    if (!modalEventsInitialized) {
+        // Modal events - SOLO UNA VEZ
         document.getElementById('closeStockBtn').addEventListener('click', () => {
             document.getElementById('stockModal').classList.add('hidden');
         });
@@ -507,6 +517,12 @@ class TrazabilidadSystem {
             document.getElementById('stockModal').classList.add('hidden');
             showAlert('Stocks iniciales guardados localmente.', 'success');
         });
+        
+        modalEventsInitialized = true;
+    }
+    
+    // ... resto del código ...
+}
 
         // Generate report
         document.getElementById('generateBtn').addEventListener('click', () => {
