@@ -98,13 +98,17 @@ class TrazabilidadSystem {
                         </div>
 
                         <div class="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
-                            <div class="search-card">
+                            <div class="chart-card">
                                 <h6>Total salidas por centro</h6>
-                                <canvas id="chartOutByCentro" height="200"></canvas>
+                                <div class="chart-wrapper">
+                                    <canvas id="chartOutByCentro"></canvas>
+                                </div>
                             </div>
-                            <div class="search-card">
+                            <div class="chart-card">
                                 <h6>Total salidas a clientes por material</h6>
-                                <canvas id="chartOutByCliente" height="200"></canvas>
+                                <div class="chart-wrapper">
+                                    <canvas id="chartOutByCliente"></canvas>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -890,7 +894,7 @@ class TrazabilidadSystem {
                 reportBody.appendChild(tr);
             });
 
-            // Charts
+            // Charts - MEJORADO: Gráficos más atractivos y responsivos
             const labels = resultsArr.map(r => r.centro);
             const data1 = resultsArr.map(r => r.totalSalidasTienda);
             
@@ -904,17 +908,49 @@ class TrazabilidadSystem {
                         datasets: [{
                             label: 'Total salidas por tienda',
                             data: data1,
-                            backgroundColor: 'rgba(33, 150, 243, 0.6)'
+                            backgroundColor: 'rgba(33, 150, 243, 0.8)',
+                            borderColor: 'rgba(33, 150, 243, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4
                         }]
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                titleFont: { size: 12 },
+                                bodyFont: { size: 11 }
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            }
+                        }
                     }
                 });
             }
 
-            const labels2 = resultsArr.map(r => r.material);
+            const labels2 = resultsArr.map(r => `${r.material} (${r.centro})`);
             const data2 = resultsArr.map(r => r.totalSalidasClientes);
             
             if (chart2) chart2.destroy();
@@ -927,16 +963,43 @@ class TrazabilidadSystem {
                         datasets: [{
                             label: 'Total salidas a clientes',
                             data: data2,
-                            backgroundColor: 'rgba(76, 175, 80, 0.6)'
+                            backgroundColor: 'rgba(76, 175, 80, 0.8)',
+                            borderColor: 'rgba(76, 175, 80, 1)',
+                            borderWidth: 1,
+                            borderRadius: 4
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
+                                titleFont: { size: 12 },
+                                bodyFont: { size: 11 }
+                            }
+                        },
                         scales: {
-                            x: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
                                 ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)'
+                                }
+                            },
+                            x: {
+                                grid: {
                                     display: false
+                                },
+                                ticks: {
+                                    color: 'rgba(255, 255, 255, 0.7)',
+                                    maxRotation: 45,
+                                    minRotation: 45
                                 }
                             }
                         }
