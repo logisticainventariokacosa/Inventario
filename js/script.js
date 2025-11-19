@@ -768,36 +768,41 @@ document.getElementById('filterCenter').addEventListener('change', function() {
     });
 
     /* ====== NAVEGACIÓN ====== */
-    document.querySelectorAll('.nav a').forEach(a => {
-        a.addEventListener('click', e => {
-            e.preventDefault();
-            
-            document.querySelectorAll('.nav a').forEach(n => n.classList.remove('active'));
-            a.classList.add('active');
-            
-            const target = a.dataset.section;
-            document.querySelectorAll('.section').forEach(s => {
-                s.classList.remove('active-section');
-            });
-            document.getElementById(target).classList.add('active-section');
-            
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-            
-            const container = document.querySelector('.container');
-            if (container) container.scrollTop = 0;
-            
-            if (target === 'documents') listUploads('documents'); 
-            if (target === 'images') listUploads('images');
-            if (target === 'home') loadNews();
-            
-            if (target === 'home') {
-                setTimeout(function() {
-                    const searchCodeInput = document.getElementById('searchCode');
-                    if (searchCodeInput) searchCodeInput.focus();
-                }, 100);
-            }
+document.querySelectorAll('.nav a').forEach(a => {
+    a.addEventListener('click', e => {
+        e.preventDefault();
+        
+        document.querySelectorAll('.nav a').forEach(n => n.classList.remove('active'));
+        a.classList.add('active');
+        
+        const target = a.dataset.section;
+        document.querySelectorAll('.section').forEach(s => {
+            s.classList.remove('active-section');
         });
+        document.getElementById(target).classList.add('active-section');
+        
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+        
+        const container = document.querySelector('.container');
+        if (container) container.scrollTop = 0;
+        
+        if (target === 'documents') listUploads('documents'); 
+        if (target === 'images') listUploads('images');
+        if (target === 'home') loadNews();
+        
+        // AGREGAR ESTE NUEVO CASO PARA REPORTES
+        if (target === 'reports') {
+            initializeReportsSystem();
+        }
+        
+        if (target === 'home') {
+            setTimeout(function() {
+                const searchCodeInput = document.getElementById('searchCode');
+                if (searchCodeInput) searchCodeInput.focus();
+            }, 100);
+        }
     });
+});
 
     /* ====== CONTACTO ====== */
     document.getElementById('waBtn').href = "https://wa.me/4129915255?text=Hola%20";
@@ -848,4 +853,81 @@ document.getElementById('filterCenter').addEventListener('change', function() {
         const filterValue = this.value.trim();
         if (!filterValue) listUploads('images', false, '', true);
     });
+}
+/* ====== SISTEMA DE REPORTES ====== */
+function initializeReportsSystem() {
+    const reportContent = document.getElementById('report-content');
+    if (reportContent) {
+        // Limpiar contenido previo
+        reportContent.innerHTML = `
+            <div class="reports-menu">
+                <div class="report-option" data-report="trazabilidad">
+                    <div class="report-icon">📊</div>
+                    <h3>Trazabilidad</h3>
+                    <p>Análisis de movimientos de inventario</p>
+                </div>
+                
+                <div class="report-option" data-report="analisis-pedidos">
+                    <div class="report-icon">📦</div>
+                    <h3>Análisis de Pedidos</h3>
+                    <p>Próximamente...</p>
+                </div>
+            </div>
+        `;
+
+        // Configurar eventos para las opciones de reportes
+        document.querySelectorAll('.report-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const reportType = e.currentTarget.dataset.report;
+                loadReport(reportType);
+            });
+        });
+    }
+}
+
+function loadReport(reportType) {
+    const reportContent = document.getElementById('report-content');
+    
+    if (reportType === 'trazabilidad') {
+        reportContent.innerHTML = `
+            <button class="back-button" id="backToReports">← Volver a Reportes</button>
+            <div class="trazabilidad-container">
+                <div class="trazabilidad-header">
+                    <h3>Analizador de Trazabilidad de Mercancía</h3>
+                    <p>Sube un archivo Excel para analizar la trazabilidad de los materiales</p>
+                </div>
+                <div style="text-align: center; padding: 40px; color: var(--muted);">
+                    <p>🔧 La funcionalidad de Trazabilidad se está cargando...</p>
+                    <p>Para usar esta función, necesitas cargar el archivo trazabilidad.js</p>
+                </div>
+            </div>
+        `;
+
+        // Configurar botón de volver
+        document.getElementById('backToReports').addEventListener('click', () => {
+            initializeReportsSystem();
+        });
+
+        // Aquí puedes cargar el JS de trazabilidad dinámicamente si lo deseas
+        // loadTrazabilidadJS();
+        
+    } else {
+        showAlert('Esta funcionalidad estará disponible próximamente', 'info');
+    }
+}
+
+// Función opcional para cargar el JS de trazabilidad dinámicamente
+function loadTrazabilidadJS() {
+    if (!window.trazabilidadLoaded) {
+        const script = document.createElement('script');
+        script.src = 'js/trazabilidad.js';
+        script.onload = function() {
+            window.trazabilidadLoaded = true;
+            // Inicializar el sistema de trazabilidad aquí
+            if (window.TrazabilidadSystem) {
+                new window.TrazabilidadSystem(document.getElementById('report-content'));
+            }
+        };
+        document.head.appendChild(script);
+    }
 }
