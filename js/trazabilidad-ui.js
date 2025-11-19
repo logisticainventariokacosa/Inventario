@@ -123,17 +123,17 @@ class TrazabilidadSystem {
                     </div>
                 </div>
 
-                <!-- Modal para stock inicial -->
+                <!-- Modal para stock inicial - ACTUALIZADO CON SCROLL -->
                 <div id="stockModal" class="modal-overlay hidden">
-                    <div class="modal-content">
-                        <div class="modal-header">
-                            <h5>Configurar stock inicial</h5>
-                            <button id="closeStockBtnTop" class="close-btn">×</button>
+                    <div class="modal-content" style="max-height: 90vh; overflow-y: auto; width: 90%; max-width: 600px;">
+                        <div class="modal-header" style="position: sticky; top: 0; background: #2d3748; z-index: 10; padding: 20px; border-bottom: 1px solid #4a5568;">
+                            <h5 style="margin: 0; color: white;">Configurar stock inicial</h5>
+                            <button id="closeStockBtnTop" class="close-btn" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">×</button>
                         </div>
-                        <div id="stockModalBody" class="modal-body"></div>
-                        <div class="modal-footer">
-                            <button id="saveStockBtn">Guardar</button>
-                            <button id="closeStockBtn" class="alt">Cerrar</button>
+                        <div id="stockModalBody" class="modal-body" style="padding: 20px;"></div>
+                        <div class="modal-footer" style="position: sticky; bottom: 0; background: #2d3748; z-index: 10; padding: 20px; border-top: 1px solid #4a5568; display: flex; gap: 10px; justify-content: flex-end;">
+                            <button id="saveStockBtn" style="padding: 10px 20px; background: #4caf50; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">Guardar</button>
+                            <button id="closeStockBtn" class="alt" style="padding: 10px 20px; background: #6c757d; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">Cerrar</button>
                         </div>
                     </div>
                 </div>
@@ -515,12 +515,16 @@ class TrazabilidadSystem {
         ).toString(16).slice(1);
     }
 
-    // Función para abrir modal (maneja estado del body)
+    // Función para abrir modal (PERMITE SCROLL)
     openModal() {
         const modal = document.getElementById('stockModal');
         modal.classList.remove('hidden');
         modal.style.display = 'flex';
-        document.body.style.overflow = 'hidden'; // Prevenir scroll del body
+        
+        // Asegurar que el modal esté centrado y sea desplazable
+        modal.style.alignItems = 'flex-start';
+        modal.style.paddingTop = '20px';
+        modal.style.paddingBottom = '20px';
         
         // Forzar reflow y luego agregar clase de animación
         setTimeout(() => {
@@ -528,7 +532,7 @@ class TrazabilidadSystem {
         }, 10);
     }
 
-    // Función para cerrar modal (maneja estado del body)
+    // Función para cerrar modal
     closeModal() {
         const modal = document.getElementById('stockModal');
         modal.style.opacity = '0';
@@ -536,7 +540,6 @@ class TrazabilidadSystem {
         setTimeout(() => {
             modal.classList.add('hidden');
             modal.style.display = 'none';
-            document.body.style.overflow = ''; // Restaurar scroll del body
         }, 300);
     }
 
@@ -707,7 +710,7 @@ class TrazabilidadSystem {
                     document.getElementById('downloadExcelBtn').disabled = true;
                 } catch(err) {
                     console.error(err);
-                    this.showCustomAlert('Error leyendo archivo: ' + err.message, 'error');
+                    this.showCustomAlert('Error leyendo archfile: ' + err.message, 'error');
                 }
             }.bind(this);
             reader.readAsArrayBuffer(f);
