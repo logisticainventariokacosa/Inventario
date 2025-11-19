@@ -184,6 +184,172 @@ class TrazabilidadSystem {
         }
     }
 
+    // Función para mostrar confirmación personalizada
+    showCustomConfirm(message, confirmCallback, cancelCallback) {
+        // Crear overlay de confirmación
+        const confirmOverlay = document.createElement('div');
+        confirmOverlay.className = 'alert-overlay';
+        confirmOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        `;
+
+        // Configuración para tipo warning
+        const config = { 
+            color: '#ff9800', 
+            icon: '⚠', 
+            title: 'Confirmar' 
+        };
+
+        // Crear contenido de la confirmación
+        confirmOverlay.innerHTML = `
+            <div class="alert-modal" style="
+                background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+                border-radius: 16px;
+                padding: 30px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                border: 1px solid #4a5568;
+                min-width: 450px;
+                max-width: 500px;
+                animation: modalSlideIn 0.3s ease-out;
+                position: relative;
+                color: white;
+                text-align: center;
+            ">
+                <div class="alert-icon" style="
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 20px;
+                    font-size: 28px;
+                    background: ${config.color}20;
+                    border: 2px solid ${config.color};
+                    color: ${config.color};
+                ">
+                    ${config.icon}
+                </div>
+                <div class="alert-content">
+                    <h3 class="alert-title" style="
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                        margin-bottom: 10px;
+                        color: white;
+                    ">${config.title}</h3>
+                    <p class="alert-message" style="
+                        font-size: 1.1rem;
+                        line-height: 1.5;
+                        color: #cbd5e0;
+                        margin-bottom: 0;
+                    ">${message}</p>
+                </div>
+                <div class="alert-actions" style="
+                    display: flex;
+                    gap: 15px;
+                    justify-content: center;
+                    margin-top: 25px;
+                ">
+                    <button class="confirm-btn" style="
+                        padding: 12px 30px;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        min-width: 120px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        background: linear-gradient(135deg, #4caf50 0%, #388e3c 100%);
+                        color: white;
+                        border: 1px solid #4caf50;
+                    ">Aceptar</button>
+                    <button class="cancel-btn" style="
+                        padding: 12px 30px;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        min-width: 120px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        background: linear-gradient(135deg, #f44336 0%, #d32f2f 100%);
+                        color: white;
+                        border: 1px solid #f44336;
+                    ">Cancelar</button>
+                </div>
+            </div>
+        `;
+
+        // Agregar estilos de animación si no existen
+        if (!document.querySelector('#alert-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'alert-styles';
+            styles.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes modalSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-50px) scale(0.9);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
+                }
+                .confirm-btn:hover, .cancel-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+                }
+                .confirm-btn:active, .cancel-btn:active {
+                    transform: translateY(0);
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+
+        document.body.appendChild(confirmOverlay);
+
+        // Event listeners para los botones
+        const confirmBtn = confirmOverlay.querySelector('.confirm-btn');
+        const cancelBtn = confirmOverlay.querySelector('.cancel-btn');
+
+        confirmBtn.addEventListener('click', () => {
+            confirmOverlay.remove();
+            if (confirmCallback) confirmCallback();
+        });
+
+        cancelBtn.addEventListener('click', () => {
+            confirmOverlay.remove();
+            if (cancelCallback) cancelCallback();
+        });
+
+        // Cerrar al hacer click fuera del modal
+        confirmOverlay.addEventListener('click', (e) => {
+            if (e.target === confirmOverlay) {
+                confirmOverlay.remove();
+                if (cancelCallback) cancelCallback();
+            }
+        });
+    }
+
     // Función mejorada para mostrar alertas personalizadas
     showCustomAlert(message, type = 'info') {
         // Crear overlay de alerta
@@ -692,11 +858,17 @@ class TrazabilidadSystem {
             e.preventDefault();
             e.stopPropagation();
             
-            if (!confirm('¿Estás seguro de que quieres reiniciar el sistema? Se perderán todos los datos y configuraciones actuales.')) {
-                return;
-            }
-            
-            this.reiniciarSistema();
+            this.showCustomConfirm(
+                '¿Estás seguro de que quieres reiniciar el sistema? Se perderán todos los datos y configuraciones actuales.',
+                // Callback para Aceptar
+                () => {
+                    this.reiniciarSistema();
+                },
+                // Callback para Cancelar (no hace nada)
+                () => {
+                    console.log('Reinicio cancelado por el usuario');
+                }
+            );
         }.bind(this));
 
         // Inicializar eventos del modal
