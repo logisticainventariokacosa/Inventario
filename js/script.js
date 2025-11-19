@@ -767,7 +767,7 @@ document.getElementById('filterCenter').addEventListener('change', function() {
         renderNews(allNewsData);
     });
 
-    /* ====== NAVEGACIÓN ====== */
+ /* ====== NAVEGACIÓN ====== */
 document.querySelectorAll('.nav a').forEach(a => {
     a.addEventListener('click', e => {
         e.preventDefault();
@@ -803,6 +803,63 @@ document.querySelectorAll('.nav a').forEach(a => {
         }
     });
 });
+
+/* ====== SISTEMA DE REPORTES - CORREGIDO ====== */
+function initializeReportsSystem() {
+    console.log('Inicializando sistema de reportes...');
+    
+    const reportContent = document.getElementById('report-content');
+    if (!reportContent) {
+        console.error('No se encontró el contenedor report-content');
+        return;
+    }
+
+    // Verificar si los scripts ya están cargados
+    if (typeof TrazabilidadSystem === 'undefined') {
+        console.log('Sistema de reportes no disponible, mostrando mensaje...');
+        reportContent.innerHTML = `
+            <div class="search-card" style="text-align: center; padding: 40px;">
+                <div class="loading-state">Cargando sistema de reportes...</div>
+            </div>
+        `;
+        
+        // Los scripts deberían estar cargados por el HTML, reintentar
+        setTimeout(() => {
+            initializeReportsSystem();
+        }, 500);
+        return;
+    }
+
+    try {
+        // Inicializar el sistema
+        if (!window.reportsSystem) {
+            window.reportsSystem = new TrazabilidadSystem(reportContent);
+            console.log('Nueva instancia de reportes creada');
+        }
+        
+        window.reportsSystem.showReportsMenu();
+        console.log('Menú de reportes mostrado correctamente');
+        
+    } catch (error) {
+        console.error('Error al inicializar reportes:', error);
+        reportContent.innerHTML = `
+            <div class="search-card" style="text-align: center; padding: 40px;">
+                <h3 style="color: var(--red);">Error en sistema de reportes</h3>
+                <p style="color: var(--muted);">${error.message}</p>
+                <button onclick="initializeReportsSystem()" class="alt">Reintentar</button>
+            </div>
+        `;
+    }
+}
+
+// Función global para mostrar alertas
+if (typeof showAlert === 'undefined') {
+    window.showAlert = function(message, type = 'info') {
+        // Usar tu sistema de alertas existente o este simple
+        alert(`${type.toUpperCase()}: ${message}`);
+    };
+}
+        
 
     /* ====== CONTACTO ====== */
     document.getElementById('waBtn').href = "https://wa.me/4129915255?text=Hola%20";
@@ -855,21 +912,44 @@ document.querySelectorAll('.nav a').forEach(a => {
     });
 }
 
-/* ====== SISTEMA DE REPORTES ====== */
+/* ====== SISTEMA DE REPORTES - ACTUALIZADO PARA 2 ARCHIVOS ====== */
 function initializeReportsSystem() {
     const reportContent = document.getElementById('report-content');
     if (reportContent) {
-        // Solo cargar el JS de trazabilidad cuando sea necesario
+        // Solo cargar los JS de trazabilidad cuando sea necesario
         if (!window.trazabilidadLoaded) {
-            const script = document.createElement('script');
-            script.src = 'js/trazabilidad.js';
-            script.onload = function() {
-                window.trazabilidadLoaded = true;
-                window.reportsSystem = new TrazabilidadSystem(reportContent);
-            };
-            document.head.appendChild(script);
+            console.log('Cargando sistema de reportes...');
+            
+            // Cargar primero el core y luego la UI
+            loadScript('js/trazabilidad-core.js', function() {
+                loadScript('js/trazabilidad-ui.js', function() {
+                    window.trazabilidadLoaded = true;
+                    window.reportsSystem = new TrazabilidadSystem(reportContent);
+                    window.reportsSystem.showReportsMenu();
+                    console.log('Sistema de reportes cargado correctamente');
+                });
+            });
         } else {
             window.reportsSystem.showReportsMenu();
         }
     }
+}
+
+// Función auxiliar para cargar scripts en orden
+function loadScript(src, callback) {
+    const script = document.createElement('script');
+    script.src = src;
+    script.onload = callback;
+    script.onerror = function() {
+        console.error('Error cargando script: ' + src);
+    };
+    document.head.appendChild(script);
+}
+
+// Función global para mostrar alertas (si no existe)
+if (typeof showAlert === 'undefined') {
+    window.showAlert = function(message, type = 'info') {
+        // Puedes usar tu sistema de alertas existente o este simple
+        alert(`${type.toUpperCase()}: ${message}`);
+    };
 }
