@@ -1,4 +1,4 @@
-// js/trazabilidad-ui.js - Interfaz de usuario del sistema
+// js/trazabilidad-ui.js - Interfaz de usuario del sistema (Actualizado)
 class TrazabilidadSystem {
     constructor(container) {
         this.container = container;
@@ -47,7 +47,6 @@ class TrazabilidadSystem {
                         <button id="listMaterialsBtn" disabled>Listar Materiales</button>
                         <button id="configStockBtn" class="alt" disabled>Configurar stock inicial</button>
                         <button id="generateBtn" class="alt" disabled>Generar reporte</button>
-                        <button id="downloadPdfBtn" class="alt" disabled>Descargar PDF</button>
                         <button id="downloadExcelBtn" class="alt" disabled>Descargar Excel</button>
                         <button id="selectAllBtn" class="alt">Seleccionar todos</button>
                         <button id="clearAllBtn" class="alt">Deseleccionar</button>
@@ -180,8 +179,173 @@ class TrazabilidadSystem {
             this.render();
             this.initializeTrazabilidadLogic();
         } else {
-            showAlert('Esta funcionalidad estará disponible próximamente', 'info');
+            this.showCustomAlert('Esta funcionalidad estará disponible próximamente', 'info');
         }
+    }
+
+    // Función mejorada para mostrar alertas personalizadas
+    showCustomAlert(message, type = 'info') {
+        // Crear overlay de alerta
+        const alertOverlay = document.createElement('div');
+        alertOverlay.className = 'alert-overlay';
+        alertOverlay.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(5px);
+            z-index: 10000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.3s ease-out;
+        `;
+
+        // Definir colores según el tipo
+        const typeConfig = {
+            success: { color: '#4caf50', icon: '✓', title: 'Éxito' },
+            error: { color: '#e53935', icon: '✕', title: 'Error' },
+            warning: { color: '#ff9800', icon: '⚠', title: 'Advertencia' },
+            info: { color: '#2196F3', icon: 'ℹ', title: 'Información' }
+        };
+
+        const config = typeConfig[type] || typeConfig.info;
+
+        // Crear contenido de la alerta
+        alertOverlay.innerHTML = `
+            <div class="alert-modal" style="
+                background: linear-gradient(135deg, #2d3748 0%, #1a202c 100%);
+                border-radius: 16px;
+                padding: 30px;
+                box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+                border: 1px solid #4a5568;
+                min-width: 400px;
+                max-width: 500px;
+                animation: modalSlideIn 0.3s ease-out;
+                position: relative;
+                color: white;
+                text-align: center;
+            ">
+                <div class="alert-icon" style="
+                    width: 60px;
+                    height: 60px;
+                    border-radius: 50%;
+                    display: flex;
+                    align-items: center;
+                    justify-content: center;
+                    margin: 0 auto 20px;
+                    font-size: 28px;
+                    background: ${config.color}20;
+                    border: 2px solid ${config.color};
+                    color: ${config.color};
+                ">
+                    ${config.icon}
+                </div>
+                <div class="alert-content">
+                    <h3 class="alert-title" style="
+                        font-size: 1.5rem;
+                        font-weight: 700;
+                        margin-bottom: 10px;
+                        color: white;
+                    ">${config.title}</h3>
+                    <p class="alert-message" style="
+                        font-size: 1.1rem;
+                        line-height: 1.5;
+                        color: #cbd5e0;
+                        margin-bottom: 0;
+                    ">${message}</p>
+                </div>
+                <div class="alert-actions" style="
+                    display: flex;
+                    gap: 15px;
+                    justify-content: center;
+                    margin-top: 25px;
+                ">
+                    <button class="alert-btn" style="
+                        padding: 12px 30px;
+                        border: none;
+                        border-radius: 8px;
+                        font-size: 1rem;
+                        font-weight: 600;
+                        cursor: pointer;
+                        transition: all 0.3s ease;
+                        min-width: 120px;
+                        text-transform: uppercase;
+                        letter-spacing: 0.5px;
+                        background: linear-gradient(135deg, ${config.color} 0%, ${this.darkenColor(config.color, 20)} 100%);
+                        color: white;
+                        border: 1px solid ${config.color};
+                    " onclick="this.closest('.alert-overlay').remove()">
+                        Aceptar
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Agregar estilos de animación si no existen
+        if (!document.querySelector('#alert-styles')) {
+            const styles = document.createElement('style');
+            styles.id = 'alert-styles';
+            styles.textContent = `
+                @keyframes fadeIn {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
+                }
+                @keyframes modalSlideIn {
+                    from {
+                        opacity: 0;
+                        transform: translateY(-50px) scale(0.9);
+                    }
+                    to {
+                        opacity: 1;
+                        transform: translateY(0) scale(1);
+                    }
+                }
+                .alert-btn:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 5px 15px ${config.color}40;
+                }
+                .alert-btn:active {
+                    transform: translateY(0);
+                }
+            `;
+            document.head.appendChild(styles);
+        }
+
+        document.body.appendChild(alertOverlay);
+
+        // Auto-remover después de 4 segundos para tipos de info/success
+        if (type === 'info' || type === 'success') {
+            setTimeout(() => {
+                if (alertOverlay.parentNode) {
+                    alertOverlay.remove();
+                }
+            }, 4000);
+        }
+
+        // Cerrar al hacer click fuera del modal
+        alertOverlay.addEventListener('click', (e) => {
+            if (e.target === alertOverlay) {
+                alertOverlay.remove();
+            }
+        });
+    }
+
+    // Función auxiliar para oscurecer colores
+    darkenColor(color, percent) {
+        const num = parseInt(color.replace("#", ""), 16);
+        const amt = Math.round(2.55 * percent);
+        const R = (num >> 16) - amt;
+        const G = (num >> 8 & 0x00FF) - amt;
+        const B = (num & 0x0000FF) - amt;
+        return "#" + (
+            0x1000000 +
+            (R < 255 ? R < 1 ? 0 : R : 255) * 0x10000 +
+            (G < 255 ? G < 1 ? 0 : G : 255) * 0x100 +
+            (B < 255 ? B < 1 ? 0 : B : 255)
+        ).toString(16).slice(1);
     }
 
     initializeTrazabilidadLogic() {
@@ -208,7 +372,7 @@ class TrazabilidadSystem {
                         };
                     });
                     document.getElementById('stockModal').classList.add('hidden');
-                    showAlert('Stocks iniciales guardados localmente.', 'success');
+                    this.showCustomAlert('Stocks iniciales guardados localmente.', 'success');
                 }
                 
                 if (e.target.id === 'stockModal') {
@@ -233,7 +397,7 @@ class TrazabilidadSystem {
                     const json = XLSX.utils.sheet_to_json(ws, {defval:''});
                     this.core.rawRows = json.map(r => this.core.transformRow(r));
                     if (!this.core.rawRows.length) { 
-                        showAlert('No se detectaron filas en el archivo.', 'warning');
+                        this.showCustomAlert('No se detectaron filas en el archivo.', 'warning');
                         return; 
                     }
                     this.core.populateMaterialList(this.core.rawRows);
@@ -251,11 +415,10 @@ class TrazabilidadSystem {
                     document.getElementById('listMaterialsBtn').disabled = false;
                     document.getElementById('configStockBtn').disabled = false;
                     document.getElementById('generateBtn').disabled = false;
-                    document.getElementById('downloadPdfBtn').disabled = true;
                     document.getElementById('downloadExcelBtn').disabled = true;
                 } catch(err) {
                     console.error(err);
-                    showAlert('Error leyendo archivo: ' + err.message, 'error');
+                    this.showCustomAlert('Error leyendo archivo: ' + err.message, 'error');
                 }
             }.bind(this);
             reader.readAsArrayBuffer(f);
@@ -338,13 +501,13 @@ class TrazabilidadSystem {
         document.getElementById('generateBtn').addEventListener('click', () => {
             const checked = Array.from(document.querySelectorAll('.material-checkbox:checked')).map(c => c.dataset.key);
             if (checked.length === 0) { 
-                showAlert('Selecciona al menos un material.', 'warning');
+                this.showCustomAlert('Selecciona al menos un material.', 'warning');
                 return; 
             }
             
             const missing = checked.filter(k => !this.core.initialStocks[k]);
             if (missing.length > 0) {
-                if (!confirm('Falta stock inicial para algunos. Continuar con stock 0?')) return;
+                this.showCustomAlert('Falta stock inicial para algunos materiales. Se usarán valores de 0.', 'warning');
                 missing.forEach(k => this.core.initialStocks[k] = { 
                     date: this.core.getOldestDateForKey(k) ? this.core.getOldestDateForKey(k).toISOString().slice(0,10) : (new Date().toISOString().slice(0,10)), 
                     stock: 0 
@@ -358,95 +521,13 @@ class TrazabilidadSystem {
             reportSection.classList.remove('hidden');
             
             document.getElementById('materialsAnalizados').textContent = this.core.results.map(r => `${r.material} (${r.centro})`).join(', ');
-            document.getElementById('downloadPdfBtn').disabled = false;
             document.getElementById('downloadExcelBtn').disabled = false;
-        });
-
-        // Download PDF - CORREGIDO para solo exportar la tabla
-        document.getElementById('downloadPdfBtn').addEventListener('click', () => {
-            if (!this.core.results || this.core.results.length === 0) { 
-                showAlert('Genera el reporte primero.', 'warning');
-                return; 
-            }
-            
-            // Crear un contenedor específico para el PDF
-            const pdfContainer = document.createElement('div');
-            pdfContainer.style.padding = '20px';
-            pdfContainer.style.background = 'white';
-            pdfContainer.style.color = 'black';
-            
-            // Título del reporte
-            const title = document.createElement('h2');
-            title.textContent = 'Reporte de Trazabilidad - ' + new Date().toLocaleDateString();
-            title.style.textAlign = 'center';
-            title.style.marginBottom = '20px';
-            title.style.color = '#2196F3';
-            pdfContainer.appendChild(title);
-            
-            // Clonar solo la tabla
-            const table = document.querySelector('.inventory-table').cloneNode(true);
-            
-            // Aplicar estilos para impresión
-            table.style.width = '100%';
-            table.style.borderCollapse = 'collapse';
-            table.style.fontSize = '10px';
-            
-            // Estilos para celdas
-            const cells = table.querySelectorAll('th, td');
-            cells.forEach(cell => {
-                cell.style.border = '1px solid #ddd';
-                cell.style.padding = '6px';
-                cell.style.textAlign = 'left';
-                cell.style.color = 'black';
-                cell.style.background = 'white';
-            });
-            
-            // Estilos para encabezados
-            const headers = table.querySelectorAll('th');
-            headers.forEach(header => {
-                header.style.background = '#2196F3';
-                header.style.color = 'white';
-                header.style.fontWeight = 'bold';
-            });
-            
-            pdfContainer.appendChild(table);
-            
-            // Información de metadatos
-            const meta = document.createElement('div');
-            meta.style.marginTop = '20px';
-            meta.style.fontSize = '10px';
-            meta.style.color = '#666';
-            meta.textContent = `Generado el: ${new Date().toLocaleString()} | Materiales analizados: ${this.core.results.length}`;
-            pdfContainer.appendChild(meta);
-            
-            const opt = {
-                margin: 0.5,
-                filename: `reporte_trazabilidad_${new Date().toISOString().split('T')[0]}.pdf`,
-                image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { 
-                    scale: 2,
-                    useCORS: true,
-                    logging: false
-                },
-                jsPDF: { 
-                    unit: 'mm', 
-                    format: 'a4', 
-                    orientation: 'landscape' 
-                }
-            };
-            
-            // Mostrar mensaje de generación
-            showAlert('Generando PDF...', 'info');
-            
-            html2pdf().from(pdfContainer).set(opt).save().then(() => {
-                showAlert('PDF generado correctamente', 'success');
-            });
         });
 
         // Download Excel
         document.getElementById('downloadExcelBtn').addEventListener('click', () => {
             if (!this.core.results || this.core.results.length === 0) { 
-                showAlert('Genera el reporte primero.', 'warning');
+                this.showCustomAlert('Genera el reporte primero.', 'warning');
                 return; 
             }
             
@@ -480,6 +561,7 @@ class TrazabilidadSystem {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
             XLSX.writeFile(wb, 'reporte_trazabilidad.xlsx');
+            this.showCustomAlert('Excel descargado correctamente', 'success');
         });
 
         // Inicializar eventos del modal
@@ -492,7 +574,7 @@ class TrazabilidadSystem {
         
         const toEdit = keys.map(k => this.core.uniqueMaterials.find(u => u.key === k)).filter(Boolean);
         if (toEdit.length === 0) { 
-            showAlert('No hay materiales seleccionados.', 'warning');
+            this.showCustomAlert('No hay materiales seleccionados.', 'warning');
             return; 
         }
 
@@ -596,11 +678,11 @@ class TrazabilidadSystem {
         if (this.chart1) this.chart1.destroy();
         if (this.chart2) this.chart2.destroy();
 
-        // Gráfico 1: Tipos de Movimiento por Destino (Barras 3D) - OCUPA TODO EL ANCHO
+        // Gráfico 1: Tipos de Movimiento por Destino (Barras 3D)
         const movementTypesData = this.core.getMovementTypesData(resultsArr);
         const ctx1 = document.getElementById('chartMovimientos');
         if (ctx1 && movementTypesData.length > 0) {
-            const topMovements = movementTypesData.slice(0, 10); // Mostrar hasta 10 tipos
+            const topMovements = movementTypesData.slice(0, 8); // Mostrar hasta 8 tipos
             
             this.chart1 = new Chart(ctx1, {
                 type: 'bar',
@@ -656,13 +738,6 @@ class TrazabilidadSystem {
                                     return `${label}: ${value.toLocaleString()}`;
                                 }
                             }
-                        },
-                        title: {
-                            display: true,
-                            text: 'Distribución por Tipo de Movimiento',
-                            font: { size: 16, weight: 'bold' },
-                            color: 'var(--text)',
-                            padding: 20
                         }
                     },
                     scales: {
@@ -692,12 +767,6 @@ class TrazabilidadSystem {
                                 callback: function(value) {
                                     return value.toLocaleString();
                                 }
-                            },
-                            title: {
-                                display: true,
-                                text: 'Cantidad',
-                                font: { size: 12, weight: 'bold' },
-                                color: 'var(--text)'
                             }
                         }
                     },
@@ -709,7 +778,7 @@ class TrazabilidadSystem {
             });
         }
 
-        // Gráfico 2: Distribución Total de Salidas (Dona 3D) - OCUPA TODO EL ANCHO
+        // Gráfico 2: Distribución Total de Salidas (Dona 3D) - MEJORADO
         const ctx2 = document.getElementById('chartDistribucion');
         if (ctx2) {
             const totalSalidasTienda = resultsArr.reduce((sum, r) => sum + Math.abs(r.totalSalidasTienda), 0);
@@ -736,8 +805,8 @@ class TrazabilidadSystem {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '55%',
+                    maintainAspectRatio: true, // Cambiado a true para mantener proporción
+                    cutout: '65%', // Más pequeño para que quepa mejor
                     plugins: {
                         legend: {
                             position: 'bottom',
@@ -748,7 +817,7 @@ class TrazabilidadSystem {
                                     weight: 'bold'
                                 },
                                 color: 'var(--text)',
-                                padding: 20,
+                                padding: 15,
                                 generateLabels: function(chart) {
                                     const data = chart.data;
                                     if (data.labels.length && data.datasets.length) {
@@ -786,13 +855,6 @@ class TrazabilidadSystem {
                                     return `${label}: ${value.toLocaleString()} (${percentage}%)`;
                                 }
                             }
-                        },
-                        title: {
-                            display: true,
-                            text: 'Distribución General de Salidas',
-                            font: { size: 16, weight: 'bold' },
-                            color: 'var(--text)',
-                            padding: 20
                         }
                     },
                     animation: {
@@ -800,6 +862,14 @@ class TrazabilidadSystem {
                         animateRotate: true,
                         duration: 1000,
                         easing: 'easeOutQuart'
+                    },
+                    layout: {
+                        padding: {
+                            top: 10,
+                            bottom: 10,
+                            left: 10,
+                            right: 10
+                        }
                     }
                 }
             });
