@@ -2492,7 +2492,7 @@ body {
 
 /* Específico para el gráfico de dona - asegurar que sea visible completo */
 .chart-card:last-child .chart-wrapper {
-    height: 350px;
+    height: 280px;
     display: flex;
     align-items: center;
     justify-content: center;
