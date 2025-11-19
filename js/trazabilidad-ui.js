@@ -50,6 +50,7 @@ class TrazabilidadSystem {
                         <button id="downloadExcelBtn" class="alt" disabled>Descargar Excel</button>
                         <button id="selectAllBtn" class="alt">Seleccionar todos</button>
                         <button id="clearAllBtn" class="alt">Deseleccionar</button>
+                        <button id="reiniciarBtn" class="alt">Reiniciar</button>
                     </div>
                 </div>
 
@@ -373,6 +374,59 @@ class TrazabilidadSystem {
         }, 300);
     }
 
+    // Función para reiniciar el sistema
+    reiniciarSistema() {
+        // 1. Limpiar instancia core
+        this.core = new TrazabilidadCore();
+        
+        // 2. Limpiar gráficos
+        if (this.chart1) {
+            this.chart1.destroy();
+            this.chart1 = null;
+        }
+        if (this.chart2) {
+            this.chart2.destroy();
+            this.chart2 = null;
+        }
+        
+        // 3. Limpiar selección de materiales
+        const materialsContainer = document.getElementById('materialsContainer');
+        if (materialsContainer) {
+            materialsContainer.innerHTML = '';
+        }
+        
+        // 4. Ocultar secciones
+        const materialsSection = document.getElementById('materialsSection');
+        const reportSection = document.getElementById('reportSection');
+        if (materialsSection) materialsSection.classList.add('hidden');
+        if (reportSection) reportSection.classList.add('hidden');
+        
+        // 5. Limpiar inputs y selects
+        const fileInput = document.getElementById('fileInput');
+        const filterCentro = document.getElementById('filterCentro');
+        const filterMaterial = document.getElementById('filterMaterial');
+        
+        if (fileInput) fileInput.value = '';
+        if (filterCentro) {
+            filterCentro.innerHTML = '<option value="">-- Todos --</option>';
+        }
+        if (filterMaterial) filterMaterial.value = '';
+        
+        // 6. Deshabilitar botones
+        document.getElementById('listMaterialsBtn').disabled = true;
+        document.getElementById('configStockBtn').disabled = true;
+        document.getElementById('generateBtn').disabled = true;
+        document.getElementById('downloadExcelBtn').disabled = true;
+        
+        // 7. Cerrar modal si está abierto
+        this.closeModal();
+        
+        // 8. Mostrar confirmación
+        this.showCustomAlert('Sistema reiniciado correctamente. Puedes cargar un nuevo archivo Excel.', 'success');
+        
+        console.log('Sistema reiniciado completamente');
+    }
+
     initializeTrazabilidadLogic() {
         let modalEventsInitialized = false;
 
@@ -632,6 +686,18 @@ class TrazabilidadSystem {
             XLSX.writeFile(wb, 'reporte_trazabilidad.xlsx');
             this.showCustomAlert('Excel descargado correctamente', 'success');
         });
+
+        // Reiniciar sistema
+        document.getElementById('reiniciarBtn').addEventListener('click', function(e) {
+            e.preventDefault();
+            e.stopPropagation();
+            
+            if (!confirm('¿Estás seguro de que quieres reiniciar el sistema? Se perderán todos los datos y configuraciones actuales.')) {
+                return;
+            }
+            
+            this.reiniciarSistema();
+        }.bind(this));
 
         // Inicializar eventos del modal
         initializeModalEvents();
