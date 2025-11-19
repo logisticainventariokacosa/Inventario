@@ -1,4 +1,4 @@
-// js/trazabilidad-core.js - Lógica principal del sistema (COMPLETO CON GLOSARIO)
+// js/trazabilidad-core.js - Lógica principal del sistema (COMPLETO)
 class TrazabilidadCore {
     constructor() {
         this.rawRows = [];
@@ -8,52 +8,41 @@ class TrazabilidadCore {
         this.results = [];
         this.centroSet = new Set();
         
-        // MOVIMIENTOS COMPLETOS SEGÚN GLOSARIO
-        // Salidas a tienda
-        this.storeOutCodes = new Set(['641', '643', '161', '351']);
-        this.storeOutCancellations = new Set(['642', '644', '162']);
+        // MOVIMIENTOS COMPLETOS - REGLA: negativo = salida, positivo = entrada
         
-        // Salidas a clientes
-        this.clientOutCodes = new Set(['601', '909', '673']);
-        this.clientOutCancellations = new Set(['602', '674', '910']);
-        this.clientReturns = new Set(['651', '653', '910']); // Devoluciones de clientes
-        this.clientReturnCancellations = new Set(['652', '654']); // Anulaciones de devoluciones
+        // Salidas a tienda (cantidad NEGATIVA)
+        this.storeOutCodes = new Set(['641', '643', '161', '351', '303', '311', '673']);
         
-        // Entradas principales
-        this.entry101 = '101';
-        this.entry101Cancellation = '102';
-        this.entry501 = '501';
-        this.entry501Cancellation = '502';
+        // Salidas a clientes (cantidad NEGATIVA)  
+        this.clientOutCodes = new Set(['601', '909']);
+        
+        // Consumos (cantidad NEGATIVA)
+        this.consumptionCodes = new Set(['201', '261', '309']);
         
         // Ajustes
-        this.adjustmentPos = new Set(['701']);
-        this.adjustmentNeg = new Set(['702']);
+        this.adjustmentPos = new Set(['701']); // POSITIVO = entrada
+        this.adjustmentNeg = new Set(['702']); // NEGATIVO = salida
         
-        // Consumos
-        this.consumptionCodes = new Set(['201', '261']);
-        this.consumptionCancellations = new Set(['202', '262']);
+        // Entradas principales (cantidad POSITIVA)
+        this.entry101 = '101';
+        this.entry501 = '501';
+        this.entry305 = '305'; // Entrada de tienda
         
-        // Traslados internos
-        this.internalTransfers = new Set(['311', '303', '305', '453']);
-        this.internalTransferCancellations = new Set(['312', '304', '454']);
+        // Devoluciones de clientes (cantidad POSITIVA)
+        this.clientReturns = new Set(['651', '910']);
         
-        // Movimientos que NO afectan inventario físico (excluir de cálculos)
+        // Anulaciones
+        this.annul501 = '502'; // Anulación de 501
+        this.annul201 = '202'; // Anulación de 201
+        this.annul261 = '262'; // Anulación de 261  
+        this.annul309 = '310'; // Anulación de 309
+        this.annul909 = '910'; // Anulación de 909 (la misma 910 es devolución)
+        
+        // Movimientos que NO afectan inventario físico
         this.nonInventoryMovements = new Set(['321', '322', '343', '344']);
-        
-        // Todos los movimientos de entrada (para cálculos)
-        this.allEntryMovements = new Set([
-            '101', '501', '651', '653', '305', '701', // Entradas positivas
-            '102', '502', '652', '654', '304', '702', '910' // Anulaciones de salidas (son entradas)
-        ]);
-        
-        // Todos los movimientos de salida (para cálculos)
-        this.allExitMovements = new Set([
-            '601', '641', '643', '161', '351', '673', '909', '201', '261', '303', '453', // Salidas
-            '702' // Ajuste negativo
-        ]);
     }
 
-    // Helpers
+    // Helpers (se mantienen igual)
     parseDate(v) {
         if (!v && v !== 0) return null;
         if (v instanceof Date) return v;
@@ -101,76 +90,6 @@ class TrazabilidadCore {
         const replaced = raw.replace(/\./g,'/').split(' ')[0];
         const p2 = this.parseDate(replaced); if (p2 instanceof Date) return p2.toISOString().slice(0,10);
         return raw;
-    }
-
-    // Determina si un movimiento es de entrada (positivo para inventario)
-    isEntryMovement(movement, quantity) {
-        const mov = String(movement);
-        const qty = Number(quantity);
-        
-        // Movimientos que siempre son entradas
-        if (this.allEntryMovements.has(mov)) return true;
-        
-        // Anulaciones de salidas son entradas
-        if (this.storeOutCancellations.has(mov) || 
-            this.clientOutCancellations.has(mov) ||
-            this.consumptionCancellations.has(mov) ||
-            this.internalTransferCancellations.has(mov)) {
-            return true;
-        }
-        
-        return false;
-    }
-
-    // Determina si un movimiento es de salida (negativo para inventario)
-    isExitMovement(movement, quantity) {
-        const mov = String(movement);
-        const qty = Number(quantity);
-        
-        // Movimientos que siempre son salidas
-        if (this.allExitMovements.has(mov)) return true;
-        
-        // Anulaciones de entradas son salidas
-        if (mov === this.entry101Cancellation || mov === this.entry501Cancellation) {
-            return true;
-        }
-        
-        return false;
-    }
-
-    // Calcula la cantidad neta considerando el tipo de movimiento
-    getNetQuantity(movement, quantity) {
-        const mov = String(movement);
-        const qty = Math.abs(Number(quantity));
-        
-        if (this.isEntryMovement(mov, quantity)) {
-            return qty;
-        } else if (this.isExitMovement(mov, quantity)) {
-            return -qty;
-        }
-        
-        return 0; // Para movimientos que no afectan inventario
-    }
-
-    // Obtiene el movimiento original para una anulación
-    getOriginalMovement(cancellationMovement) {
-        const mov = String(cancellationMovement);
-        if (mov === '642') return '641';
-        if (mov === '644') return '643';
-        if (mov === '162') return '161';
-        if (mov === '602') return '601';
-        if (mov === '674') return '673';
-        if (mov === '910') return '909';
-        if (mov === '102') return '101';
-        if (mov === '502') return '501';
-        if (mov === '652') return '651';
-        if (mov === '654') return '653';
-        if (mov === '202') return '201';
-        if (mov === '262') return '261';
-        if (mov === '312') return '311';
-        if (mov === '304') return '303';
-        if (mov === '454') return '453';
-        return '';
     }
 
     transformRow(r) {
@@ -223,9 +142,6 @@ class TrazabilidadCore {
         row['Centro'] = row['Centro'] ? String(row['Centro']).trim() : '';
         row['Almacén'] = row['Almacén'] ? String(row['Almacén']).trim() : '';
 
-        // Calcular cantidad neta
-        row['Ctd.neta'] = this.getNetQuantity(row['Clase de movimiento'], row['Ctd.en UM entrada']);
-
         return row;
     }
 
@@ -277,7 +193,7 @@ class TrazabilidadCore {
         // Filtrar solo movimientos 101 con cantidad positiva
         const movimientos101 = filtered.filter(r => 
             String(r['Clase de movimiento']) === this.entry101 && 
-            r['Ctd.neta'] > 0
+            Number(r['Ctd.en UM entrada']) > 0
         );
 
         if (movimientos101.length === 0) return '';
@@ -376,7 +292,7 @@ class TrazabilidadCore {
             return false; 
         };
 
-        // Emparejar movimientos para ignorar (mejorado)
+        // Emparejar movimientos para ignorar
         const pairedIgnore = new Set();
         Object.keys(byDay).forEach(ds => {
             const items = byDay[ds];
@@ -384,9 +300,10 @@ class TrazabilidadCore {
             // Emparejar 643/311 con 101
             const salidas = items.filter(it => { 
                 const c = String(it.row['Clase de movimiento']); 
-                return (c==='643' || c==='311') && it.row['Ctd.neta'] < 0; 
+                const q = Number(it.row['Ctd.en UM entrada']||0); 
+                return (c==='643' || c==='311') && q < 0; 
             });
-            const entradas101 = items.filter(it => String(it.row['Clase de movimiento']) === this.entry101 && it.row['Ctd.neta'] > 0);
+            const entradas101 = items.filter(it => String(it.row['Clase de movimiento']) === this.entry101 && Number(it.row['Ctd.en UM entrada']||0) > 0);
             
             salidas.forEach(s => {
                 const sQty = Math.abs(Number(s.row['Ctd.en UM entrada']||0));
@@ -410,12 +327,9 @@ class TrazabilidadCore {
                 const qty = Math.abs(Number(it.row['Ctd.en UM entrada']||0));
                 
                 // Buscar anulaciones y emparejarlas
-                if (this.storeOutCancellations.has(movement) || 
-                    this.clientOutCancellations.has(movement) ||
-                    movement === this.entry101Cancellation ||
-                    movement === this.entry501Cancellation) {
-                    
-                    const originalMovement = this.getOriginalMovement(movement);
+                if (movement === this.annul201 || movement === this.annul261 || movement === this.annul309) {
+                    const originalMovement = movement === this.annul201 ? '201' : 
+                                           movement === this.annul261 ? '261' : '309';
                     const matchingOriginal = items.find(item => 
                         String(item.row['Clase de movimiento']) === originalMovement &&
                         Math.abs(Number(item.row['Ctd.en UM entrada']||0)) === qty
@@ -429,43 +343,46 @@ class TrazabilidadCore {
             });
         });
 
-        // Cálculos mejorados considerando todos los movimientos
+        // Salidas por tienda (INCLUYENDO TODOS LOS MOVIMIENTOS)
         const salidaPorTienda = filtered.reduce((sum,r,idx) => {
+            const qty = Number(r['Ctd.en UM entrada']||0); 
+            const clase = String(r['Clase de movimiento']);
+            if (qty >= 0) return sum;
+            if (clase === '311' && !pairedIgnore.has(idx)) return sum;
             if (pairedIgnore.has(idx)) return sum;
-            
-            const movement = String(r['Clase de movimiento']);
-            const netQty = r['Ctd.neta'];
-            
-            if (netQty >= 0) return sum;
-            if (this.storeOutCodes.has(movement)) return sum + Math.abs(netQty);
+            if (this.storeOutCodes.has(clase)) return sum + Math.abs(qty);
             return sum;
         },0);
 
+        // Salidas a clientes (INCLUYENDO TODOS LOS MOVIMIENTOS)
         const salidaAClientes = filtered.reduce((sum,r,idx) => {
+            const qty = Number(r['Ctd.en UM entrada']||0); 
+            const clase = String(r['Clase de movimiento']);
+            if (qty >= 0) return sum;
+            if (clase === '311' && !pairedIgnore.has(idx)) return sum;
             if (pairedIgnore.has(idx)) return sum;
-            
-            const movement = String(r['Clase de movimiento']);
-            const netQty = r['Ctd.neta'];
-            
-            if (netQty >= 0) return sum;
-            if (this.clientOutCodes.has(movement)) return sum + Math.abs(netQty);
+            if (this.clientOutCodes.has(clase)) return sum + Math.abs(qty);
             return sum;
         },0);
 
         // Cálculos de estadísticas adicionales
         const storeMovsNeg = filtered.filter((r,idx) => {
+            const qty = Number(r['Ctd.en UM entrada']||0); 
+            const clase = String(r['Clase de movimiento']);
+            if (qty >= 0) return false;
+            if (clase === '311' && !pairedIgnore.has(idx)) return false;
             if (pairedIgnore.has(idx)) return false;
-            const movement = String(r['Clase de movimiento']);
-            const netQty = r['Ctd.neta'];
-            return netQty < 0 && this.storeOutCodes.has(movement);
-        }).map(r => r['Ctd.neta']);
+            return this.storeOutCodes.has(clase);
+        }).map(r => Number(r['Ctd.en UM entrada']||0));
 
         const clientMovsNeg = filtered.filter((r,idx) => {
+            const qty = Number(r['Ctd.en UM entrada']||0); 
+            const clase = String(r['Clase de movimiento']);
+            if (qty >= 0) return false;
+            if (clase === '311' && !pairedIgnore.has(idx)) return false;
             if (pairedIgnore.has(idx)) return false;
-            const movement = String(r['Clase de movimiento']);
-            const netQty = r['Ctd.neta'];
-            return netQty < 0 && this.clientOutCodes.has(movement);
-        }).map(r => r['Ctd.neta']);
+            return this.clientOutCodes.has(clase);
+        }).map(r => Number(r['Ctd.en UM entrada']||0));
 
         const storeMax = storeMovsNeg.length ? Math.min(...storeMovsNeg) : 0;
         const storeMin = storeMovsNeg.length ? Math.max(...storeMovsNeg) : 0;
@@ -474,8 +391,8 @@ class TrazabilidadCore {
         const avgStore = storeMovsNeg.length ? (storeMovsNeg.reduce((a,b)=>a + Math.abs(b),0)/storeMovsNeg.length) : 0;
         const avgClient = clientMovsNeg.length ? (clientMovsNeg.reduce((a,b)=>a + Math.abs(b),0)/clientMovsNeg.length) : 0;
 
-        // Stock actual usando cantidades netas
-        const totalSumMov = filtered.reduce((s,r) => s + r['Ctd.neta'], 0);
+        // Stock actual
+        const totalSumMov = filtered.reduce((s,r) => s + Number(r['Ctd.en UM entrada']||0), 0);
         const stockActual = (Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0) + totalSumMov;
 
         // Puntos cero
@@ -497,7 +414,7 @@ class TrazabilidadCore {
                 const ds = day.toISOString().slice(0,10);
                 const startBalance = currentBalance;
                 const movs = movementsByDate[ds] || [];
-                const sumDay = movs.reduce((s,r) => s + r['Ctd.neta'], 0);
+                const sumDay = movs.reduce((s,r) => s + Number(r['Ctd.en UM entrada']||0), 0);
                 const endBalance = startBalance + sumDay;
                 if (Number(endBalance) === 0 && Number(startBalance) !== 0) puntosCero.push(this.formatDate(day));
                 currentBalance = endBalance;
@@ -509,25 +426,21 @@ class TrazabilidadCore {
             uniqueDates.forEach(ds => {
                 const movs = filtered.filter(r => (r._dateKey || this.getDateKeyFromRow(r)) === ds);
                 const startBalance = running;
-                const sumDay = movs.reduce((s,r)=> s + r['Ctd.neta'], 0);
+                const sumDay = movs.reduce((s,r)=> s + Number(r['Ctd.en UM entrada']||0), 0);
                 const endBalance = startBalance + sumDay;
                 if (Number(endBalance) === 0 && Number(startBalance) !== 0) puntosCero.push(ds);
                 running = endBalance;
             });
         }
 
-        // Irregularidades (mejorado)
+        // Irregularidades (MEJORADO CON NUEVOS MOVIMIENTOS)
         const irregularidades = [];
 
         // 501 without 502
-        const entries501 = filtered.filter(r => String(r['Clase de movimiento']) === this.entry501 && r['Ctd.neta'] > 0);
+        const entries501 = filtered.filter(r => String(r['Clase de movimiento']) === this.entry501);
         entries501.forEach(en => {
-            const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-            const found502 = filtered.find(r => 
-                String(r['Clase de movimiento']) === this.entry501Cancellation && 
-                Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
-                !pairedIgnore.has(filtered.indexOf(r))
-            );
+            const qty = Number(en['Ctd.en UM entrada']||0);
+            const found502 = filtered.find(r => String(r['Clase de movimiento']) === this.annul501 && Math.abs(Number(r['Ctd.en UM entrada']||0)) === Math.abs(qty));
             if (!found502) {
                 const fecha = en._dateKey || this.getDateKeyFromRow(en);
                 irregularidades.push({ 
@@ -540,11 +453,7 @@ class TrazabilidadCore {
         });
 
         // 673 sin 101
-        const exits673 = filtered.filter(r => 
-            String(r['Clase de movimiento']) === '673' && 
-            r['Ctd.neta'] < 0 &&
-            !pairedIgnore.has(filtered.indexOf(r))
-        );
+        const exits673 = filtered.filter(r => String(r['Clase de movimiento']) === '673' && Number(r['Ctd.en UM entrada']) < 0);
         exits673.forEach(ex => {
             const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
             const user = this.normalizeUser(ex['Nombre del usuario']);
@@ -553,8 +462,7 @@ class TrazabilidadCore {
                 String(r['Clase de movimiento']) === this.entry101 && 
                 Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty && 
                 this.normalizeUser(r['Nombre del usuario']) === user && 
-                !pairedIgnore.has(filtered.indexOf(r)) &&
-                (r._dateKey || this.getDateKeyFromRow(r)) >= fecha
+                (r._dateKey || this.getDateKeyFromRow(r)) >= (ex._dateKey || fecha)
             );
             if (!found101) {
                 irregularidades.push({ 
@@ -566,12 +474,27 @@ class TrazabilidadCore {
             }
         });
 
+        // 909 sin 910 correspondiente (misma cantidad)
+        const exits909 = filtered.filter(r => String(r['Clase de movimiento']) === '909' && Number(r['Ctd.en UM entrada']) < 0);
+        exits909.forEach(ex => {
+            const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
+            const found910 = filtered.find(r => 
+                String(r['Clase de movimiento']) === '910' && 
+                Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty
+            );
+            if (!found910) {
+                const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
+                irregularidades.push({ 
+                    tipo:'909_sin_910', 
+                    usuario: ex['Nombre del usuario']||'', 
+                    fecha: this.formatDate(fecha),
+                    descripcion:`Salida 909 de ${qty} sin devolución 910 correspondiente (fecha: ${this.formatDate(fecha)})`
+                });
+            }
+        });
+
         // 101 en centro 1000 check - skip if user YLARA
-        const entries101in100 = filtered.filter(r => 
-            String(r['Clase de movimiento']) === this.entry101 && 
-            String(r['Centro']).trim() === '1000' &&
-            r['Ctd.neta'] > 0
-        );
+        const entries101in100 = filtered.filter(r => String(r['Clase de movimiento']) === this.entry101 && String(r['Centro']).trim() === '1000');
         entries101in100.forEach(en => {
             const enUserNorm = this.normalizeUser(en['Nombre del usuario']||'');
             if (enUserNorm === 'ylara') return; // skip per request
@@ -602,6 +525,7 @@ class TrazabilidadCore {
         let tipoDiferencia = 'Ninguna detectada';
         if (irregularidades.some(i=>i.tipo==='673_sin_101')) tipoDiferencia = 'Posible Faltante';
         if (irregularidades.some(i=>i.tipo==='501_sin_502')) tipoDiferencia = 'Posible Faltante';
+        if (irregularidades.some(i=>i.tipo==='909_sin_910')) tipoDiferencia = 'Posible Faltante';
         if (irregularidades.some(i=>i.tipo==='673_sin_101') && irregularidades.some(i=>i.tipo==='501_sin_502')) tipoDiferencia = 'Diferencias mixtas';
         if (irregularidades.some(i=>i.tipo==='101_en_1000')) tipoDiferencia = 'Posible Error de Registro';
 
@@ -654,16 +578,16 @@ class TrazabilidadCore {
                         });
                     }
                     
-                    const netQty = row['Ctd.neta'];
+                    const qty = Number(row['Ctd.en UM entrada'] || 0);
                     const data = movementTypes.get(movementType);
                     
-                    if (this.storeOutCodes.has(movementType) && netQty < 0) {
-                        data.tienda += Math.abs(netQty);
-                    } else if (this.clientOutCodes.has(movementType) && netQty < 0) {
-                        data.cliente += Math.abs(netQty);
+                    if (this.storeOutCodes.has(movementType) && qty < 0) {
+                        data.tienda += Math.abs(qty);
+                    } else if (this.clientOutCodes.has(movementType) && qty < 0) {
+                        data.cliente += Math.abs(qty);
                     }
                     
-                    data.total += Math.abs(netQty);
+                    data.total += Math.abs(qty);
                 }
             });
         });
