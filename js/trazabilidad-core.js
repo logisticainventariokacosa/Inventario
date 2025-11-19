@@ -436,149 +436,154 @@ class TrazabilidadCore {
         // IRREGULARIDADES - SOLO LAS 5 REGLAS ESPECÍFICAS
         const irregularidades = [];
 
-        // REGLA 1: 673 sin 101 (solo para centros 1000/3000)
-        if (group.centro === '1000/3000') {
-            const exits673 = filtered.filter(r => 
-                String(r['Clase de movimiento']) === '673' && 
-                Number(r['Ctd.en UM entrada']) < 0
-            );
-            
-            exits673.forEach(ex => {
-                const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
-                const user = this.normalizeUser(ex['Nombre del usuario']);
-                const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
-                
-                const found101 = filtered.find(r => 
-                    String(r['Clase de movimiento']) === this.entry101 && 
-                    Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty && 
-                    this.normalizeUser(r['Nombre del usuario']) === user &&
-                    !pairedIgnore.has(filtered.indexOf(r))
-                );
-                
-                if (!found101) {
-                    irregularidades.push({ 
-                        tipo:'673_sin_101', 
-                        usuario: ex['Nombre del usuario']||'', 
-                        fecha: this.formatDate(fecha),
-                        descripcion:`Salida 673 de ${qty} sin entrada 101 correspondiente (mismo usuario: ${user})`
-                    });
-                }
+       // REGLA 1: 673 sin 101 (solo para centros 1000/3000)
+if (group.centro === '1000/3000') {
+    const exits673 = filtered.filter(r => 
+        String(r['Clase de movimiento']) === '673' && 
+        Number(r['Ctd.en UM entrada']) < 0
+    );
+    
+    exits673.forEach(ex => {
+        const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
+        const user = this.normalizeUser(ex['Nombre del usuario']);
+        const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
+        const fechaFormateada = this.formatDate(fecha);
+        
+        const found101 = filtered.find(r => 
+            String(r['Clase de movimiento']) === this.entry101 && 
+            Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty && 
+            this.normalizeUser(r['Nombre del usuario']) === user &&
+            !pairedIgnore.has(filtered.indexOf(r))
+        );
+        
+        if (!found101) {
+            irregularidades.push({ 
+                tipo:'673_sin_101', 
+                usuario: ex['Nombre del usuario']||'', 
+                fecha: fechaFormateada,
+                descripcion:`Salida 673 de ${qty} sin entrada 101 correspondiente (mismo usuario: ${user}) - Fecha: ${fechaFormateada}`
             });
         }
+    });
+}
 
-        // REGLA 2: 101 en centro 1000 sin 673 (solo para centros 1000/3000, excepto usuario YLARA)
-        if (group.centro === '1000/3000') {
-            const entries101in100 = filtered.filter(r => 
-                String(r['Clase de movimiento']) === this.entry101 && 
-                String(r['Centro']).trim() === '1000' &&
-                Number(r['Ctd.en UM entrada']) > 0
-            );
-            
-            entries101in100.forEach(en => {
-                const enUserNorm = this.normalizeUser(en['Nombre del usuario']||'');
-                if (enUserNorm === 'ylara') return; // EXCEPCIÓN para usuario YLARA
-                
-                const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-                const user = enUserNorm;
-                const fecha = en._dateKey || this.getDateKeyFromRow(en);
-                
-                const found673 = filtered.find(r => 
-                    String(r['Clase de movimiento']) === '673' && 
-                    Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
-                    this.normalizeUser(r['Nombre del usuario']) === user &&
-                    !pairedIgnore.has(filtered.indexOf(r))
-                );
-                
-                if (!found673) {
-                    irregularidades.push({ 
-                        tipo:'101_en_1000_sin_673', 
-                        usuario: en['Nombre del usuario']||'', 
-                        fecha: this.formatDate(fecha),
-                        descripcion:`Entrada 101 en centro 1000 de ${qty} sin salida 673 correspondiente`
-                    });
-                }
+// REGLA 2: 101 en centro 1000 sin 673 (solo para centros 1000/3000, excepto usuario YLARA)
+if (group.centro === '1000/3000') {
+    const entries101in100 = filtered.filter(r => 
+        String(r['Clase de movimiento']) === this.entry101 && 
+        String(r['Centro']).trim() === '1000' &&
+        Number(r['Ctd.en UM entrada']) > 0
+    );
+    
+    entries101in100.forEach(en => {
+        const enUserNorm = this.normalizeUser(en['Nombre del usuario']||'');
+        if (enUserNorm === 'ylara') return; // EXCEPCIÓN para usuario YLARA
+        
+        const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
+        const user = enUserNorm;
+        const fecha = en._dateKey || this.getDateKeyFromRow(en);
+        const fechaFormateada = this.formatDate(fecha);
+        
+        const found673 = filtered.find(r => 
+            String(r['Clase de movimiento']) === '673' && 
+            Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
+            this.normalizeUser(r['Nombre del usuario']) === user &&
+            !pairedIgnore.has(filtered.indexOf(r))
+        );
+        
+        if (!found673) {
+            irregularidades.push({ 
+                tipo:'101_en_1000_sin_673', 
+                usuario: en['Nombre del usuario']||'', 
+                fecha: fechaFormateada,
+                descripcion:`Entrada 101 en centro 1000 de ${qty} sin salida 673 correspondiente - Fecha: ${fechaFormateada}`
             });
         }
+    });
+}
 
-        // REGLA 3: 501 sin 502 (para TODOS los centros)
-        const entries501 = filtered.filter(r => 
-            String(r['Clase de movimiento']) === this.entry501 && 
-            Number(r['Ctd.en UM entrada']) > 0
-        );
+// REGLA 3: 501 sin 502 (para TODOS los centros)
+const entries501 = filtered.filter(r => 
+    String(r['Clase de movimiento']) === this.entry501 && 
+    Number(r['Ctd.en UM entrada']) > 0
+);
 
-        entries501.forEach(en => {
-            const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-            const fecha = en._dateKey || this.getDateKeyFromRow(en);
-            
-            const found502 = filtered.find(r => 
-                String(r['Clase de movimiento']) === this.annul501 && 
-                Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
-                !pairedIgnore.has(filtered.indexOf(r))
-            );
-            
-            if (!found502) {
-                irregularidades.push({ 
-                    tipo:'501_sin_502', 
-                    usuario: en['Nombre del usuario']||'', 
-                    fecha: this.formatDate(fecha),
-                    descripcion:`Entrada 501 de ${qty} sin anulación 502 equivalente`
-                });
-            }
+entries501.forEach(en => {
+    const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
+    const fecha = en._dateKey || this.getDateKeyFromRow(en);
+    const fechaFormateada = this.formatDate(fecha);
+    
+    const found502 = filtered.find(r => 
+        String(r['Clase de movimiento']) === this.annul501 && 
+        Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
+        !pairedIgnore.has(filtered.indexOf(r))
+    );
+    
+    if (!found502) {
+        irregularidades.push({ 
+            tipo:'501_sin_502', 
+            usuario: en['Nombre del usuario']||'', 
+            fecha: fechaFormateada,
+            descripcion:`Entrada 501 de ${qty} sin anulación 502 equivalente - Fecha: ${fechaFormateada}`
         });
+    }
+});
 
-        // REGLA 4: 910 sin 909 (para TODOS los centros)
-        const entries910 = filtered.filter(r => 
-            String(r['Clase de movimiento']) === '910' && 
-            Number(r['Ctd.en UM entrada']) > 0
-        );
+// REGLA 4: 910 sin 909 (para TODOS los centros)
+const entries910 = filtered.filter(r => 
+    String(r['Clase de movimiento']) === '910' && 
+    Number(r['Ctd.en UM entrada']) > 0
+);
 
-        entries910.forEach(en => {
-            const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-            const fecha = en._dateKey || this.getDateKeyFromRow(en);
-            
-            const found909 = filtered.find(r => 
-                String(r['Clase de movimiento']) === '909' && 
-                Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
-                !pairedIgnore.has(filtered.indexOf(r))
-            );
-            
-            if (!found909) {
-                irregularidades.push({ 
-                    tipo:'910_sin_909', 
-                    usuario: en['Nombre del usuario']||'', 
-                    fecha: this.formatDate(fecha),
-                    descripcion:`Devolución 910 de ${qty} sin venta 909 correspondiente`
-                });
-            }
+entries910.forEach(en => {
+    const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
+    const fecha = en._dateKey || this.getDateKeyFromRow(en);
+    const fechaFormateada = this.formatDate(fecha);
+    
+    const found909 = filtered.find(r => 
+        String(r['Clase de movimiento']) === '909' && 
+        Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
+        !pairedIgnore.has(filtered.indexOf(r))
+    );
+    
+    if (!found909) {
+        irregularidades.push({ 
+            tipo:'910_sin_909', 
+            usuario: en['Nombre del usuario']||'', 
+            fecha: fechaFormateada,
+            descripcion:`Devolución 910 de ${qty} sin venta 909 correspondiente - Fecha: ${fechaFormateada}`
         });
+    }
+});
 
-        // REGLA 5: 651 sin 601 (para TODOS los centros)
-        const entries651 = filtered.filter(r => 
-            String(r['Clase de movimiento']) === '651' && 
-            Number(r['Ctd.en UM entrada']) > 0
-        );
+// REGLA 5: 651 sin 601 (para TODOS los centros)
+const entries651 = filtered.filter(r => 
+    String(r['Clase de movimiento']) === '651' && 
+    Number(r['Ctd.en UM entrada']) > 0
+);
 
-        entries651.forEach(en => {
-            const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-            const centro = String(en['Centro']||'').trim();
-            const fecha = en._dateKey || this.getDateKeyFromRow(en);
-            
-            const found601 = filtered.find(r => 
-                String(r['Clase de movimiento']) === '601' && 
-                Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
-                String(r['Centro']||'').trim() === centro &&
-                !pairedIgnore.has(filtered.indexOf(r))
-            );
-            
-            if (!found601) {
-                irregularidades.push({ 
-                    tipo:'651_sin_601', 
-                    usuario: en['Nombre del usuario']||'', 
-                    fecha: this.formatDate(fecha),
-                    descripcion:`Devolución 651 de ${qty} sin venta 601 correspondiente (mismo centro: ${centro})`
-                });
-            }
+entries651.forEach(en => {
+    const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
+    const centro = String(en['Centro']||'').trim();
+    const fecha = en._dateKey || this.getDateKeyFromRow(en);
+    const fechaFormateada = this.formatDate(fecha);
+    
+    const found601 = filtered.find(r => 
+        String(r['Clase de movimiento']) === '601' && 
+        Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
+        String(r['Centro']||'').trim() === centro &&
+        !pairedIgnore.has(filtered.indexOf(r))
+    );
+    
+    if (!found601) {
+        irregularidades.push({ 
+            tipo:'651_sin_601', 
+            usuario: en['Nombre del usuario']||'', 
+            fecha: fechaFormateada,
+            descripcion:`Devolución 651 de ${qty} sin venta 601 correspondiente (mismo centro: ${centro}) - Fecha: ${fechaFormateada}`
         });
+    }
+});
 
         // Determinar tipo de diferencia BASADO EN LAS 5 REGLAS
         let tipoDiferencia = 'Ninguna detectada';
