@@ -1,4 +1,4 @@
-// js/trazabilidad.js - Sistema de Trazabilidad Corregido
+// js/trazabilidad.js - Sistema de Trazabilidad Mejorado
 class TrazabilidadSystem {
     constructor(container) {
         this.container = container;
@@ -90,6 +90,12 @@ class TrazabilidadSystem {
                                         <th>Tipo de diferencia</th>
                                         <th>Total salidas por tienda</th>
                                         <th>Total salidas a clientes</th>
+                                        <th>Salida max. por tienda</th>
+                                        <th>Salida min. por tienda</th>
+                                        <th>Salida max. a clientes</th>
+                                        <th>Salida min. a clientes</th>
+                                        <th>Promedio salida por tienda</th>
+                                        <th>Promedio salida por cliente</th>
                                         <th>Stock Actual</th>
                                     </tr>
                                 </thead>
@@ -99,15 +105,15 @@ class TrazabilidadSystem {
 
                         <div class="charts-container">
                             <div class="chart-card">
-                                <h6>Distribución por Centro</h6>
+                                <h6>Promedio de Movimientos</h6>
                                 <div class="chart-wrapper">
-                                    <canvas id="chartOutByCentro"></canvas>
+                                    <canvas id="chartPromedioMovimientos"></canvas>
                                 </div>
                             </div>
                             <div class="chart-card">
-                                <h6>Salidas por Material</h6>
+                                <h6>Distribución de Salidas</h6>
                                 <div class="chart-wrapper">
-                                    <canvas id="chartOutByCliente"></canvas>
+                                    <canvas id="chartDistribucionSalidas"></canvas>
                                 </div>
                             </div>
                         </div>
@@ -139,7 +145,6 @@ class TrazabilidadSystem {
     }
 
     showReportsMenu() {
-        // CORRECCIÓN: Eliminada la duplicación de opciones
         this.container.innerHTML = `
             <div class="reports-menu">
                 <div class="report-option" data-report="trazabilidad">
@@ -588,6 +593,12 @@ class TrazabilidadSystem {
                 Tipo_diferencia: r.tipoDiferencia,
                 Total_salidas_tienda: r.totalSalidasTienda,
                 Total_salidas_clientes: r.totalSalidasClientes,
+                Salida_max_tienda: r.salidaMaxTienda,
+                Salida_min_tienda: r.salidaMinTienda,
+                Salida_max_clientes: r.salidaMaxClientes,
+                Salida_min_clientes: r.salidaMinClientes,
+                Promedio_salida_tienda: r.promedioSalidaTienda,
+                Promedio_salida_cliente: r.promedioSalidaCliente,
                 Stock_Actual: r.stockActual
             }));
             
@@ -706,6 +717,32 @@ class TrazabilidadSystem {
                 if (clientOutCodes.has(clase)) return sum + Math.abs(qty);
                 return sum;
             },0);
+
+            // Cálculos de estadísticas adicionales (del código original)
+            const storeMovsNeg = filtered.filter((r,idx) => {
+                const qty = Number(r['Ctd.en UM entrada']||0); 
+                const clase = String(r['Clase de movimiento']);
+                if (qty >= 0) return false;
+                if (clase === '311' && !pairedIgnore.has(idx)) return false;
+                if (pairedIgnore.has(idx)) return false;
+                return storeOutCodes.has(clase);
+            }).map(r => Number(r['Ctd.en UM entrada']||0));
+
+            const clientMovsNeg = filtered.filter((r,idx) => {
+                const qty = Number(r['Ctd.en UM entrada']||0); 
+                const clase = String(r['Clase de movimiento']);
+                if (qty >= 0) return false;
+                if (clase === '311' && !pairedIgnore.has(idx)) return false;
+                if (pairedIgnore.has(idx)) return false;
+                return clientOutCodes.has(clase);
+            }).map(r => Number(r['Ctd.en UM entrada']||0));
+
+            const storeMax = storeMovsNeg.length ? Math.min(...storeMovsNeg) : 0;
+            const storeMin = storeMovsNeg.length ? Math.max(...storeMovsNeg) : 0;
+            const clientMax = clientMovsNeg.length ? Math.min(...clientMovsNeg) : 0;
+            const clientMin = clientMovsNeg.length ? Math.max(...clientMovsNeg) : 0;
+            const avgStore = storeMovsNeg.length ? (storeMovsNeg.reduce((a,b)=>a + Math.abs(b),0)/storeMovsNeg.length) : 0;
+            const avgClient = clientMovsNeg.length ? (clientMovsNeg.reduce((a,b)=>a + Math.abs(b),0)/clientMovsNeg.length) : 0;
 
             // Stock actual
             const totalSumMov = filtered.reduce((s,r) => s + Number(r['Ctd.en UM entrada']||0), 0);
@@ -844,6 +881,12 @@ class TrazabilidadSystem {
                 tipoDiferencia,
                 totalSalidasTienda: salidaPorTienda,
                 totalSalidasClientes: salidaAClientes,
+                salidaMaxTienda: storeMax,
+                salidaMinTienda: storeMin,
+                salidaMaxClientes: clientMax,
+                salidaMinClientes: clientMin,
+                promedioSalidaTienda: round2(avgStore),
+                promedioSalidaCliente: round2(avgClient),
                 stockActual,
                 dateMin: minDate, 
                 dateMax: maxDate,
@@ -887,6 +930,12 @@ class TrazabilidadSystem {
                 tr.appendChild(td(r.tipoDiferencia));
                 tr.appendChild(td(Math.abs(r.totalSalidasTienda), 'negative-diff'));
                 tr.appendChild(td(Math.abs(r.totalSalidasClientes), 'negative-diff'));
+                tr.appendChild(td(r.salidaMaxTienda));
+                tr.appendChild(td(r.salidaMinTienda));
+                tr.appendChild(td(r.salidaMaxClientes));
+                tr.appendChild(td(r.salidaMinClientes));
+                tr.appendChild(td(r.promedioSalidaTienda));
+                tr.appendChild(td(r.promedioSalidaCliente));
                 
                 const stockTd = td(round2(r.stockActual));
                 stockTd.classList.add(r.stockActual < 0 ? 'negative-diff' : 'positive-diff');
@@ -895,45 +944,38 @@ class TrazabilidadSystem {
                 reportBody.appendChild(tr);
             });
 
-            // CORRECCIÓN: Gráficos de pastel/dona pequeños y controlados
-            const centroData = {};
-            resultsArr.forEach(r => {
-                centroData[r.centro] = (centroData[r.centro] || 0) + r.totalSalidasTienda;
-            });
-
-            const materialData = {};
-            resultsArr.forEach(r => {
-                materialData[r.material] = (materialData[r.material] || 0) + r.totalSalidasClientes;
-            });
+            // CORRECCIÓN: Gráficos 3D mejorados con leyendas y porcentajes
+            const totalSalidasTienda = resultsArr.reduce((sum, r) => sum + Math.abs(r.totalSalidasTienda), 0);
+            const totalSalidasClientes = resultsArr.reduce((sum, r) => sum + Math.abs(r.totalSalidasClientes), 0);
+            const totalGeneral = totalSalidasTienda + totalSalidasClientes;
 
             // Destruir gráficos anteriores
             if (chart1) chart1.destroy();
             if (chart2) chart2.destroy();
 
-            // Gráfico 1: Distribución por Centro (Dona)
-            const ctx1 = document.getElementById('chartOutByCentro');
+            // Gráfico 1: Promedio de Movimientos (3D Doughnut)
+            const ctx1 = document.getElementById('chartPromedioMovimientos');
             if (ctx1) {
+                const promediosData = {
+                    'Salidas Tienda': resultsArr.reduce((sum, r) => sum + r.promedioSalidaTienda, 0) / resultsArr.length,
+                    'Salidas Clientes': resultsArr.reduce((sum, r) => sum + r.promedioSalidaCliente, 0) / resultsArr.length
+                };
+
                 chart1 = new Chart(ctx1, {
                     type: 'doughnut',
                     data: {
-                        labels: Object.keys(centroData),
+                        labels: Object.keys(promediosData),
                         datasets: [{
-                            data: Object.values(centroData),
+                            data: Object.values(promediosData),
                             backgroundColor: [
                                 'rgba(33, 150, 243, 0.8)',
-                                'rgba(76, 175, 80, 0.8)',
-                                'rgba(255, 193, 7, 0.8)',
-                                'rgba(156, 39, 176, 0.8)',
-                                'rgba(244, 67, 54, 0.8)'
+                                'rgba(76, 175, 80, 0.8)'
                             ],
                             borderColor: [
                                 'rgba(33, 150, 243, 1)',
-                                'rgba(76, 175, 80, 1)',
-                                'rgba(255, 193, 7, 1)',
-                                'rgba(156, 39, 176, 1)',
-                                'rgba(244, 67, 54, 1)'
+                                'rgba(76, 175, 80, 1)'
                             ],
-                            borderWidth: 1
+                            borderWidth: 2
                         }]
                     },
                     options: {
@@ -946,7 +988,27 @@ class TrazabilidadSystem {
                                 labels: {
                                     boxWidth: 12,
                                     font: {
-                                        size: 10
+                                        size: 11
+                                    },
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        if (data.labels.length && data.datasets.length) {
+                                            return data.labels.map((label, i) => {
+                                                const value = data.datasets[0].data[i];
+                                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                                
+                                                return {
+                                                    text: `${label}: ${round2(value)} (${percentage}%)`,
+                                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                                    strokeStyle: data.datasets[0].borderColor[i],
+                                                    lineWidth: 1,
+                                                    hidden: false,
+                                                    index: i
+                                                };
+                                            });
+                                        }
+                                        return [];
                                     }
                                 }
                             },
@@ -957,7 +1019,7 @@ class TrazabilidadSystem {
                                         const value = context.raw || 0;
                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                         const percentage = Math.round((value / total) * 100);
-                                        return `${label}: ${value} (${percentage}%)`;
+                                        return `${label}: ${round2(value)} (${percentage}%)`;
                                     }
                                 }
                             }
@@ -966,47 +1028,61 @@ class TrazabilidadSystem {
                 });
             }
 
-            // Gráfico 2: Salidas por Material (Dona)
-            const ctx2 = document.getElementById('chartOutByCliente');
+            // Gráfico 2: Distribución de Salidas (3D Pie)
+            const ctx2 = document.getElementById('chartDistribucionSalidas');
             if (ctx2) {
+                const distribucionData = {
+                    'Salidas Tienda': totalSalidasTienda,
+                    'Salidas Clientes': totalSalidasClientes
+                };
+
                 chart2 = new Chart(ctx2, {
-                    type: 'doughnut',
+                    type: 'pie',
                     data: {
-                        labels: Object.keys(materialData),
+                        labels: Object.keys(distribucionData),
                         datasets: [{
-                            data: Object.values(materialData),
+                            data: Object.values(distribucionData),
                             backgroundColor: [
-                                'rgba(33, 150, 243, 0.8)',
-                                'rgba(76, 175, 80, 0.8)',
                                 'rgba(255, 193, 7, 0.8)',
-                                'rgba(156, 39, 176, 0.8)',
-                                'rgba(244, 67, 54, 0.8)',
-                                'rgba(0, 188, 212, 0.8)',
-                                'rgba(139, 195, 74, 0.8)'
+                                'rgba(156, 39, 176, 0.8)'
                             ],
                             borderColor: [
-                                'rgba(33, 150, 243, 1)',
-                                'rgba(76, 175, 80, 1)',
                                 'rgba(255, 193, 7, 1)',
-                                'rgba(156, 39, 176, 1)',
-                                'rgba(244, 67, 54, 1)',
-                                'rgba(0, 188, 212, 1)',
-                                'rgba(139, 195, 74, 1)'
+                                'rgba(156, 39, 176, 1)'
                             ],
-                            borderWidth: 1
+                            borderWidth: 2
                         }]
                     },
                     options: {
                         responsive: true,
                         maintainAspectRatio: true,
-                        cutout: '60%',
                         plugins: {
                             legend: {
                                 position: 'bottom',
                                 labels: {
                                     boxWidth: 12,
                                     font: {
-                                        size: 10
+                                        size: 11
+                                    },
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        if (data.labels.length && data.datasets.length) {
+                                            return data.labels.map((label, i) => {
+                                                const value = data.datasets[0].data[i];
+                                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                                
+                                                return {
+                                                    text: `${label}: ${round2(value)} (${percentage}%)`,
+                                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                                    strokeStyle: data.datasets[0].borderColor[i],
+                                                    lineWidth: 1,
+                                                    hidden: false,
+                                                    index: i
+                                                };
+                                            });
+                                        }
+                                        return [];
                                     }
                                 }
                             },
@@ -1017,7 +1093,7 @@ class TrazabilidadSystem {
                                         const value = context.raw || 0;
                                         const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                         const percentage = Math.round((value / total) * 100);
-                                        return `${label}: ${value} (${percentage}%)`;
+                                        return `${label}: ${round2(value)} (${percentage}%)`;
                                     }
                                 }
                             }
