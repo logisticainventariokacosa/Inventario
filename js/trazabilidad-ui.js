@@ -907,8 +907,8 @@ class TrazabilidadSystem {
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
-                    cutout: '50%', // Reducido para que el anillo sea más grueso y visible
+                    maintainAspectRatio: false,
+                    cutout: '65%', // Reducido para que el anillo sea más grueso y visible
                     plugins: {
                         legend: {
                             position: 'bottom',
