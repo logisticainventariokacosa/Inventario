@@ -142,7 +142,7 @@ class TrazabilidadSystem {
     }
 
     bindEvents() {
-        // CORREGIDO: Usar event delegation para el botón volver
+        // Event delegation para el botón volver
         this.container.addEventListener('click', (e) => {
             if (e.target.id === 'backToReports') {
                 this.showReportsMenu();
@@ -362,17 +362,85 @@ class TrazabilidadSystem {
             document.getElementById('downloadExcelBtn').disabled = false;
         });
 
-        // Download PDF
+        // Download PDF - CORREGIDO para solo exportar la tabla
         document.getElementById('downloadPdfBtn').addEventListener('click', () => {
-            const element = document.querySelector('.trazabilidad-container');
+            if (!this.core.results || this.core.results.length === 0) { 
+                showAlert('Genera el reporte primero.', 'warning');
+                return; 
+            }
+            
+            // Crear un contenedor específico para el PDF
+            const pdfContainer = document.createElement('div');
+            pdfContainer.style.padding = '20px';
+            pdfContainer.style.background = 'white';
+            pdfContainer.style.color = 'black';
+            
+            // Título del reporte
+            const title = document.createElement('h2');
+            title.textContent = 'Reporte de Trazabilidad - ' + new Date().toLocaleDateString();
+            title.style.textAlign = 'center';
+            title.style.marginBottom = '20px';
+            title.style.color = '#2196F3';
+            pdfContainer.appendChild(title);
+            
+            // Clonar solo la tabla
+            const table = document.querySelector('.inventory-table').cloneNode(true);
+            
+            // Aplicar estilos para impresión
+            table.style.width = '100%';
+            table.style.borderCollapse = 'collapse';
+            table.style.fontSize = '10px';
+            
+            // Estilos para celdas
+            const cells = table.querySelectorAll('th, td');
+            cells.forEach(cell => {
+                cell.style.border = '1px solid #ddd';
+                cell.style.padding = '6px';
+                cell.style.textAlign = 'left';
+                cell.style.color = 'black';
+                cell.style.background = 'white';
+            });
+            
+            // Estilos para encabezados
+            const headers = table.querySelectorAll('th');
+            headers.forEach(header => {
+                header.style.background = '#2196F3';
+                header.style.color = 'white';
+                header.style.fontWeight = 'bold';
+            });
+            
+            pdfContainer.appendChild(table);
+            
+            // Información de metadatos
+            const meta = document.createElement('div');
+            meta.style.marginTop = '20px';
+            meta.style.fontSize = '10px';
+            meta.style.color = '#666';
+            meta.textContent = `Generado el: ${new Date().toLocaleString()} | Materiales analizados: ${this.core.results.length}`;
+            pdfContainer.appendChild(meta);
+            
             const opt = {
-                margin: 0.2,
-                filename: 'reporte_trazabilidad.pdf',
+                margin: 0.5,
+                filename: `reporte_trazabilidad_${new Date().toISOString().split('T')[0]}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2 },
-                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+                html2canvas: { 
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                },
+                jsPDF: { 
+                    unit: 'mm', 
+                    format: 'a4', 
+                    orientation: 'landscape' 
+                }
             };
-            html2pdf().from(element).set(opt).save();
+            
+            // Mostrar mensaje de generación
+            showAlert('Generando PDF...', 'info');
+            
+            html2pdf().from(pdfContainer).set(opt).save().then(() => {
+                showAlert('PDF generado correctamente', 'success');
+            });
         });
 
         // Download Excel
@@ -528,11 +596,11 @@ class TrazabilidadSystem {
         if (this.chart1) this.chart1.destroy();
         if (this.chart2) this.chart2.destroy();
 
-        // Gráfico 1: Tipos de Movimiento por Destino (Barras 3D)
+        // Gráfico 1: Tipos de Movimiento por Destino (Barras 3D) - OCUPA TODO EL ANCHO
         const movementTypesData = this.core.getMovementTypesData(resultsArr);
         const ctx1 = document.getElementById('chartMovimientos');
         if (ctx1 && movementTypesData.length > 0) {
-            const topMovements = movementTypesData.slice(0, 8); // Mostrar solo los 8 principales
+            const topMovements = movementTypesData.slice(0, 10); // Mostrar hasta 10 tipos
             
             this.chart1 = new Chart(ctx1, {
                 type: 'bar',
@@ -544,62 +612,108 @@ class TrazabilidadSystem {
                             data: topMovements.map(m => m.tienda),
                             backgroundColor: 'rgba(33, 150, 243, 0.8)',
                             borderColor: 'rgba(33, 150, 243, 1)',
-                            borderWidth: 1
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
                         },
                         {
                             label: 'Salidas Clientes',
                             data: topMovements.map(m => m.cliente),
                             backgroundColor: 'rgba(76, 175, 80, 0.8)',
                             borderColor: 'rgba(76, 175, 80, 1)',
-                            borderWidth: 1
+                            borderWidth: 2,
+                            borderRadius: 8,
+                            borderSkipped: false,
                         }
                     ]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
+                    maintainAspectRatio: false,
                     plugins: {
                         legend: {
                             position: 'top',
                             labels: {
                                 boxWidth: 12,
-                                font: { size: 11 }
+                                font: { 
+                                    size: 12,
+                                    weight: 'bold'
+                                },
+                                color: 'var(--text)',
+                                padding: 15
                             }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
                             callbacks: {
                                 label: function(context) {
                                     const label = context.dataset.label || '';
                                     const value = context.raw || 0;
-                                    return `${label}: ${value}`;
+                                    return `${label}: ${value.toLocaleString()}`;
                                 }
                             }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Distribución por Tipo de Movimiento',
+                            font: { size: 16, weight: 'bold' },
+                            color: 'var(--text)',
+                            padding: 20
                         }
                     },
                     scales: {
                         x: {
-                            grid: { display: false },
+                            grid: { 
+                                display: false,
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
                             ticks: { 
-                                font: { size: 10 },
-                                maxRotation: 45
+                                font: { 
+                                    size: 11,
+                                    weight: 'bold'
+                                },
+                                color: 'var(--text)',
+                                maxRotation: 45,
+                                minRotation: 45
                             }
                         },
                         y: {
                             beginAtZero: true,
-                            grid: { color: 'rgba(255, 255, 255, 0.1)' },
-                            ticks: { font: { size: 10 } }
+                            grid: { 
+                                color: 'rgba(255, 255, 255, 0.1)'
+                            },
+                            ticks: { 
+                                font: { size: 11 },
+                                color: 'var(--text)',
+                                callback: function(value) {
+                                    return value.toLocaleString();
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'Cantidad',
+                                font: { size: 12, weight: 'bold' },
+                                color: 'var(--text)'
+                            }
                         }
+                    },
+                    animation: {
+                        duration: 1000,
+                        easing: 'easeOutQuart'
                     }
                 }
             });
         }
 
-        // Gráfico 2: Distribución Total de Salidas (Dona 3D)
+        // Gráfico 2: Distribución Total de Salidas (Dona 3D) - OCUPA TODO EL ANCHO
         const ctx2 = document.getElementById('chartDistribucion');
         if (ctx2) {
             const totalSalidasTienda = resultsArr.reduce((sum, r) => sum + Math.abs(r.totalSalidasTienda), 0);
             const totalSalidasClientes = resultsArr.reduce((sum, r) => sum + Math.abs(r.totalSalidasClientes), 0);
-            const totalGeneral = totalSalidasTienda + totalSalidasClientes;
 
             this.chart2 = new Chart(ctx2, {
                 type: 'doughnut',
@@ -608,26 +722,33 @@ class TrazabilidadSystem {
                     datasets: [{
                         data: [totalSalidasTienda, totalSalidasClientes],
                         backgroundColor: [
-                            'rgba(255, 193, 7, 0.8)',
-                            'rgba(156, 39, 176, 0.8)'
+                            'rgba(255, 193, 7, 0.9)',
+                            'rgba(156, 39, 176, 0.9)'
                         ],
                         borderColor: [
                             'rgba(255, 193, 7, 1)',
                             'rgba(156, 39, 176, 1)'
                         ],
-                        borderWidth: 2
+                        borderWidth: 3,
+                        borderRadius: 6,
+                        spacing: 2
                     }]
                 },
                 options: {
                     responsive: true,
-                    maintainAspectRatio: true,
-                    cutout: '60%',
+                    maintainAspectRatio: false,
+                    cutout: '55%',
                     plugins: {
                         legend: {
                             position: 'bottom',
                             labels: {
-                                boxWidth: 12,
-                                font: { size: 11 },
+                                boxWidth: 15,
+                                font: { 
+                                    size: 12,
+                                    weight: 'bold'
+                                },
+                                color: 'var(--text)',
+                                padding: 20,
                                 generateLabels: function(chart) {
                                     const data = chart.data;
                                     if (data.labels.length && data.datasets.length) {
@@ -637,10 +758,10 @@ class TrazabilidadSystem {
                                             const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
                                             
                                             return {
-                                                text: `${label}: ${value} (${percentage}%)`,
+                                                text: `${label}: ${value.toLocaleString()} (${percentage}%)`,
                                                 fillStyle: data.datasets[0].backgroundColor[i],
                                                 strokeStyle: data.datasets[0].borderColor[i],
-                                                lineWidth: 1,
+                                                lineWidth: 2,
                                                 hidden: false,
                                                 index: i
                                             };
@@ -651,16 +772,34 @@ class TrazabilidadSystem {
                             }
                         },
                         tooltip: {
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleFont: { size: 13, weight: 'bold' },
+                            bodyFont: { size: 12 },
+                            padding: 12,
+                            cornerRadius: 8,
                             callbacks: {
                                 label: function(context) {
                                     const label = context.label || '';
                                     const value = context.raw || 0;
                                     const total = context.dataset.data.reduce((a, b) => a + b, 0);
                                     const percentage = Math.round((value / total) * 100);
-                                    return `${label}: ${value} (${percentage}%)`;
+                                    return `${label}: ${value.toLocaleString()} (${percentage}%)`;
                                 }
                             }
+                        },
+                        title: {
+                            display: true,
+                            text: 'Distribución General de Salidas',
+                            font: { size: 16, weight: 'bold' },
+                            color: 'var(--text)',
+                            padding: 20
                         }
+                    },
+                    animation: {
+                        animateScale: true,
+                        animateRotate: true,
+                        duration: 1000,
+                        easing: 'easeOutQuart'
                     }
                 }
             });
