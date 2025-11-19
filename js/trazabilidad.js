@@ -1,4 +1,4 @@
-// js/trazabilidad.js - Sistema de Trazabilidad Adaptado
+// js/trazabilidad.js - Sistema de Trazabilidad Corregido
 class TrazabilidadSystem {
     constructor(container) {
         this.container = container;
@@ -97,15 +97,15 @@ class TrazabilidadSystem {
                             </table>
                         </div>
 
-                        <div class="charts-container" style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 30px;">
+                        <div class="charts-container">
                             <div class="chart-card">
-                                <h6>Total salidas por centro</h6>
+                                <h6>Distribución por Centro</h6>
                                 <div class="chart-wrapper">
                                     <canvas id="chartOutByCentro"></canvas>
                                 </div>
                             </div>
                             <div class="chart-card">
-                                <h6>Total salidas a clientes por material</h6>
+                                <h6>Salidas por Material</h6>
                                 <div class="chart-wrapper">
                                     <canvas id="chartOutByCliente"></canvas>
                                 </div>
@@ -139,6 +139,7 @@ class TrazabilidadSystem {
     }
 
     showReportsMenu() {
+        // CORRECCIÓN: Eliminada la duplicación de opciones
         this.container.innerHTML = `
             <div class="reports-menu">
                 <div class="report-option" data-report="trazabilidad">
@@ -605,7 +606,7 @@ class TrazabilidadSystem {
             return new Date(Math.min(...dates.map(d => d.getTime())));
         }
 
-        // ===== LÓGICA DE ANÁLISIS COMPLETA (de tu versión original) =====
+        // ===== LÓGICA DE ANÁLISIS COMPLETA =====
         function analyzeKey(key) {
             const group = materialMap.get(key);
             if (!group) return null;
@@ -894,55 +895,70 @@ class TrazabilidadSystem {
                 reportBody.appendChild(tr);
             });
 
-            // Charts - MEJORADO: Gráficos más atractivos y responsivos
-            const labels = resultsArr.map(r => r.centro);
-            const data1 = resultsArr.map(r => r.totalSalidasTienda);
-            
+            // CORRECCIÓN: Gráficos de pastel/dona pequeños y controlados
+            const centroData = {};
+            resultsArr.forEach(r => {
+                centroData[r.centro] = (centroData[r.centro] || 0) + r.totalSalidasTienda;
+            });
+
+            const materialData = {};
+            resultsArr.forEach(r => {
+                materialData[r.material] = (materialData[r.material] || 0) + r.totalSalidasClientes;
+            });
+
+            // Destruir gráficos anteriores
             if (chart1) chart1.destroy();
+            if (chart2) chart2.destroy();
+
+            // Gráfico 1: Distribución por Centro (Dona)
             const ctx1 = document.getElementById('chartOutByCentro');
             if (ctx1) {
                 chart1 = new Chart(ctx1, {
-                    type: 'bar',
+                    type: 'doughnut',
                     data: {
-                        labels: labels,
+                        labels: Object.keys(centroData),
                         datasets: [{
-                            label: 'Total salidas por tienda',
-                            data: data1,
-                            backgroundColor: 'rgba(33, 150, 243, 0.8)',
-                            borderColor: 'rgba(33, 150, 243, 1)',
-                            borderWidth: 1,
-                            borderRadius: 4
+                            data: Object.values(centroData),
+                            backgroundColor: [
+                                'rgba(33, 150, 243, 0.8)',
+                                'rgba(76, 175, 80, 0.8)',
+                                'rgba(255, 193, 7, 0.8)',
+                                'rgba(156, 39, 176, 0.8)',
+                                'rgba(244, 67, 54, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(33, 150, 243, 1)',
+                                'rgba(76, 175, 80, 1)',
+                                'rgba(255, 193, 7, 1)',
+                                'rgba(156, 39, 176, 1)',
+                                'rgba(244, 67, 54, 1)'
+                            ],
+                            borderWidth: 1
                         }]
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        cutout: '60%',
                         plugins: {
                             legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                                titleFont: { size: 12 },
-                                bodyFont: { size: 11 }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: 'rgba(255, 255, 255, 0.7)'
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    font: {
+                                        size: 10
+                                    }
                                 }
                             },
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    color: 'rgba(255, 255, 255, 0.7)'
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
                                 }
                             }
                         }
@@ -950,56 +966,59 @@ class TrazabilidadSystem {
                 });
             }
 
-            const labels2 = resultsArr.map(r => `${r.material} (${r.centro})`);
-            const data2 = resultsArr.map(r => r.totalSalidasClientes);
-            
-            if (chart2) chart2.destroy();
+            // Gráfico 2: Salidas por Material (Dona)
             const ctx2 = document.getElementById('chartOutByCliente');
             if (ctx2) {
                 chart2 = new Chart(ctx2, {
-                    type: 'bar',
+                    type: 'doughnut',
                     data: {
-                        labels: labels2,
+                        labels: Object.keys(materialData),
                         datasets: [{
-                            label: 'Total salidas a clientes',
-                            data: data2,
-                            backgroundColor: 'rgba(76, 175, 80, 0.8)',
-                            borderColor: 'rgba(76, 175, 80, 1)',
-                            borderWidth: 1,
-                            borderRadius: 4
+                            data: Object.values(materialData),
+                            backgroundColor: [
+                                'rgba(33, 150, 243, 0.8)',
+                                'rgba(76, 175, 80, 0.8)',
+                                'rgba(255, 193, 7, 0.8)',
+                                'rgba(156, 39, 176, 0.8)',
+                                'rgba(244, 67, 54, 0.8)',
+                                'rgba(0, 188, 212, 0.8)',
+                                'rgba(139, 195, 74, 0.8)'
+                            ],
+                            borderColor: [
+                                'rgba(33, 150, 243, 1)',
+                                'rgba(76, 175, 80, 1)',
+                                'rgba(255, 193, 7, 1)',
+                                'rgba(156, 39, 176, 1)',
+                                'rgba(244, 67, 54, 1)',
+                                'rgba(0, 188, 212, 1)',
+                                'rgba(139, 195, 74, 1)'
+                            ],
+                            borderWidth: 1
                         }]
                     },
                     options: {
                         responsive: true,
-                        maintainAspectRatio: false,
+                        maintainAspectRatio: true,
+                        cutout: '60%',
                         plugins: {
                             legend: {
-                                display: false
-                            },
-                            tooltip: {
-                                backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                                titleFont: { size: 12 },
-                                bodyFont: { size: 11 }
-                            }
-                        },
-                        scales: {
-                            y: {
-                                beginAtZero: true,
-                                grid: {
-                                    color: 'rgba(255, 255, 255, 0.1)'
-                                },
-                                ticks: {
-                                    color: 'rgba(255, 255, 255, 0.7)'
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 12,
+                                    font: {
+                                        size: 10
+                                    }
                                 }
                             },
-                            x: {
-                                grid: {
-                                    display: false
-                                },
-                                ticks: {
-                                    color: 'rgba(255, 255, 255, 0.7)',
-                                    maxRotation: 45,
-                                    minRotation: 45
+                            tooltip: {
+                                callbacks: {
+                                    label: function(context) {
+                                        const label = context.label || '';
+                                        const value = context.raw || 0;
+                                        const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                        const percentage = Math.round((value / total) * 100);
+                                        return `${label}: ${value} (${percentage}%)`;
+                                    }
                                 }
                             }
                         }
