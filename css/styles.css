@@ -2073,6 +2073,93 @@ body {
     .charts-container {
         grid-template-columns: 1fr;
     }
+    /* Estilos para gráficos pequeños y controlados */
+.charts-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 20px;
+    margin-top: 30px;
+}
+
+.chart-card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 15px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.chart-card h6 {
+    margin: 0 0 15px 0;
+    color: var(--text);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.chart-wrapper {
+    position: relative;
+    height: 200px; /* Altura fija y controlada */
+    width: 100%;
+    margin: 0 auto;
+}
+
+/* Asegurar que los canvas no se agranden */
+.chart-wrapper canvas {
+    max-width: 100% !important;
+    max-height: 180px !important;
+}
+
+@media (max-width: 768px) {
+    .charts-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .chart-wrapper {
+        height: 180px;
+    }
+}
+
+/* Estilos para el menú de reportes sin duplicación */
+.reports-menu {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+    margin-top: 20px;
+}
+
+.report-option {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 25px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.report-option:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    border-color: var(--primary);
+}
+
+.report-icon {
+    font-size: 2.5rem;
+    margin-bottom: 15px;
+}
+
+.report-option h3 {
+    margin: 0 0 10px 0;
+    color: var(--text);
+    font-size: 1.2rem;
+}
+
+.report-option p {
+    margin: 0;
+    color: var(--muted);
+    font-size: 0.9rem;
+}
     
     .chart-wrapper {
         height: 200px;
