@@ -436,24 +436,30 @@ class TrazabilidadCore {
         // IRREGULARIDADES - SOLO LAS 5 REGLAS ESPECÍFICAS
         const irregularidades = [];
 
-       // REGLA 1: 673 sin 101 (solo para centros 1000/3000)
+     // REGLA 1 CORREGIDA: 673 sin 101 (solo para centros 1000/3000)
 if (group.centro === '1000/3000') {
     const exits673 = filtered.filter(r => 
         String(r['Clase de movimiento']) === '673' && 
-        Number(r['Ctd.en UM entrada']) < 0
+        String(r['Centro']||'').trim() === '3000' && // ← Solo 673 en centro 3000
+        Number(r['Ctd.en UM entrada']) < 0 &&
+        !pairedIgnore.has(filtered.indexOf(r))
     );
     
     exits673.forEach(ex => {
         const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
         const user = this.normalizeUser(ex['Nombre del usuario']);
-        const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
+        const fecha = ex['Fe.contabilización'];
         const fechaFormateada = this.formatDate(fecha);
         
+        // BUSCAR 101 CORRESPONDIENTE en CENTRO 1000
+        const fechaEx = this.startOfDay(fecha);
         const found101 = filtered.find(r => 
             String(r['Clase de movimiento']) === this.entry101 && 
+            String(r['Centro']||'').trim() === '1000' && // ← Buscar en centro 1000
             Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty && 
             this.normalizeUser(r['Nombre del usuario']) === user &&
-            !pairedIgnore.has(filtered.indexOf(r))
+            !pairedIgnore.has(filtered.indexOf(r)) &&
+            this.startOfDay(r['Fe.contabilización']) <= fechaEx // 101 debe ser anterior o mismo día
         );
         
         if (!found101) {
@@ -461,12 +467,11 @@ if (group.centro === '1000/3000') {
                 tipo:'673_sin_101', 
                 usuario: ex['Nombre del usuario']||'', 
                 fecha: fechaFormateada,
-                descripcion:`Salida 673 de ${qty} sin entrada 101 correspondiente (mismo usuario: ${user}) - Fecha: ${fechaFormateada}`
+                descripcion:`Salida 673 en centro 3000 de ${qty} sin entrada 101 correspondiente en centro 1000 (mismo usuario: ${user}) - Fecha: ${fechaFormateada}`
             });
         }
     });
 }
-
 // REGLA 2 CORREGIDA: 101 en centro 1000 sin 673 en centro 3000
 if (group.centro === '1000/3000') {
     const entries101in100 = filtered.filter(r => 
