@@ -52,8 +52,8 @@ class TrazabilidadCore {
         // Movimientos que NO afectan inventario físico
         this.nonInventoryMovements = new Set(['321', '322', '343', '344']);
 
-        // Usuarios especiales
-        this.usuariosEspeciales = new Set(['avitora', 'lgarcia', 'ylara']);
+        // Usuarios especiales - ACTUALIZADO CON KSOTELDO Y GONZALEZM
+        this.usuariosEspeciales = new Set(['avitora', 'lgarcia', 'ylara', 'ksoteldo', 'gonzalezm']);
     }
 
     // Helpers (se mantienen igual)
@@ -628,7 +628,7 @@ class TrazabilidadCore {
         // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS
         const irregularidades = [];
 
-        // REGLA 1 CORREGIDA: 643 sin 101 (solo para centros 1000/3000) - CON EXCEPCIONES DE USUARIOS
+        // REGLA 1 CORREGIDA: 643 sin 101 (solo para centros 1000/3000) - CON EXCEPCIONES DE USUARIOS ACTUALIZADAS
         if (group.centro === '1000/3000') {
             const exits643 = filtered.filter(r => 
                 String(r['Clase de movimiento']) === '643' && 
@@ -641,8 +641,8 @@ class TrazabilidadCore {
                 const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
                 const fechaFormateada = this.formatDate(fecha);
                 
-                // EXCEPCIÓN: Si el usuario es AVITORA o LGARCIA, no es irregularidad
-                if (user === 'avitora' || user === 'lgarcia') {
+                // EXCEPCIÓN ACTUALIZADA: Si el usuario es AVITORA, LGARCIA, KSOTELDO o GONZALEZM, no es irregularidad
+                if (user === 'avitora' || user === 'lgarcia' || user === 'ksoteldo' || user === 'gonzalezm') {
                     return; // No es irregularidad para estos usuarios
                 }
                 
