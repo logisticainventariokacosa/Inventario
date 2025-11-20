@@ -641,7 +641,8 @@ class TrazabilidadCore {
 
         // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS CLARAS
         const irregularidades = [];
-// REGLA 1: 643 sin 101 (solo para centros 1000/3000) - CORREGIDA
+
+        // REGLA 1: 643 sin 101 (solo para centros 1000/3000) - CORREGIDA
 if (group.centro === '1000/3000') {
     const exits643 = filtered.filter(r => 
         String(r['Clase de movimiento']) === '643' && 
@@ -678,7 +679,7 @@ if (group.centro === '1000/3000') {
                 tipo:'643_sin_101_o_673', 
                 usuario: ex['Nombre del usuario']||'', 
                 fecha: this.formatDate(fecha),
-                descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente del MISMO USUARIO (${user643}) - Misma cantidad, mismo día - Fecha: ${fechaFormateada}`
+                descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente del MISMO USUARIO (${user643}) - Misma cantidad, mismo día`
             });
         }
     });
