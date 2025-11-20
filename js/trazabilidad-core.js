@@ -423,6 +423,43 @@ class TrazabilidadCore {
         if (!group) return null;
         const rows = group.rows.slice();
 
+        // VERIFICACIÓN INICIAL CRÍTICA
+        console.log('=== VERIFICACIÓN INICIAL ===');
+        console.log('Material:', group.material);
+        console.log('Centro:', group.centro);
+        console.log('Total filas filtered:', rows.length);
+
+        // CORRECCIÓN CRÍTICA: Asegurar que todas las fechas estén bien parseadas
+        rows.forEach(r => {
+            // Si la fecha no es un objeto Date válido, volver a parsear
+            if (!r['Fe.contabilización'] || !(r['Fe.contabilización'] instanceof Date)) {
+                r['Fe.contabilización'] = this.parseDate(r['Fe.contabilización_raw'] || r['Fe.contabilización']);
+            }
+            
+            // Asegurar que _dateKey esté correcto
+            if (!r._dateKey) {
+                r._dateKey = this.getDateKeyFromRow(r);
+            }
+            
+            // Asegurar que _userNorm esté correcto
+            if (!r._userNorm) {
+                r._userNorm = this.normalizeUser(r['Nombre del usuario']);
+            }
+        });
+
+        // Mostrar todas las filas para debugging
+        rows.forEach((r, idx) => {
+            console.log(`Fila ${idx}:`, {
+                movimiento: r['Clase de movimiento'],
+                cantidad: r['Ctd.en UM entrada'],
+                usuario: r['Nombre del usuario'],
+                usuarioNorm: this.normalizeUser(r['Nombre del usuario']),
+                fecha: r['Fe.contabilización'],
+                fechaKey: r._dateKey,
+                centro: r['Centro']
+            });
+        });
+
         // Filtrar filas problemáticas y movimientos que no afectan inventario
         const filtered = rows.filter(r => {
             const movement = String(r['Clase de movimiento']);
@@ -640,116 +677,175 @@ class TrazabilidadCore {
             });
         }
 
-        // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS CLARAS
+        // IRREGULARIDADES - CORREGIDAS CON DIAGNÓSTICO
         const irregularidades = [];
 
-      // REGLA 1 CORREGIDA: 643 sin 101 o 673 - REGLA CLARA Y PRECISA
-if (group.centro === '1000/3000') {
-    const exits643 = filtered.filter(r => 
-        String(r['Clase de movimiento']) === '643' && 
-        Number(r['Ctd.en UM entrada']) < 0
-    );
-    
-    exits643.forEach(ex => {
-        const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
-        const user = this.normalizeUser(ex['Nombre del usuario']);
-        const fecha = ex['Fe.contabilización'];
-        if (!fecha) return;
-        
-        const fechaFormateada = this.formatDate(fecha);
-        
-        // EXCEPCIÓN: Si el usuario es AVITORA, LGARCIA, KSOTELDO o GONZALEZM, no es irregularidad
-        if (this.usuariosEspeciales643.has(user)) {
-            return; // No es irregularidad para estos usuarios
-        }
-        
-        // Para otros usuarios, buscar 101 o 673 positivo del mismo usuario, misma cantidad y mismo día en CUALQUIER centro
-        const fechaEx = this.startOfDay(fecha);
-        const movimientoCorrespondiente = filtered.find(r => {
-            if (pairedIgnore.has(filtered.indexOf(r))) return false;
+        // REGLA 1 CORREGIDA CON DIAGNÓSTICO: 643 sin 101 o 673
+        if (group.centro === '1000/3000') {
+            const exits643 = filtered.filter(r => 
+                String(r['Clase de movimiento']) === '643' && 
+                Number(r['Ctd.en UM entrada']) < 0
+            );
             
-            const movimiento = String(r['Clase de movimiento']);
-            const cantidadRaw = Number(r['Ctd.en UM entrada'] || 0);
-            const cantidadAbs = Math.abs(cantidadRaw);
-            const usuario = this.normalizeUser(r['Nombre del usuario']);
-            const fechaR = r['Fe.contabilización'];
-            if (!fechaR) return false;
-            
-            const fechaRDay = this.startOfDay(fechaR);
-            
-            // CORRECCIÓN: Buscar 101 o 673 POSITIVOS del mismo usuario, misma cantidad y mismo día en CUALQUIER centro
-            return (movimiento === this.entry101 || movimiento === '673') && 
-                   cantidadRaw > 0 && // Debe ser positivo (entrada)
-                   cantidadAbs === qty && // Misma cantidad en valor absoluto
-                   usuario === user && // Mismo usuario
-                   fechaRDay.getTime() === fechaEx.getTime(); // Mismo día
-            // NOTA: No importa el centro, puede ser en 1000 o 3000
-        });
-        
-        if (!movimientoCorrespondiente) {
-            irregularidades.push({ 
-                tipo:'643_sin_101_o_673', 
-                usuario: ex['Nombre del usuario']||'', 
-                fecha: fechaFormateada,
-                descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente (mismo usuario: ${user}, mismo día) - Fecha: ${fechaFormateada}`
+            exits643.forEach(ex => {
+                const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
+                const user = this.normalizeUser(ex['Nombre del usuario']);
+                const fecha = ex['Fe.contabilización'];
+                if (!fecha) return;
+                
+                const fechaFormateada = this.formatDate(fecha);
+                
+                // EXCEPCIÓN: Si el usuario es AVITORA, LGARCIA, KSOTELDO o GONZALEZM, no es irregularidad
+                if (this.usuariosEspeciales643.has(user)) {
+                    return; // No es irregularidad para estos usuarios
+                }
+                
+                // DIAGNÓSTICO: Mostrar información del 643 que se está analizando
+                if (user === 'jcastro' && fechaFormateada === '30/01/2025') {
+                    console.log('=== DIAGNÓSTICO REGLA 1 - JCASTRO 30/01/2025 ===');
+                    console.log('Movimiento 643 encontrado:', {
+                        usuario: user,
+                        cantidad: qty,
+                        fecha: fechaFormateada,
+                        centro: ex['Centro'],
+                        fechaObjeto: fecha,
+                        fechaKey: ex._dateKey
+                    });
+                }
+                
+                // Para otros usuarios, buscar 101 o 673 positivo del mismo usuario, misma cantidad y mismo día en CUALQUIER centro
+                const fechaEx = this.startOfDay(fecha);
+                const movimientoCorrespondiente = filtered.find(r => {
+                    if (pairedIgnore.has(filtered.indexOf(r))) return false;
+                    
+                    const movimiento = String(r['Clase de movimiento']);
+                    const cantidadRaw = Number(r['Ctd.en UM entrada'] || 0);
+                    const cantidadAbs = Math.abs(cantidadRaw);
+                    const usuario = this.normalizeUser(r['Nombre del usuario']);
+                    const fechaR = r['Fe.contabilización'];
+                    if (!fechaR) return false;
+                    
+                    const fechaRDay = this.startOfDay(fechaR);
+                    
+                    // DIAGNÓSTICO: Mostrar candidatos potenciales para JCASTRO
+                    if (user === 'jcastro' && fechaFormateada === '30/01/2025' && 
+                        (movimiento === this.entry101 || movimiento === '673') && 
+                        cantidadRaw > 0 && usuario === user) {
+                        console.log('Candidato potencial encontrado:', {
+                            movimiento,
+                            cantidadRaw,
+                            cantidadAbs,
+                            usuario,
+                            fechaR: this.formatDate(fechaR),
+                            fechaRDay: fechaRDay.getTime(),
+                            fechaEx: fechaEx.getTime(),
+                            mismoDia: fechaRDay.getTime() === fechaEx.getTime(),
+                            mismaCantidad: cantidadAbs === qty,
+                            centro: r['Centro']
+                        });
+                    }
+                    
+                    // CORRECCIÓN: Buscar 101 o 673 POSITIVOS del mismo usuario, misma cantidad y mismo día en CUALQUIER centro
+                    return (movimiento === this.entry101 || movimiento === '673') && 
+                           cantidadRaw > 0 && // Debe ser positivo (entrada)
+                           cantidadAbs === qty && // Misma cantidad en valor absoluto
+                           usuario === user && // Mismo usuario
+                           fechaRDay.getTime() === fechaEx.getTime(); // Mismo día
+                });
+                
+                // DIAGNÓSTICO: Resultado final
+                if (user === 'jcastro' && fechaFormateada === '30/01/2025') {
+                    console.log('¿Se encontró movimiento correspondiente?', movimientoCorrespondiente ? 'SÍ' : 'NO');
+                    console.log('========================================');
+                }
+                
+                if (!movimientoCorrespondiente) {
+                    irregularidades.push({ 
+                        tipo:'643_sin_101_o_673', 
+                        usuario: ex['Nombre del usuario']||'', 
+                        fecha: fechaFormateada,
+                        descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente (mismo usuario: ${user}, mismo día) - Fecha: ${fechaFormateada}`
+                    });
+                    
+                    // DIAGNÓSTICO: Si no encuentra el movimiento, mostrar por qué
+                    if (user === 'jcastro' && fechaFormateada === '30/01/2025') {
+                        console.log('=== POR QUÉ NO ENCONTRÓ EL MOVIMIENTO 101 ===');
+                        
+                        // Mostrar todos los movimientos 101/673 de JCASTRO ese día
+                        const todosMovimientosJcastro = filtered.filter(r => {
+                            const usuarioR = this.normalizeUser(r['Nombre del usuario']);
+                            const fechaR = r['Fe.contabilización'];
+                            if (!fechaR) return false;
+                            const fechaRDay = this.startOfDay(fechaR);
+                            return usuarioR === 'jcastro' && fechaRDay.getTime() === fechaEx.getTime();
+                        });
+                        
+                        console.log('Todos los movimientos de JCASTRO ese día:', todosMovimientosJcastro.map(m => ({
+                            movimiento: m['Clase de movimiento'],
+                            cantidad: m['Ctd.en UM entrada'],
+                            fecha: this.formatDate(m['Fe.contabilización']),
+                            centro: m['Centro'],
+                            paired: pairedIgnore.has(filtered.indexOf(m))
+                        })));
+                    }
+                }
             });
         }
-    });
-}
-// REGLA 2 ACTUALIZADA: 101 en centro 1000 sin 643 en centro 3000 (solo para centros 1000/3000, excepto usuario YLARA)
-if (group.centro === '1000/3000') {
-    const entries101in1000 = filtered.filter(r => 
-        String(r['Clase de movimiento']) === this.entry101 && 
-        String(r['Centro']).trim() === '1000' && // SOLO centro 1000
-        Number(r['Ctd.en UM entrada']) > 0 &&
-        !pairedIgnore.has(filtered.indexOf(r))
-    );
-    
-    entries101in1000.forEach(en => {
-        const enUserNorm = this.normalizeUser(en['Nombre del usuario']||'');
-        if (this.usuariosEspeciales101.has(enUserNorm)) return; // EXCEPCIÓN para usuario YLARA
-        
-        const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-        const user = enUserNorm;
-        const fecha = en['Fe.contabilización'];
-        if (!fecha) return;
-        
-        const fechaFormateada = this.formatDate(fecha);
-        
-        // BUSCAR 643 CORRESPONDIENTE en CENTRO 3000 - NEGATIVO
-        const fechaEn = this.startOfDay(fecha);
-        const found643 = filtered.find(r => {
-            if (pairedIgnore.has(filtered.indexOf(r))) return false;
+
+        // REGLA 2 ACTUALIZADA: 101 en centro 1000 sin 643 en centro 3000 (solo para centros 1000/3000, excepto usuario YLARA)
+        if (group.centro === '1000/3000') {
+            const entries101in1000 = filtered.filter(r => 
+                String(r['Clase de movimiento']) === this.entry101 && 
+                String(r['Centro']).trim() === '1000' && // SOLO centro 1000
+                Number(r['Ctd.en UM entrada']) > 0 &&
+                !pairedIgnore.has(filtered.indexOf(r))
+            );
             
-            const movimiento = String(r['Clase de movimiento']);
-            const cantidadRaw = Number(r['Ctd.en UM entrada'] || 0);
-            const cantidadAbs = Math.abs(cantidadRaw);
-            const usuario = this.normalizeUser(r['Nombre del usuario']);
-            const centro = String(r['Centro']||'').trim();
-            const fechaR = r['Fe.contabilización'];
-            if (!fechaR) return false;
-            
-            const fechaRDay = this.startOfDay(fechaR);
-            
-            // BUSCAR ESPECÍFICAMENTE 643 NEGATIVO en CENTRO 3000
-            return movimiento === '643' && 
-                   cantidadRaw < 0 && // Debe ser negativo (salida)
-                   cantidadAbs === qty && // Misma cantidad
-                   usuario === user && // Mismo usuario
-                   centro === '3000' && // ← CLAVE: Buscar en centro 3000 específicamente
-                   fechaRDay.getTime() === fechaEn.getTime(); // Mismo día
-        });
-        
-        if (!found643) {
-            irregularidades.push({ 
-                tipo:'101_en_1000_sin_643', 
-                usuario: en['Nombre del usuario']||'', 
-                fecha: fechaFormateada,
-                descripcion:`Entrada 101 en centro 1000 de ${qty} sin salida 643 correspondiente en centro 3000 - Fecha: ${fechaFormateada}`
+            entries101in1000.forEach(en => {
+                const enUserNorm = this.normalizeUser(en['Nombre del usuario']||'');
+                if (this.usuariosEspeciales101.has(enUserNorm)) return; // EXCEPCIÓN para usuario YLARA
+                
+                const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
+                const user = enUserNorm;
+                const fecha = en['Fe.contabilización'];
+                if (!fecha) return;
+                
+                const fechaFormateada = this.formatDate(fecha);
+                
+                // BUSCAR 643 CORRESPONDIENTE en CENTRO 3000 - NEGATIVO
+                const fechaEn = this.startOfDay(fecha);
+                const found643 = filtered.find(r => {
+                    if (pairedIgnore.has(filtered.indexOf(r))) return false;
+                    
+                    const movimiento = String(r['Clase de movimiento']);
+                    const cantidadRaw = Number(r['Ctd.en UM entrada'] || 0);
+                    const cantidadAbs = Math.abs(cantidadRaw);
+                    const usuario = this.normalizeUser(r['Nombre del usuario']);
+                    const centro = String(r['Centro']||'').trim();
+                    const fechaR = r['Fe.contabilización'];
+                    if (!fechaR) return false;
+                    
+                    const fechaRDay = this.startOfDay(fechaR);
+                    
+                    // BUSCAR ESPECÍFICAMENTE 643 NEGATIVO en CENTRO 3000
+                    return movimiento === '643' && 
+                           cantidadRaw < 0 && // Debe ser negativo (salida)
+                           cantidadAbs === qty && // Misma cantidad
+                           usuario === user && // Mismo usuario
+                           centro === '3000' && // ← CLAVE: Buscar en centro 3000 específicamente
+                           fechaRDay.getTime() === fechaEn.getTime(); // Mismo día
+                });
+                
+                if (!found643) {
+                    irregularidades.push({ 
+                        tipo:'101_en_1000_sin_643', 
+                        usuario: en['Nombre del usuario']||'', 
+                        fecha: fechaFormateada,
+                        descripcion:`Entrada 101 en centro 1000 de ${qty} sin salida 643 correspondiente en centro 3000 - Fecha: ${fechaFormateada}`
+                    });
+                }
             });
         }
-    });
-}
 
         // NUEVA REGLA: 673 positivo sin 643 o 641 negativo (mismo usuario, misma cantidad, mismo día)
         if (group.centro === '1000/3000') {
@@ -767,7 +863,7 @@ if (group.centro === '1000/3000') {
                 const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
                 const user = enUserNorm;
                 const fecha = en['Fe.contabilización'];
-                if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
+                if (!fecha) return;
                 
                 const fechaFormateada = this.formatDate(fecha);
                 
@@ -777,7 +873,8 @@ if (group.centro === '1000/3000') {
                     if (pairedIgnore.has(filtered.indexOf(r))) return false;
                     
                     const movimiento = String(r['Clase de movimiento']);
-                    const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+                    const cantidadRaw = Number(r['Ctd.en UM entrada'] || 0);
+                    const cantidadAbs = Math.abs(cantidadRaw);
                     const usuario = this.normalizeUser(r['Nombre del usuario']);
                     const fechaR = r['Fe.contabilización'];
                     if (!fechaR) return false;
@@ -786,8 +883,8 @@ if (group.centro === '1000/3000') {
                     
                     // Buscar 643 o 641 NEGATIVO del mismo usuario, misma cantidad y mismo día
                     return (movimiento === '643' || movimiento === '641') && 
-                           cantidad < 0 && // Debe ser negativo
-                           Math.abs(cantidad) === qty && // Misma cantidad en valor absoluto
+                           cantidadRaw < 0 && // Debe ser negativo
+                           cantidadAbs === qty && // Misma cantidad en valor absoluto
                            usuario === user && // Mismo usuario
                            fechaRDay.getTime() === fechaEn.getTime(); // Mismo día
                 });
@@ -812,7 +909,7 @@ if (group.centro === '1000/3000') {
         entries501.forEach(en => {
             const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
             const fecha = en['Fe.contabilización'];
-            if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
+            if (!fecha) return;
             
             const fechaFormateada = this.formatDate(fecha);
             
@@ -841,7 +938,7 @@ if (group.centro === '1000/3000') {
         entries910.forEach(en => {
             const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
             const fecha = en['Fe.contabilización'];
-            if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
+            if (!fecha) return;
             
             const fechaFormateada = this.formatDate(fecha);
             
@@ -871,7 +968,7 @@ if (group.centro === '1000/3000') {
             const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
             const centro = String(en['Centro']||'').trim();
             const fecha = en['Fe.contabilización'];
-            if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
+            if (!fecha) return;
             
             const fechaFormateada = this.formatDate(fecha);
             
