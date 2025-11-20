@@ -53,7 +53,8 @@ class TrazabilidadCore {
         this.nonInventoryMovements = new Set(['321', '322', '343', '344']);
 
         // Usuarios especiales - ACTUALIZADO CON KSOTELDO Y GONZALEZM
-        this.usuariosEspeciales = new Set(['avitora', 'lgarcia', 'ylara', 'ksoteldo', 'gonzalezm']);
+        this.usuariosEspeciales643 = new Set(['avitora', 'lgarcia', 'ksoteldo', 'gonzalezm']);
+        this.usuariosEspeciales101 = new Set(['ylara']);
     }
 
     // Helpers (se mantienen igual)
@@ -639,10 +640,10 @@ class TrazabilidadCore {
             });
         }
 
-        // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS Y CORRECCIÓN DE FECHAS
+        // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS CLARAS
         const irregularidades = [];
 
-        // REGLA 1 CORREGIDA: 643 sin 101 (solo para centros 1000/3000) - CON EXCEPCIONES DE USUARIOS ACTUALIZADAS
+        // REGLA 1 CORREGIDA: 643 sin 101 o 673 - REGLA CLARA
         if (group.centro === '1000/3000') {
             const exits643 = filtered.filter(r => 
                 String(r['Clase de movimiento']) === '643' && 
@@ -659,12 +660,12 @@ class TrazabilidadCore {
                 
                 const fechaFormateada = this.formatDate(fecha);
                 
-                // EXCEPCIÓN ACTUALIZADA: Si el usuario es AVITORA, LGARCIA, KSOTELDO o GONZALEZM, no es irregularidad
-                if (user === 'avitora' || user === 'lgarcia' || user === 'ksoteldo' || user === 'gonzalezm') {
+                // EXCEPCIÓN: Si el usuario es AVITORA, LGARCIA, KSOTELDO o GONZALEZM, no es irregularidad
+                if (this.usuariosEspeciales643.has(user)) {
                     return; // No es irregularidad para estos usuarios
                 }
                 
-                // Para otros usuarios, buscar 101 o 673 positivo del mismo usuario y mismo día
+                // Para otros usuarios, buscar 101 o 673 positivo del mismo usuario, misma cantidad y mismo día en CUALQUIER centro
                 const fechaEx = this.startOfDay(fecha);
                 const movimientoCorrespondiente = filtered.find(r => {
                     if (pairedIgnore.has(filtered.indexOf(r))) return false;
@@ -677,12 +678,13 @@ class TrazabilidadCore {
                     
                     const fechaRDay = this.startOfDay(fechaR);
                     
-                    // Buscar 101 o 673 POSITIVOS del mismo usuario y mismo día
+                    // Buscar 101 o 673 POSITIVOS del mismo usuario, misma cantidad y mismo día en CUALQUIER centro
                     return (movimiento === this.entry101 || movimiento === '673') && 
                            cantidad > 0 && // Debe ser positivo
                            Math.abs(cantidad) === qty && // Misma cantidad
                            usuario === user && // Mismo usuario
                            fechaRDay.getTime() === fechaEx.getTime(); // Mismo día
+                    // NOTA: No importa el centro, puede ser en 1000 o 3000
                 });
                 
                 if (!movimientoCorrespondiente) {
@@ -697,7 +699,6 @@ class TrazabilidadCore {
         }
 
         // REGLA 2 ACTUALIZADA: 101 en centro 1000 sin 643 en centro 3000 (solo para centros 1000/3000, excepto usuario YLARA)
-        // NOTA: En centro 3000 los 101 pueden estar solos
         if (group.centro === '1000/3000') {
             const entries101in100 = filtered.filter(r => 
                 String(r['Clase de movimiento']) === this.entry101 && 
@@ -708,7 +709,7 @@ class TrazabilidadCore {
             
             entries101in100.forEach(en => {
                 const enUserNorm = this.normalizeUser(en['Nombre del usuario']||'');
-                if (enUserNorm === 'ylara') return; // EXCEPCIÓN para usuario YLARA
+                if (this.usuariosEspeciales101.has(enUserNorm)) return; // EXCEPCIÓN para usuario YLARA
                 
                 const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
                 const user = enUserNorm;
@@ -736,7 +737,7 @@ class TrazabilidadCore {
                            cantidad === qty &&
                            usuario === user &&
                            centro === '3000' && // ← CLAVE: Buscar en centro 3000
-                           fechaRDay >= fechaEn; // 643 debe ser el mismo día o posterior
+                           fechaRDay.getTime() === fechaEn.getTime(); // Mismo día
                 });
                 
                 if (!found643) {
@@ -761,7 +762,7 @@ class TrazabilidadCore {
             entries673Positivo.forEach(en => {
                 const enUserNorm = this.normalizeUser(en['Nombre del usuario']||'');
                 // EXCEPCIÓN para usuario YLARA
-                if (enUserNorm === 'ylara') return;
+                if (this.usuariosEspeciales101.has(enUserNorm)) return;
                 
                 const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
                 const user = enUserNorm;
