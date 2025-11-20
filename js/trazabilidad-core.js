@@ -52,10 +52,9 @@ class TrazabilidadCore {
         // Movimientos que NO afectan inventario físico
         this.nonInventoryMovements = new Set(['321', '322', '343', '344']);
 
-        // Usuarios especiales - ACTUALIZADO CON KSOTELDO Y GONZALEZM
-        this.usuariosEspeciales643 = new Set(['avitora', 'lgarcia', 'ksoteldo', 'gonzalezm']);
+        // Usuarios especiales - ACTUALIZADO
+        this.usuariosEspeciales643 = new Set(['avitora', 'lgarcia', 'ksoteldo', 'gonzalezm', 'gcontreras', 'cipolito']);
         this.usuariosEspeciales101 = new Set(['ylara']);
-    }
 
     // Helpers (se mantienen igual)
     parseDate(v) {
@@ -642,8 +641,7 @@ class TrazabilidadCore {
 
         // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS CLARAS
         const irregularidades = [];
-
-   // REGLA 1: 643 sin 101 (solo para centros 1000/3000) - CON DEBUGGING
+// REGLA 1: 643 sin 101 (solo para centros 1000/3000) - CORREGIDA
 if (group.centro === '1000/3000') {
     const exits643 = filtered.filter(r => 
         String(r['Clase de movimiento']) === '643' && 
@@ -652,28 +650,26 @@ if (group.centro === '1000/3000') {
     
     exits643.forEach(ex => {
         const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
-        const user = this.normalizeUser(ex['Nombre del usuario']);
+        const user643 = this.normalizeUser(ex['Nombre del usuario']);
         const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
         
-        // DEBUG: Verificar usuario normalizado
-        console.log('Usuario normalizado:', user, 'Usuarios especiales:', Array.from(this.usuariosEspeciales643));
-        
-        // EXCLUIR USUARIOS ESPECIALES: gonzalezm, avitora, lgarcia, ksoteldo
-        if (this.usuariosEspeciales643.has(user)) {
-            console.log('Usuario especial excluido:', user);
+        // EXCLUIR USUARIOS ESPECIALES: AVITORA, GONZALEZM, KSOTELDO, LGARCIA, GCONTRERAS, CIPOLITO
+        if (this.usuariosEspeciales643.has(user643)) {
             return; // Saltar esta iteración para usuarios especiales
         }
         
-        // Buscar 101 O 673 como movimiento equivalente
+        // Buscar 101 O 673 del MISMO USUARIO, MISMO DÍA y MISMA CANTIDAD
         const found101or673 = filtered.find(r => {
             const movimiento = String(r['Clase de movimiento']);
             const cantidad = Math.abs(Number(r['Ctd.en UM entrada']||0));
             const usuario = this.normalizeUser(r['Nombre del usuario']);
+            const fechaR = r._dateKey || this.getDateKeyFromRow(r);
             
-            // Considerar 101 O 673 como movimientos válidos
+            // Considerar 101 O 673 como movimientos válidos - MISMO USUARIO
             return (movimiento === this.entry101 || movimiento === '673') && 
                    cantidad === qty && 
-                   usuario === user &&
+                   usuario === user643 && // MISMO USUARIO
+                   fechaR === fecha && // MISMO DÍA
                    !pairedIgnore.has(filtered.indexOf(r))
         });
         
@@ -682,12 +678,11 @@ if (group.centro === '1000/3000') {
                 tipo:'643_sin_101_o_673', 
                 usuario: ex['Nombre del usuario']||'', 
                 fecha: this.formatDate(fecha),
-                descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente (mismo usuario: ${user})`
+                descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente del MISMO USUARIO (${user643}) - Misma cantidad, mismo día`
             });
         }
     });
 }
-
 
         // REGLA 2 ACTUALIZADA: 101 en centro 1000 sin 643 en centro 3000 (solo para centros 1000/3000, excepto usuario YLARA)
         if (group.centro === '1000/3000') {
