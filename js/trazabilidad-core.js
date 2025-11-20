@@ -443,6 +443,24 @@ class TrazabilidadCore {
             });
         });
 
+        // CÁLCULO CORREGIDO DEL STOCK ACTUAL
+        const stockInicial = Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0;
+        
+        // Sumar solo movimientos positivos (entradas)
+        const totalEntradas = filtered.reduce((sum, r) => {
+            const qty = Number(r['Ctd.en UM entrada'] || 0);
+            return qty > 0 ? sum + qty : sum;
+        }, 0);
+        
+        // Sumar solo movimientos negativos (salidas) - en valor absoluto
+        const totalSalidas = filtered.reduce((sum, r) => {
+            const qty = Number(r['Ctd.en UM entrada'] || 0);
+            return qty < 0 ? sum + Math.abs(qty) : sum;
+        }, 0);
+        
+        // Stock actual = (Stock Inicial + Total Entradas) - Total Salidas
+        const stockActual = (stockInicial + totalEntradas) - totalSalidas;
+
         // Salidas por tienda (INCLUYENDO TODOS LOS MOVIMIENTOS)
         const salidaPorTienda = filtered.reduce((sum,r,idx) => {
             const qty = Number(r['Ctd.en UM entrada']||0); 
@@ -491,15 +509,13 @@ class TrazabilidadCore {
         const avgStore = storeMovsNeg.length ? (storeMovsNeg.reduce((a,b)=>a + Math.abs(b),0)/storeMovsNeg.length) : 0;
         const avgClient = clientMovsNeg.length ? (clientMovsNeg.reduce((a,b)=>a + Math.abs(b),0)/clientMovsNeg.length) : 0;
 
-        // Stock actual
-        const totalSumMov = filtered.reduce((s,r) => s + Number(r['Ctd.en UM entrada']||0), 0);
-        const stockActual = (Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0) + totalSumMov;
-
-        // Puntos cero
+        // PUNTOS CERO - CÁLCULO CORREGIDO
         const initData = this.initialStocks[key] || { date: (minDate ? minDate.toISOString().slice(0,10) : new Date().toISOString().slice(0,10)), stock:0 };
         const initDate = this.parseISODate(initData.date) || (minDate || null);
         let currentBalance = Number(initData.stock) || 0;
         const movementsByDate = {};
+        
+        // Agrupar movimientos por fecha
         filtered.forEach(r => {
             const ds = r._dateKey || this.getDateKeyFromRow(r);
             if (!movementsByDate[ds]) movementsByDate[ds] = [];
@@ -507,28 +523,46 @@ class TrazabilidadCore {
         });
         
         const puntosCero = [];
+        
         if (minDate && maxDate && initDate) {
             let day = this.startOfDay(initDate);
             const lastDay = this.startOfDay(maxDate);
+            
             while (day <= lastDay) {
                 const ds = day.toISOString().slice(0,10);
                 const startBalance = currentBalance;
                 const movs = movementsByDate[ds] || [];
-                const sumDay = movs.reduce((s,r) => s + Number(r['Ctd.en UM entrada']||0), 0);
+                
+                // Calcular suma del día correctamente
+                const sumDay = movs.reduce((s, r) => {
+                    const qty = Number(r['Ctd.en UM entrada'] || 0);
+                    return s + qty; // Sumar directamente (positivos y negativos)
+                }, 0);
+                
                 const endBalance = startBalance + sumDay;
-                if (Number(endBalance) === 0 && Number(startBalance) !== 0) puntosCero.push(this.formatDate(day));
+                
+                // Punto cero: cuando el stock llega a 0 después de no ser 0
+                if (Number(endBalance) === 0 && Number(startBalance) !== 0) {
+                    puntosCero.push(this.formatDate(day));
+                }
+                
                 currentBalance = endBalance;
-                day = this.addDays(day,1);
+                day = this.addDays(day, 1);
             }
         } else {
-            let running = Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0);
+            // Método alternativo si no hay fechas válidas
+            let running = Number(initData.stock) || 0;
             const uniqueDates = Array.from(new Set(filtered.map(r => r._dateKey || this.getDateKeyFromRow(r)))).filter(Boolean).sort();
+            
             uniqueDates.forEach(ds => {
                 const movs = filtered.filter(r => (r._dateKey || this.getDateKeyFromRow(r)) === ds);
                 const startBalance = running;
-                const sumDay = movs.reduce((s,r)=> s + Number(r['Ctd.en UM entrada']||0), 0);
+                const sumDay = movs.reduce((s, r) => s + Number(r['Ctd.en UM entrada'] || 0), 0);
                 const endBalance = startBalance + sumDay;
-                if (Number(endBalance) === 0 && Number(startBalance) !== 0) puntosCero.push(ds);
+                
+                if (Number(endBalance) === 0 && Number(startBalance) !== 0) {
+                    puntosCero.push(ds);
+                }
                 running = endBalance;
             });
         }
@@ -740,11 +774,18 @@ class TrazabilidadCore {
             salidaMinClientes: clientMin,
             promedioSalidaTienda: this.round2(avgStore),
             promedioSalidaCliente: this.round2(avgClient),
-            stockActual,
+            stockActual: this.round2(stockActual),
             dateMin: minDate, 
             dateMax: maxDate,
             rawRows: filtered,
-            irregularidadesAll: irregularidades
+            irregularidadesAll: irregularidades,
+            // Para debugging
+            _debug: {
+                stockInicial,
+                totalEntradas,
+                totalSalidas,
+                calculo: `(${stockInicial} + ${totalEntradas}) - ${totalSalidas} = ${this.round2(stockActual)}`
+            }
         };
     }
 
