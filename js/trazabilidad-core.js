@@ -55,7 +55,7 @@ class TrazabilidadCore {
         // Usuarios especiales - ACTUALIZADO
         this.usuariosEspeciales643 = new Set(['avitora', 'lgarcia', 'ksoteldo', 'gonzalezm', 'gcontreras', 'cipolito']);
         this.usuariosEspeciales101 = new Set(['ylara']);
-
+     } 
     // Helpers (se mantienen igual)
     parseDate(v) {
         if (!v && v !== 0) return null;
