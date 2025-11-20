@@ -753,36 +753,87 @@ class TrazabilidadCore {
             }
         });
 
-        // REGLA 4: 651 sin 601 (para TODOS los centros)
-        const entries651 = filtered.filter(r => 
-            String(r['Clase de movimiento']) === '651' && 
-            Number(r['Ctd.en UM entrada']) > 0
-        );
+        // REGLA 4: 651 sin 601 (para TODOS los centros) - MODIFICADA CON VALIDACIÓN DE CLIENTE
+const entries651 = filtered.filter(r => 
+    String(r['Clase de movimiento']) === '651' && 
+    Number(r['Ctd.en UM entrada']) > 0
+);
 
-        entries651.forEach(en => {
-            const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-            const centro = String(en['Centro']||'').trim();
-            const fecha = en['Fe.contabilización'];
-            if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
-            
-            const fechaFormateada = this.formatDate(fecha);
-            
-            const found601 = filtered.find(r => 
-                String(r['Clase de movimiento']) === '601' && 
-                Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
-                String(r['Centro']||'').trim() === centro &&
-                !pairedIgnore.has(filtered.indexOf(r))
-            );
-            
-            if (!found601) {
-                irregularidades.push({ 
-                    tipo:'651_sin_601', 
-                    usuario: en['Nombre del usuario']||'', 
-                    fecha: fechaFormateada,
-                    descripcion:`Devolución 651 de ${qty} sin venta 601 correspondiente (mismo centro: ${centro}) - Fecha: ${fechaFormateada}`
-                });
-            }
+entries651.forEach(en => {
+    const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
+    const cliente651 = String(en['Cliente']||'').trim();
+    const fecha = en['Fe.contabilización'];
+    if (!fecha) return;
+    
+    const fechaFormateada = this.formatDate(fecha);
+    
+    // Buscar 601 con misma cantidad y MISMO CLIENTE (no importa la fecha)
+    const found601 = filtered.find(r => 
+        String(r['Clase de movimiento']) === '601' && 
+        Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
+        String(r['Cliente']||'').trim() === cliente651 &&
+        !pairedIgnore.has(filtered.indexOf(r))
+    );
+    
+    if (!found601) {
+        irregularidades.push({ 
+            tipo:'651_sin_601', 
+            usuario: en['Nombre del usuario']||'', 
+            fecha: fechaFormateada,
+            descripcion:`Devolución 651 de ${qty} sin venta 601 correspondiente (mismo cliente: ${cliente651}) - Fecha: ${fechaFormateada}`
         });
+    }
+});
+
+        // NUEVA REGLA: 643 negativo sin 101 o 673 positivo (mismo usuario, misma cantidad, mismo día)
+const salidas643 = filtered.filter(r => 
+    String(r['Clase de movimiento']) === '643' && 
+    Number(r['Ctd.en UM entrada']) < 0 &&
+    !pairedIgnore.has(filtered.indexOf(r))
+);
+
+salidas643.forEach(salida => {
+    const salidaUserNorm = this.normalizeUser(salida['Nombre del usuario']||'');
+    // EXCEPCIÓN para usuarios especiales
+    if (this.usuariosEspeciales643.has(salidaUserNorm)) return;
+    
+    const qty = Math.abs(Number(salida['Ctd.en UM entrada']||0));
+    const user = salidaUserNorm;
+    const fecha = salida['Fe.contabilización'];
+    if (!fecha) return;
+    
+    const fechaFormateada = this.formatDate(fecha);
+    
+    // BUSCAR 101 o 673 POSITIVO correspondiente (mismo usuario, misma cantidad, mismo día)
+    const fechaSalida = this.startOfDay(fecha);
+    const foundEntradaCorrespondiente = filtered.find(r => {
+        if (pairedIgnore.has(filtered.indexOf(r))) return false;
+        
+        const movimiento = String(r['Clase de movimiento']);
+        const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+        const usuario = this.normalizeUser(r['Nombre del usuario']);
+        const fechaR = r['Fe.contabilización'];
+        if (!fechaR) return false;
+        
+        const fechaRDay = this.startOfDay(fechaR);
+        
+        // Buscar 101 o 673 POSITIVO del mismo usuario, misma cantidad y mismo día
+        return (movimiento === '101' || movimiento === '673') && 
+               cantidad > 0 && // Debe ser positivo
+               Math.abs(cantidad) === qty && // Misma cantidad en valor absoluto
+               usuario === user && // Mismo usuario
+               fechaRDay.getTime() === fechaSalida.getTime(); // Mismo día
+    });
+    
+    if (!foundEntradaCorrespondiente) {
+        irregularidades.push({ 
+            tipo:'643_sin_101_o_673', 
+            usuario: salida['Nombre del usuario']||'', 
+            fecha: fechaFormateada,
+            descripcion:`Salida 643 negativa de ${qty} sin entrada 101 o 673 correspondiente (mismo usuario: ${user}, mismo día) - Fecha: ${fechaFormateada}`
+        });
+    }
+});
 
         // Determinar tipo de diferencia BASADO EN LAS REGLAS CORREGIDAS
         let tipoDiferencia = 'Ninguna detectada';
