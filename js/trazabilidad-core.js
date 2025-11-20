@@ -643,35 +643,46 @@ class TrazabilidadCore {
         // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS CLARAS
         const irregularidades = [];
 
-       // REGLA 1: 643 sin 101 (solo para centros 1000/3000)
-        if (group.centro === '1000/3000') {
-            const exits643 = filtered.filter(r => 
-                String(r['Clase de movimiento']) === '643' && 
-                Number(r['Ctd.en UM entrada']) < 0
-            );
+       // REGLA 1: 643 sin 101 (solo para centros 1000/3000) - CORREGIDA
+if (group.centro === '1000/3000') {
+    const exits643 = filtered.filter(r => 
+        String(r['Clase de movimiento']) === '643' && 
+        Number(r['Ctd.en UM entrada']) < 0
+    );
+    
+    exits643.forEach(ex => {
+        const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
+        const user = this.normalizeUser(ex['Nombre del usuario']);
+        const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
+        
+        // EXCLUIR USUARIOS ESPECIALES: GONZALEZM, AVITORA, LGARCIA, KSOTELDO
+        if (this.usuariosEspeciales643.has(user)) {
+            return; // Saltar esta iteración para usuarios especiales
+        }
+        
+        // Buscar 101 O 673 como movimiento equivalente
+        const found101or673 = filtered.find(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Math.abs(Number(r['Ctd.en UM entrada']||0));
+            const usuario = this.normalizeUser(r['Nombre del usuario']);
             
-            exits643.forEach(ex => {
-                const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
-                const user = this.normalizeUser(ex['Nombre del usuario']);
-                const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
-                
-                const found101 = filtered.find(r => 
-                    String(r['Clase de movimiento']) === this.entry101 && 
-                    Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty && 
-                    this.normalizeUser(r['Nombre del usuario']) === user &&
-                    !pairedIgnore.has(filtered.indexOf(r))
-                );
-                
-                if (!found101) {
-                    irregularidades.push({ 
-                        tipo:'643_sin_101', 
-                        usuario: ex['Nombre del usuario']||'', 
-                        fecha: this.formatDate(fecha),
-                        descripcion:`Salida 643 de ${qty} sin entrada 101 correspondiente (mismo usuario: ${user})`
-                    });
-                }
+            // Considerar 101 O 673 como movimientos válidos
+            return (movimiento === this.entry101 || movimiento === '673') && 
+                   cantidad === qty && 
+                   usuario === user &&
+                   !pairedIgnore.has(filtered.indexOf(r))
+        });
+        
+        if (!found101or673) {
+            irregularidades.push({ 
+                tipo:'643_sin_101_o_673', 
+                usuario: ex['Nombre del usuario']||'', 
+                fecha: this.formatDate(fecha),
+                descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente (mismo usuario: ${user})`
             });
         }
+    });
+}
 
 
         // REGLA 2 ACTUALIZADA: 101 en centro 1000 sin 643 en centro 3000 (solo para centros 1000/3000, excepto usuario YLARA)
