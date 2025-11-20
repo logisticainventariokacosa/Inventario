@@ -10,14 +10,23 @@ class TrazabilidadCore {
         
         // MOVIMIENTOS COMPLETOS - REGLA: negativo = salida, positivo = entrada
         
-        // Salidas a tienda (cantidad NEGATIVA)
-        this.storeOutCodes = new Set(['641', '643', '161', '351', '303', '673']);
-        
-        // Salidas a clientes (cantidad NEGATIVA)  
+        // Salidas a cliente (cantidad NEGATIVA)
         this.clientOutCodes = new Set(['601', '909']);
         
-        // Anulaciones de salidas a clientes (cantidad POSITIVA)
-        this.clientOutAnnul = new Set(['602', '910']);
+        // Entradas que restan a salidas a cliente (cantidad POSITIVA)
+        this.clientInCodes = new Set(['651', '602', '910']);
+        
+        // Salidas a tienda (cantidad NEGATIVA)
+        this.storeOutCodes = new Set(['673', '643', '641', '351', '161', '909', '201', '261']);
+        
+        // Entradas que restan a salidas a tienda (cantidad POSITIVA)
+        this.storeInCodes = new Set(['644', '642', '352', '162', '910', '202', '262']);
+        
+        // Nuevos movimientos de ingreso
+        this.entry992 = '992';
+        this.entry561 = '561';
+        this.annul992 = '993';
+        this.annul561 = '562';
         
         // Consumos (cantidad NEGATIVA)
         this.consumptionCodes = new Set(['201', '261', '309']);
@@ -219,7 +228,9 @@ class TrazabilidadCore {
             '651': ['601'], // 601 puede anular 651  
             '673': ['643'],  // 643 puede anular 673
             '601': ['602'],  // 602 anula 601
-            '909': ['910']   // 910 anula 909
+            '909': ['910'],   // 910 anula 909
+            '992': ['993'],   // 993 anula 992
+            '561': ['562']    // 562 anula 561
         };
 
         return paresAnulacion[movimientoOriginal]?.includes(movimientoAnulacion) || false;
@@ -249,7 +260,7 @@ class TrazabilidadCore {
         return movimientos643.length > 0;
     }
 
-    // Nueva función para centros 1000/3000 - MEJORADA
+    // Nueva función para centros 1000/3000 - MEJORADA CON NUEVOS MOVIMIENTOS
     getUltimoIngresoComplejo(filtered) {
         // Movimientos considerados como ingresos para 1000/3000
         const movimientosIngreso = filtered.filter(r => {
@@ -262,7 +273,9 @@ class TrazabilidadCore {
             // Tipos de movimiento considerados ingresos
             return movimiento === this.entry101 || 
                    movimiento === '651' || 
-                   movimiento === '673';
+                   movimiento === '673' ||
+                   movimiento === this.entry992 ||
+                   movimiento === this.entry561;
         });
 
         if (movimientosIngreso.length === 0) return '';
@@ -294,7 +307,7 @@ class TrazabilidadCore {
                     return this.formatDate(fecha);
                 }
             } else {
-                // Para 651 y 673, tomarlos directamente (ya verificamos que no fueron anulados)
+                // Para 651, 673, 992 y 561, tomarlos directamente (ya verificamos que no fueron anulados)
                 return this.formatDate(fecha);
             }
         }
@@ -302,7 +315,7 @@ class TrazabilidadCore {
         return ''; // Si ningún movimiento cumple las condiciones
     }
 
-    // Función simple para otros centros
+    // Función simple para otros centros - ACTUALIZADA CON NUEVOS MOVIMIENTOS
     getUltimoIngresoSimple(filtered) {
         // Movimientos considerados como ingresos para otros centros
         const movimientosIngreso = filtered.filter(r => {
@@ -313,7 +326,10 @@ class TrazabilidadCore {
             if (cantidad <= 0) return false;
             
             // Tipos de movimiento considerados ingresos
-            return movimiento === this.entry101 || movimiento === '305';
+            return movimiento === this.entry101 || 
+                   movimiento === '305' ||
+                   movimiento === this.entry992 ||
+                   movimiento === this.entry561;
         });
 
         if (movimientosIngreso.length === 0) return '';
@@ -333,78 +349,59 @@ class TrazabilidadCore {
             return this.getUltimoIngresoComplejo(filtered);
         }
         
-        // Para otros centros - lógica simple (101 o 305)
+        // Para otros centros - lógica simple (101, 305, 992, 561)
         return this.getUltimoIngresoSimple(filtered);
     }
 
-    // Función para calcular salidas a clientes considerando anulaciones
+    // Función para calcular salidas a clientes según nuevas reglas
     calcularSalidasClientes(filtered) {
-        const movimientosCliente = filtered.filter(r => {
+        // Sumar todos los 601 y 909 negativos
+        const salidasCliente = filtered.filter(r => {
             const movimiento = String(r['Clase de movimiento']);
             const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-            
-            // Solo movimientos negativos de 601 y 909, excluyendo 311 y 309
-            return (movimiento === '601' || movimiento === '909') && cantidad < 0;
-        });
+            return this.clientOutCodes.has(movimiento) && cantidad < 0;
+        }).reduce((sum, r) => sum + Math.abs(Number(r['Ctd.en UM entrada'] || 0)), 0);
 
-        let totalSalidasClientes = 0;
-        const movimientosValidos = [];
+        // Restar todos los 651, 602, 910 positivos
+        const entradasCliente = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            return this.clientInCodes.has(movimiento) && cantidad > 0;
+        }).reduce((sum, r) => sum + Number(r['Ctd.en UM entrada'] || 0), 0);
 
-        movimientosCliente.forEach(mov => {
-            const movimiento = String(mov['Clase de movimiento']);
-            const cantidad = Math.abs(Number(mov['Ctd.en UM entrada'] || 0));
-            const fecha = mov['Fe.contabilización'];
-            const usuario = this.normalizeUser(mov['Nombre del usuario']);
-            
-            // Buscar anulación correspondiente
-            const movimientoAnulacion = movimiento === '601' ? '602' : '910';
-            const fueAnulado = filtered.some(r => {
-                const movAnulacion = String(r['Clase de movimiento']);
-                const cantAnulacion = Number(r['Ctd.en UM entrada'] || 0);
-                const fechaAnulacion = r['Fe.contabilización'];
-                const usuarioAnulacion = this.normalizeUser(r['Nombre del usuario']);
-                
-                return movAnulacion === movimientoAnulacion &&
-                       cantAnulacion === cantidad &&
-                       this.startOfDay(fechaAnulacion).getTime() === this.startOfDay(fecha).getTime() &&
-                       usuarioAnulacion === usuario;
-            });
-
-            // Si no fue anulado, contar el movimiento
-            if (!fueAnulado) {
-                totalSalidasClientes += cantidad;
-                movimientosValidos.push(mov);
-            }
-        });
+        const totalSalidasClientes = Math.max(0, salidasCliente - entradasCliente);
 
         return {
             total: totalSalidasClientes,
-            movimientos: movimientosValidos
+            salidas: salidasCliente,
+            entradas: entradasCliente,
+            calculo: `${salidasCliente} - ${entradasCliente} = ${totalSalidasClientes}`
         };
     }
 
-    // Función para calcular salidas a tienda
+    // Función para calcular salidas a tienda según nuevas reglas
     calcularSalidasTienda(filtered) {
-        const movimientosTienda = filtered.filter(r => {
+        // Sumar todos los movimientos negativos de tienda
+        const salidasTienda = filtered.filter(r => {
             const movimiento = String(r['Clase de movimiento']);
             const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-            
-            // Excluir movimientos 311, 309 y movimientos de clientes (601, 909)
-            if (movimiento === '311' || movimiento === '309' || this.clientOutCodes.has(movimiento)) {
-                return false;
-            }
-            
-            // Solo movimientos negativos que no sean de clientes
-            return cantidad < 0 && this.storeOutCodes.has(movimiento);
-        });
+            return this.storeOutCodes.has(movimiento) && cantidad < 0;
+        }).reduce((sum, r) => sum + Math.abs(Number(r['Ctd.en UM entrada'] || 0)), 0);
 
-        const totalSalidasTienda = movimientosTienda.reduce((sum, r) => {
-            return sum + Math.abs(Number(r['Ctd.en UM entrada'] || 0));
-        }, 0);
+        // Restar todos los movimientos positivos que anulan salidas de tienda
+        const entradasTienda = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            return this.storeInCodes.has(movimiento) && cantidad > 0;
+        }).reduce((sum, r) => sum + Number(r['Ctd.en UM entrada'] || 0), 0);
+
+        const totalSalidasTienda = Math.max(0, salidasTienda - entradasTienda);
 
         return {
             total: totalSalidasTienda,
-            movimientos: movimientosTienda
+            salidas: salidasTienda,
+            entradas: entradasTienda,
+            calculo: `${salidasTienda} - ${entradasTienda} = ${totalSalidasTienda}`
         };
     }
 
@@ -502,9 +499,12 @@ class TrazabilidadCore {
                 const qty = Math.abs(Number(it.row['Ctd.en UM entrada']||0));
                 
                 // Buscar anulaciones y emparejarlas
-                if (movement === this.annul201 || movement === this.annul261 || movement === this.annul309) {
+                if (movement === this.annul201 || movement === this.annul261 || movement === this.annul309 || 
+                    movement === this.annul992 || movement === this.annul561) {
                     const originalMovement = movement === this.annul201 ? '201' : 
-                                           movement === this.annul261 ? '261' : '309';
+                                           movement === this.annul261 ? '261' : 
+                                           movement === this.annul309 ? '309' :
+                                           movement === this.annul992 ? '992' : '561';
                     const matchingOriginal = items.find(item => 
                         String(item.row['Clase de movimiento']) === originalMovement &&
                         Math.abs(Number(item.row['Ctd.en UM entrada']||0)) === qty
@@ -543,9 +543,19 @@ class TrazabilidadCore {
         const totalSalidasClientes = salidasClientes.total;
         const totalSalidasTienda = salidasTienda.total;
 
-        // Cálculos de estadísticas adicionales
-        const storeMovs = salidasTienda.movimientos.map(r => Number(r['Ctd.en UM entrada']||0));
-        const clientMovs = salidasClientes.movimientos.map(r => Number(r['Ctd.en UM entrada']||0));
+        // Cálculos de estadísticas adicionales para salidas a tienda
+        const storeMovs = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            return this.storeOutCodes.has(movimiento) && cantidad < 0;
+        }).map(r => Number(r['Ctd.en UM entrada']||0));
+
+        // Cálculos de estadísticas adicionales para salidas a clientes
+        const clientMovs = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            return this.clientOutCodes.has(movimiento) && cantidad < 0;
+        }).map(r => Number(r['Ctd.en UM entrada']||0));
 
         const storeMax = storeMovs.length ? Math.min(...storeMovs) : 0;
         const storeMin = storeMovs.length ? Math.max(...storeMovs) : 0;
@@ -829,7 +839,9 @@ class TrazabilidadCore {
                 stockInicial,
                 totalEntradas,
                 totalSalidas,
-                calculo: `(${stockInicial} + ${totalEntradas}) - ${totalSalidas} = ${this.round2(stockActual)}`
+                calculoStock: `(${stockInicial} + ${totalEntradas}) - ${totalSalidas} = ${this.round2(stockActual)}`,
+                calculoClientes: salidasClientes.calculo,
+                calculoTienda: salidasTienda.calculo
             }
         };
     }
