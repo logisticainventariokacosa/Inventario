@@ -95,14 +95,20 @@ class TrazabilidadCore {
     }
 
     getDateKeyFromRow(r) {
-        if (r['Fe.contabilización'] instanceof Date) return r['Fe.contabilización'].toISOString().slice(0,10);
-        const raw = (r['Fe.contabilización_raw'] ?? r['Fe.contabilización'] ?? '').toString().trim();
-        const m = raw.match(/^(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/);
-        if (m) {
-            const p = this.parseDate(m[1]); if (p instanceof Date) return p.toISOString().slice(0,10);
+        // Primero intentar con la fecha ya parseada
+        if (r['Fe.contabilización'] instanceof Date) {
+            return r['Fe.contabilización'].toISOString().slice(0,10);
         }
-        const replaced = raw.replace(/\./g,'/').split(' ')[0];
-        const p2 = this.parseDate(replaced); if (p2 instanceof Date) return p2.toISOString().slice(0,10);
+        
+        // Si no, intentar parsear desde el raw
+        const raw = (r['Fe.contabilización_raw'] ?? r['Fe.contabilización'] ?? '').toString().trim();
+        if (!raw) return '';
+        
+        const parsed = this.parseDate(raw);
+        if (parsed instanceof Date) {
+            return parsed.toISOString().slice(0,10);
+        }
+        
         return raw;
     }
 
@@ -250,20 +256,23 @@ class TrazabilidadCore {
             const cantidadR = Number(r['Ctd.en UM entrada'] || 0); // IMPORTANTE: mantener signo
             const usuarioR = this.normalizeUser(r['Nombre del usuario']);
             const centroR = String(r['Centro'] || '').trim();
-            const fechaR = this.startOfDay(r['Fe.contabilización']);
+            const fechaR = r['Fe.contabilización'];
+            if (!fechaR) return false;
+            
+            const fechaRDay = this.startOfDay(fechaR);
             
             // Buscar 643 NEGATIVOS en el centro opuesto - CORREGIDO
             return movimiento === '643' && 
                    cantidadR === -cantidad && // 643 debe ser NEGATIVO y misma cantidad
                    usuarioR === usuario && 
                    centroR === centroBuscado &&
-                   fechaR.getTime() === fechaMov.getTime();
+                   fechaRDay.getTime() === fechaMov.getTime();
         });
 
         return movimientos643.length > 0;
     }
 
-    // Nueva función para centros 1000/3000 - CORREGIDA CON 643
+    // Nueva función para centros 1000/3000 - CORREGIDA CON 643 Y REGLA ACTUALIZADA
     getUltimoIngresoComplejo(filtered) {
         // Movimientos considerados como ingresos para 1000/3000
         const movimientosIngreso = filtered.filter(r => {
@@ -301,8 +310,8 @@ class TrazabilidadCore {
                 continue; // Saltar este movimiento si fue anulado
             }
 
-            // Validación especial para movimientos 101 - CORREGIDO CON 643
-            if (movimiento === this.entry101) {
+            // Validación especial para movimientos 101 - REGLA ACTUALIZADA: Solo para centro 1000
+            if (movimiento === this.entry101 && centroMov === '1000') {
                 // Verificar que NO tenga un 643 correspondiente en el otro centro
                 const tiene643 = this.tiene643Correspondiente(filtered, cantidad, fecha, usuario, centroMov);
                 
@@ -310,7 +319,7 @@ class TrazabilidadCore {
                     return this.formatDate(fecha);
                 }
             } else {
-                // Para 651, 673, 992 y 561, tomarlos directamente (ya verificamos que no fueron anulados)
+                // Para 651, 673, 992, 561 y 101 en centro 3000, tomarlos directamente
                 return this.formatDate(fecha);
             }
         }
@@ -426,10 +435,15 @@ class TrazabilidadCore {
             return true;
         });
         
-        // Preparar datos
+        // Preparar datos - CORRECCIÓN: Asegurar que las fechas se procesen correctamente
         filtered.forEach(r => { 
             if (!r._dateKey) r._dateKey = this.getDateKeyFromRow(r); 
             if (!r._userNorm) r._userNorm = this.normalizeUser(r['Nombre del usuario']); 
+            
+            // CORRECCIÓN: Asegurar que la fecha esté correctamente parseada
+            if (r['Fe.contabilización'] && !(r['Fe.contabilización'] instanceof Date)) {
+                r['Fe.contabilización'] = this.parseDate(r['Fe.contabilización']);
+            }
         });
         
         // Ordenar por fecha
@@ -625,7 +639,7 @@ class TrazabilidadCore {
             });
         }
 
-        // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS
+        // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS Y CORRECCIÓN DE FECHAS
         const irregularidades = [];
 
         // REGLA 1 CORREGIDA: 643 sin 101 (solo para centros 1000/3000) - CON EXCEPCIONES DE USUARIOS ACTUALIZADAS
@@ -638,7 +652,11 @@ class TrazabilidadCore {
             exits643.forEach(ex => {
                 const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
                 const user = this.normalizeUser(ex['Nombre del usuario']);
-                const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
+                
+                // CORRECCIÓN: Usar directamente la fecha parseada
+                const fecha = ex['Fe.contabilización'];
+                if (!fecha) return; // Si no hay fecha, saltar
+                
                 const fechaFormateada = this.formatDate(fecha);
                 
                 // EXCEPCIÓN ACTUALIZADA: Si el usuario es AVITORA, LGARCIA, KSOTELDO o GONZALEZM, no es irregularidad
@@ -647,21 +665,24 @@ class TrazabilidadCore {
                 }
                 
                 // Para otros usuarios, buscar 101 o 673 positivo del mismo usuario y mismo día
-                const fechaEx = this.startOfDay(ex['Fe.contabilización']);
+                const fechaEx = this.startOfDay(fecha);
                 const movimientoCorrespondiente = filtered.find(r => {
                     if (pairedIgnore.has(filtered.indexOf(r))) return false;
                     
                     const movimiento = String(r['Clase de movimiento']);
                     const cantidad = Number(r['Ctd.en UM entrada'] || 0);
                     const usuario = this.normalizeUser(r['Nombre del usuario']);
-                    const fechaR = this.startOfDay(r['Fe.contabilización']);
+                    const fechaR = r['Fe.contabilización'];
+                    if (!fechaR) return false;
+                    
+                    const fechaRDay = this.startOfDay(fechaR);
                     
                     // Buscar 101 o 673 POSITIVOS del mismo usuario y mismo día
                     return (movimiento === this.entry101 || movimiento === '673') && 
                            cantidad > 0 && // Debe ser positivo
                            Math.abs(cantidad) === qty && // Misma cantidad
                            usuario === user && // Mismo usuario
-                           fechaR.getTime() === fechaEx.getTime(); // Mismo día
+                           fechaRDay.getTime() === fechaEx.getTime(); // Mismo día
                 });
                 
                 if (!movimientoCorrespondiente) {
@@ -675,11 +696,12 @@ class TrazabilidadCore {
             });
         }
 
-        // REGLA 2: 101 en centro 1000 sin 643 en centro 3000 (solo para centros 1000/3000, excepto usuario YLARA)
+        // REGLA 2 ACTUALIZADA: 101 en centro 1000 sin 643 en centro 3000 (solo para centros 1000/3000, excepto usuario YLARA)
+        // NOTA: En centro 3000 los 101 pueden estar solos
         if (group.centro === '1000/3000') {
             const entries101in100 = filtered.filter(r => 
                 String(r['Clase de movimiento']) === this.entry101 && 
-                String(r['Centro']).trim() === '1000' &&
+                String(r['Centro']).trim() === '1000' && // SOLO centro 1000
                 Number(r['Ctd.en UM entrada']) > 0 &&
                 !pairedIgnore.has(filtered.indexOf(r)) // EXCLUIR LOS QUE YA ESTÁN EMPAREJADOS
             );
@@ -691,6 +713,8 @@ class TrazabilidadCore {
                 const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
                 const user = enUserNorm;
                 const fecha = en['Fe.contabilización'];
+                if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
+                
                 const fechaFormateada = this.formatDate(fecha);
                 
                 // BUSCAR 643 CORRESPONDIENTE en CENTRO 3000 - CORREGIDO
@@ -703,6 +727,8 @@ class TrazabilidadCore {
                     const usuario = this.normalizeUser(r['Nombre del usuario']);
                     const centro = String(r['Centro']||'').trim();
                     const fechaR = r['Fe.contabilización'];
+                    if (!fechaR) return false;
+                    
                     const fechaRDay = this.startOfDay(fechaR);
                     
                     // BUSCAR ESPECÍFICAMENTE EN CENTRO 3000 - CORREGIDO CON 643
@@ -740,6 +766,8 @@ class TrazabilidadCore {
                 const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
                 const user = enUserNorm;
                 const fecha = en['Fe.contabilización'];
+                if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
+                
                 const fechaFormateada = this.formatDate(fecha);
                 
                 // BUSCAR 643 o 641 NEGATIVO correspondiente
@@ -750,14 +778,17 @@ class TrazabilidadCore {
                     const movimiento = String(r['Clase de movimiento']);
                     const cantidad = Number(r['Ctd.en UM entrada'] || 0);
                     const usuario = this.normalizeUser(r['Nombre del usuario']);
-                    const fechaR = this.startOfDay(r['Fe.contabilización']);
+                    const fechaR = r['Fe.contabilización'];
+                    if (!fechaR) return false;
+                    
+                    const fechaRDay = this.startOfDay(fechaR);
                     
                     // Buscar 643 o 641 NEGATIVO del mismo usuario, misma cantidad y mismo día
                     return (movimiento === '643' || movimiento === '641') && 
                            cantidad < 0 && // Debe ser negativo
                            Math.abs(cantidad) === qty && // Misma cantidad en valor absoluto
                            usuario === user && // Mismo usuario
-                           fechaR.getTime() === fechaEn.getTime(); // Mismo día
+                           fechaRDay.getTime() === fechaEn.getTime(); // Mismo día
                 });
                 
                 if (!foundSalidaCorrespondiente) {
@@ -779,7 +810,9 @@ class TrazabilidadCore {
 
         entries501.forEach(en => {
             const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-            const fecha = en._dateKey || this.getDateKeyFromRow(en);
+            const fecha = en['Fe.contabilización'];
+            if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
+            
             const fechaFormateada = this.formatDate(fecha);
             
             const found502 = filtered.find(r => 
@@ -806,7 +839,9 @@ class TrazabilidadCore {
 
         entries910.forEach(en => {
             const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-            const fecha = en._dateKey || this.getDateKeyFromRow(en);
+            const fecha = en['Fe.contabilización'];
+            if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
+            
             const fechaFormateada = this.formatDate(fecha);
             
             const found909 = filtered.find(r => 
@@ -834,7 +869,9 @@ class TrazabilidadCore {
         entries651.forEach(en => {
             const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
             const centro = String(en['Centro']||'').trim();
-            const fecha = en._dateKey || this.getDateKeyFromRow(en);
+            const fecha = en['Fe.contabilización'];
+            if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
+            
             const fechaFormateada = this.formatDate(fecha);
             
             const found601 = filtered.find(r => 
