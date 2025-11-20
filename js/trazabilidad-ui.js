@@ -710,7 +710,7 @@ class TrazabilidadSystem {
                     document.getElementById('downloadExcelBtn').disabled = true;
                 } catch(err) {
                     console.error(err);
-                    this.showCustomAlert('Error leyendo archfile: ' + err.message, 'error');
+                    this.showCustomAlert('Error leyendo archivo: ' + err.message, 'error');
                 }
             }.bind(this);
             reader.readAsArrayBuffer(f);
@@ -789,7 +789,7 @@ class TrazabilidadSystem {
             }
         });
 
-        // Generate report
+        // Generate report - CON ALERT DE ÉXITO
         document.getElementById('generateBtn').addEventListener('click', () => {
             const checked = Array.from(document.querySelectorAll('.material-checkbox:checked')).map(c => c.dataset.key);
             if (checked.length === 0) { 
@@ -814,9 +814,12 @@ class TrazabilidadSystem {
             
             document.getElementById('materialsAnalizados').textContent = this.core.results.map(r => `${r.material} (${r.centro})`).join(', ');
             document.getElementById('downloadExcelBtn').disabled = false;
+            
+            // ALERT DE ÉXITO - Reporte generado
+            this.showCustomAlert(`Reporte generado exitosamente. Se analizaron ${this.core.results.length} materiales.`, 'success');
         });
 
-        // Download Excel
+        // Download Excel - CON ALERT DE ÉXITO
         document.getElementById('downloadExcelBtn').addEventListener('click', () => {
             if (!this.core.results || this.core.results.length === 0) { 
                 this.showCustomAlert('Genera el reporte primero.', 'warning');
@@ -853,7 +856,9 @@ class TrazabilidadSystem {
             const wb = XLSX.utils.book_new();
             XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
             XLSX.writeFile(wb, 'reporte_trazabilidad.xlsx');
-            this.showCustomAlert('Excel descargado correctamente', 'success');
+            
+            // ALERT DE ÉXITO - Excel descargado
+            this.showCustomAlert('Excel descargado correctamente. El archivo "reporte_trazabilidad.xlsx" se ha guardado en tu dispositivo.', 'success');
         });
 
         // Reiniciar sistema
