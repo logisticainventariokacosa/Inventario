@@ -11,10 +11,13 @@ class TrazabilidadCore {
         // MOVIMIENTOS COMPLETOS - REGLA: negativo = salida, positivo = entrada
         
         // Salidas a tienda (cantidad NEGATIVA)
-        this.storeOutCodes = new Set(['641', '643', '161', '351', '303', '311', '673']);
+        this.storeOutCodes = new Set(['641', '643', '161', '351', '303', '673']);
         
         // Salidas a clientes (cantidad NEGATIVA)  
         this.clientOutCodes = new Set(['601', '909']);
+        
+        // Anulaciones de salidas a clientes (cantidad POSITIVA)
+        this.clientOutAnnul = new Set(['602', '910']);
         
         // Consumos (cantidad NEGATIVA)
         this.consumptionCodes = new Set(['201', '261', '309']);
@@ -29,14 +32,13 @@ class TrazabilidadCore {
         this.entry305 = '305'; // Entrada de tienda
         
         // Devoluciones de clientes (cantidad POSITIVA)
-        this.clientReturns = new Set(['651', '910']);
+        this.clientReturns = new Set(['651']);
         
         // Anulaciones
         this.annul501 = '502'; // Anulación de 501
         this.annul201 = '202'; // Anulación de 201
         this.annul261 = '262'; // Anulación de 261  
         this.annul309 = '310'; // Anulación de 309
-        this.annul909 = '910'; // Anulación de 909 (la misma 910 es devolución)
         
         // Movimientos que NO afectan inventario físico
         this.nonInventoryMovements = new Set(['321', '322', '343', '344']);
@@ -215,7 +217,9 @@ class TrazabilidadCore {
         const paresAnulacion = {
             '101': ['643'], // 643 puede anular 101
             '651': ['601'], // 601 puede anular 651  
-            '673': ['643']  // 643 puede anular 673
+            '673': ['643'],  // 643 puede anular 673
+            '601': ['602'],  // 602 anula 601
+            '909': ['910']   // 910 anula 909
         };
 
         return paresAnulacion[movimientoOriginal]?.includes(movimientoAnulacion) || false;
@@ -331,6 +335,77 @@ class TrazabilidadCore {
         
         // Para otros centros - lógica simple (101 o 305)
         return this.getUltimoIngresoSimple(filtered);
+    }
+
+    // Función para calcular salidas a clientes considerando anulaciones
+    calcularSalidasClientes(filtered) {
+        const movimientosCliente = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            
+            // Solo movimientos negativos de 601 y 909, excluyendo 311 y 309
+            return (movimiento === '601' || movimiento === '909') && cantidad < 0;
+        });
+
+        let totalSalidasClientes = 0;
+        const movimientosValidos = [];
+
+        movimientosCliente.forEach(mov => {
+            const movimiento = String(mov['Clase de movimiento']);
+            const cantidad = Math.abs(Number(mov['Ctd.en UM entrada'] || 0));
+            const fecha = mov['Fe.contabilización'];
+            const usuario = this.normalizeUser(mov['Nombre del usuario']);
+            
+            // Buscar anulación correspondiente
+            const movimientoAnulacion = movimiento === '601' ? '602' : '910';
+            const fueAnulado = filtered.some(r => {
+                const movAnulacion = String(r['Clase de movimiento']);
+                const cantAnulacion = Number(r['Ctd.en UM entrada'] || 0);
+                const fechaAnulacion = r['Fe.contabilización'];
+                const usuarioAnulacion = this.normalizeUser(r['Nombre del usuario']);
+                
+                return movAnulacion === movimientoAnulacion &&
+                       cantAnulacion === cantidad &&
+                       this.startOfDay(fechaAnulacion).getTime() === this.startOfDay(fecha).getTime() &&
+                       usuarioAnulacion === usuario;
+            });
+
+            // Si no fue anulado, contar el movimiento
+            if (!fueAnulado) {
+                totalSalidasClientes += cantidad;
+                movimientosValidos.push(mov);
+            }
+        });
+
+        return {
+            total: totalSalidasClientes,
+            movimientos: movimientosValidos
+        };
+    }
+
+    // Función para calcular salidas a tienda
+    calcularSalidasTienda(filtered) {
+        const movimientosTienda = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            
+            // Excluir movimientos 311, 309 y movimientos de clientes (601, 909)
+            if (movimiento === '311' || movimiento === '309' || this.clientOutCodes.has(movimiento)) {
+                return false;
+            }
+            
+            // Solo movimientos negativos que no sean de clientes
+            return cantidad < 0 && this.storeOutCodes.has(movimiento);
+        });
+
+        const totalSalidasTienda = movimientosTienda.reduce((sum, r) => {
+            return sum + Math.abs(Number(r['Ctd.en UM entrada'] || 0));
+        }, 0);
+
+        return {
+            total: totalSalidasTienda,
+            movimientos: movimientosTienda
+        };
     }
 
     analyzeKey(key) {
@@ -461,53 +536,23 @@ class TrazabilidadCore {
         // Stock actual = (Stock Inicial + Total Entradas) - Total Salidas
         const stockActual = (stockInicial + totalEntradas) - totalSalidas;
 
-        // Salidas por tienda (INCLUYENDO TODOS LOS MOVIMIENTOS)
-        const salidaPorTienda = filtered.reduce((sum,r,idx) => {
-            const qty = Number(r['Ctd.en UM entrada']||0); 
-            const clase = String(r['Clase de movimiento']);
-            if (qty >= 0) return sum;
-            if (clase === '311' && !pairedIgnore.has(idx)) return sum;
-            if (pairedIgnore.has(idx)) return sum;
-            if (this.storeOutCodes.has(clase)) return sum + Math.abs(qty);
-            return sum;
-        },0);
+        // CALCULAR SALIDAS A CLIENTES Y TIENDA CON LAS NUEVAS REGLAS
+        const salidasClientes = this.calcularSalidasClientes(filtered);
+        const salidasTienda = this.calcularSalidasTienda(filtered);
 
-        // Salidas a clientes (INCLUYENDO TODOS LOS MOVIMIENTOS)
-        const salidaAClientes = filtered.reduce((sum,r,idx) => {
-            const qty = Number(r['Ctd.en UM entrada']||0); 
-            const clase = String(r['Clase de movimiento']);
-            if (qty >= 0) return sum;
-            if (clase === '311' && !pairedIgnore.has(idx)) return sum;
-            if (pairedIgnore.has(idx)) return sum;
-            if (this.clientOutCodes.has(clase)) return sum + Math.abs(qty);
-            return sum;
-        },0);
+        const totalSalidasClientes = salidasClientes.total;
+        const totalSalidasTienda = salidasTienda.total;
 
         // Cálculos de estadísticas adicionales
-        const storeMovsNeg = filtered.filter((r,idx) => {
-            const qty = Number(r['Ctd.en UM entrada']||0); 
-            const clase = String(r['Clase de movimiento']);
-            if (qty >= 0) return false;
-            if (clase === '311' && !pairedIgnore.has(idx)) return false;
-            if (pairedIgnore.has(idx)) return false;
-            return this.storeOutCodes.has(clase);
-        }).map(r => Number(r['Ctd.en UM entrada']||0));
+        const storeMovs = salidasTienda.movimientos.map(r => Number(r['Ctd.en UM entrada']||0));
+        const clientMovs = salidasClientes.movimientos.map(r => Number(r['Ctd.en UM entrada']||0));
 
-        const clientMovsNeg = filtered.filter((r,idx) => {
-            const qty = Number(r['Ctd.en UM entrada']||0); 
-            const clase = String(r['Clase de movimiento']);
-            if (qty >= 0) return false;
-            if (clase === '311' && !pairedIgnore.has(idx)) return false;
-            if (pairedIgnore.has(idx)) return false;
-            return this.clientOutCodes.has(clase);
-        }).map(r => Number(r['Ctd.en UM entrada']||0));
-
-        const storeMax = storeMovsNeg.length ? Math.min(...storeMovsNeg) : 0;
-        const storeMin = storeMovsNeg.length ? Math.max(...storeMovsNeg) : 0;
-        const clientMax = clientMovsNeg.length ? Math.min(...clientMovsNeg) : 0;
-        const clientMin = clientMovsNeg.length ? Math.max(...clientMovsNeg) : 0;
-        const avgStore = storeMovsNeg.length ? (storeMovsNeg.reduce((a,b)=>a + Math.abs(b),0)/storeMovsNeg.length) : 0;
-        const avgClient = clientMovsNeg.length ? (clientMovsNeg.reduce((a,b)=>a + Math.abs(b),0)/clientMovsNeg.length) : 0;
+        const storeMax = storeMovs.length ? Math.min(...storeMovs) : 0;
+        const storeMin = storeMovs.length ? Math.max(...storeMovs) : 0;
+        const clientMax = clientMovs.length ? Math.min(...clientMovs) : 0;
+        const clientMin = clientMovs.length ? Math.max(...clientMovs) : 0;
+        const avgStore = storeMovs.length ? (storeMovs.reduce((a,b)=>a + Math.abs(b),0)/storeMovs.length) : 0;
+        const avgClient = clientMovs.length ? (clientMovs.reduce((a,b)=>a + Math.abs(b),0)/clientMovs.length) : 0;
 
         // PUNTOS CERO - CÁLCULO CORREGIDO
         const initData = this.initialStocks[key] || { date: (minDate ? minDate.toISOString().slice(0,10) : new Date().toISOString().slice(0,10)), stock:0 };
@@ -766,8 +811,8 @@ class TrazabilidadCore {
             usuarioIrregularidad: primaryIrreg ? primaryIrreg.usuario : '-',
             descIrregularidad: primaryIrreg ? primaryIrreg.descripcion : '-',
             tipoDiferencia,
-            totalSalidasTienda: salidaPorTienda,
-            totalSalidasClientes: salidaAClientes,
+            totalSalidasTienda: totalSalidasTienda,
+            totalSalidasClientes: totalSalidasClientes,
             salidaMaxTienda: storeMax,
             salidaMinTienda: storeMin,
             salidaMaxClientes: clientMax,
