@@ -642,60 +642,50 @@ class TrazabilidadCore {
         // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS CLARAS
         const irregularidades = [];
 
-        // REGLA 1 ACTUALIZADA: 101 en centro 1000 sin 643 en centro 3000 (solo para centros 1000/3000, excepto usuario YLARA)
-        if (group.centro === '1000/3000') {
-            const entries101in100 = filtered.filter(r => 
-                String(r['Clase de movimiento']) === this.entry101 && 
-                String(r['Centro']).trim() === '1000' && // SOLO centro 1000
-                Number(r['Ctd.en UM entrada']) > 0 &&
-                !pairedIgnore.has(filtered.indexOf(r)) // EXCLUIR LOS QUE YA ESTÁN EMPAREJADOS
-            );
+        // REGLA inicial prueba: 643 sin 101 (solo para centros 1000/3000) - CORREGIDA
+if (group.centro === '1000/3000') {
+    const exits643 = filtered.filter(r => 
+        String(r['Clase de movimiento']) === '643' && 
+        Number(r['Ctd.en UM entrada']) < 0
+    );
+    
+    exits643.forEach(ex => {
+        const qty = Math.abs(Number(ex['Ctd.en UM entrada']||0));
+        const user643 = this.normalizeUser(ex['Nombre del usuario']);
+        const fecha = ex._dateKey || this.getDateKeyFromRow(ex);
+        
+        // EXCLUIR USUARIOS ESPECIALES: AVITORA, GONZALEZM, KSOTELDO, LGARCIA, GCONTRERAS, CIPOLITO
+        if (this.usuariosEspeciales643.has(user643)) {
+            return; // Saltar esta iteración para usuarios especiales
+        }
+        
+        // Buscar 101 O 673 del MISMO USUARIO, MISMO DÍA y MISMA CANTIDAD
+        const found101or673 = filtered.find(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Math.abs(Number(r['Ctd.en UM entrada']||0));
+            const usuario = this.normalizeUser(r['Nombre del usuario']);
+            const fechaR = r._dateKey || this.getDateKeyFromRow(r);
             
-            entries101in100.forEach(en => {
-                const enUserNorm = this.normalizeUser(en['Nombre del usuario']||'');
-                if (this.usuariosEspeciales101.has(enUserNorm)) return; // EXCEPCIÓN para usuario YLARA
-                
-                const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-                const user = enUserNorm;
-                const fecha = en['Fe.contabilización'];
-                if (!fecha) return; // CORRECCIÓN: Si no hay fecha, saltar
-                
-                const fechaFormateada = this.formatDate(fecha);
-                
-                // BUSCAR 643 CORRESPONDIENTE en CENTRO 3000 - CORREGIDO
-                const fechaEn = this.startOfDay(fecha);
-                const found643 = filtered.find(r => {
-                    if (pairedIgnore.has(filtered.indexOf(r))) return false;
-                    
-                    const movimiento = String(r['Clase de movimiento']);
-                    const cantidad = Math.abs(Number(r['Ctd.en UM entrada']||0));
-                    const usuario = this.normalizeUser(r['Nombre del usuario']);
-                    const centro = String(r['Centro']||'').trim();
-                    const fechaR = r['Fe.contabilización'];
-                    if (!fechaR) return false;
-                    
-                    const fechaRDay = this.startOfDay(fechaR);
-                    
-                    // BUSCAR ESPECÍFICAMENTE EN CENTRO 3000 - CORREGIDO CON 643
-                    return movimiento === '643' && 
-                           cantidad === qty &&
-                           usuario === user &&
-                           centro === '3000' && // ← CLAVE: Buscar en centro 3000
-                           fechaRDay.getTime() === fechaEn.getTime(); // Mismo día
-                });
-                
-                if (!found643) {
-                    irregularidades.push({ 
-                        tipo:'101_en_1000_sin_643', 
-                        usuario: en['Nombre del usuario']||'', 
-                        fecha: fechaFormateada,
-                        descripcion:`Entrada 101 en centro 1000 de ${qty} sin salida 643 correspondiente en centro 3000 - Fecha: ${fechaFormateada}`
-                    });
-                }
+            // Considerar 101 O 673 como movimientos válidos - MISMO USUARIO
+            return (movimiento === this.entry101 || movimiento === '673') && 
+                   cantidad === qty && 
+                   usuario === user643 && // MISMO USUARIO
+                   fechaR === fecha && // MISMO DÍA
+                   !pairedIgnore.has(filtered.indexOf(r))
+        });
+        
+        if (!found101or673) {
+            irregularidades.push({ 
+                tipo:'643_sin_101_o_673', 
+                usuario: ex['Nombre del usuario']||'', 
+                fecha: this.formatDate(fecha),
+                descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente del MISMO USUARIO (${user643}) - Misma cantidad, mismo día`
             });
         }
-
-        // REGLA 2: 673 positivo sin 643 o 641 negativo (mismo usuario, misma cantidad, mismo día)
+    });
+}
+        
+        // REGLA 1: 673 positivo sin 643 o 641 negativo (mismo usuario, misma cantidad, mismo día)
         if (group.centro === '1000/3000') {
             const entries673Positivo = filtered.filter(r => 
                 String(r['Clase de movimiento']) === '673' && 
@@ -747,7 +737,7 @@ class TrazabilidadCore {
             });
         }
 
-        // REGLA 3: 501 sin 502 (para TODOS los centros)
+        // REGLA 2: 501 sin 502 (para TODOS los centros)
         const entries501 = filtered.filter(r => 
             String(r['Clase de movimiento']) === this.entry501 && 
             Number(r['Ctd.en UM entrada']) > 0
@@ -776,7 +766,7 @@ class TrazabilidadCore {
             }
         });
 
-        // REGLA 4: 910 sin 909 (para TODOS los centros)
+        // REGLA 3: 910 sin 909 (para TODOS los centros)
         const entries910 = filtered.filter(r => 
             String(r['Clase de movimiento']) === '910' && 
             Number(r['Ctd.en UM entrada']) > 0
@@ -805,7 +795,7 @@ class TrazabilidadCore {
             }
         });
 
-        // REGLA 5: 651 sin 601 (para TODOS los centros)
+        // REGLA 4: 651 sin 601 (para TODOS los centros)
         const entries651 = filtered.filter(r => 
             String(r['Clase de movimiento']) === '651' && 
             Number(r['Ctd.en UM entrada']) > 0
