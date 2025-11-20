@@ -678,7 +678,7 @@ if (group.centro === '1000/3000') {
                 tipo:'643_sin_101_o_673', 
                 usuario: ex['Nombre del usuario']||'', 
                 fecha: this.formatDate(fecha),
-                descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente (mismo usuario: ${user})`
+                descripcion:`Salida 643 de ${qty} sin entrada 101 o 673 correspondiente (mismo usuario: ${user}- Fecha: ${fechaFormateada})`
             });
         }
     });
