@@ -221,20 +221,22 @@ class TrazabilidadCore {
         return paresAnulacion[movimientoOriginal]?.includes(movimientoAnulacion) || false;
     }
 
-    // Función para verificar si un 101 tiene un 643 correspondiente en el otro centro
+    // Función para verificar si un 101 tiene un 643 correspondiente en el otro centro - CORREGIDA
     tiene643Correspondiente(filtered, cantidad, fecha, usuario, centroOriginal) {
-        const centroBuscado = centroOriginal === '1000' ? '3000' : '1000';
+        // Si el 101 está en 3000, buscar 643 en 1000, y viceversa
+        const centroBuscado = centroOriginal === '3000' ? '1000' : '3000';
         const fechaMov = this.startOfDay(fecha);
         
         const movimientos643 = filtered.filter(r => {
             const movimiento = String(r['Clase de movimiento']);
-            const cantidadR = Math.abs(Number(r['Ctd.en UM entrada'] || 0));
+            const cantidadR = Number(r['Ctd.en UM entrada'] || 0); // IMPORTANTE: mantener signo
             const usuarioR = this.normalizeUser(r['Nombre del usuario']);
             const centroR = String(r['Centro'] || '').trim();
             const fechaR = this.startOfDay(r['Fe.contabilización']);
             
+            // Buscar 643 NEGATIVOS en el centro opuesto
             return movimiento === '643' && 
-                   cantidadR === cantidad && 
+                   cantidadR === -cantidad && // 643 debe ser NEGATIVO y misma cantidad
                    usuarioR === usuario && 
                    centroR === centroBuscado &&
                    fechaR.getTime() === fechaMov.getTime();
@@ -243,7 +245,7 @@ class TrazabilidadCore {
         return movimientos643.length > 0;
     }
 
-    // Nueva función para centros 1000/3000
+    // Nueva función para centros 1000/3000 - MEJORADA
     getUltimoIngresoComplejo(filtered) {
         // Movimientos considerados como ingresos para 1000/3000
         const movimientosIngreso = filtered.filter(r => {
@@ -281,8 +283,10 @@ class TrazabilidadCore {
 
             // Validación especial para movimientos 101
             if (movimiento === this.entry101) {
-                // Verificar que no tenga un 643 correspondiente en el otro centro
-                if (!this.tiene643Correspondiente(filtered, cantidad, fecha, usuario, centroMov)) {
+                // Verificar que NO tenga un 643 correspondiente en el otro centro
+                const tiene643 = this.tiene643Correspondiente(filtered, cantidad, fecha, usuario, centroMov);
+                
+                if (!tiene643) {
                     return this.formatDate(fecha);
                 }
             } else {
