@@ -5,6 +5,8 @@ class TrazabilidadSystem {
         this.core = new TrazabilidadCore();
         this.chart1 = null;
         this.chart2 = null;
+        this.chartModal1 = null;
+        this.chartModal2 = null;
         this.init();
     }
 
@@ -48,6 +50,7 @@ class TrazabilidadSystem {
                         <button id="configStockBtn" class="alt" disabled>Configurar stock inicial</button>
                         <button id="generateBtn" class="alt" disabled>Generar reporte</button>
                         <button id="downloadExcelBtn" class="alt" disabled>Descargar Excel</button>
+                        <button id="downloadExcelWithChartsBtn" class="alt" disabled>Descargar Excel con Gráficos</button>
                         <button id="selectAllBtn" class="alt">Seleccionar todos</button>
                         <button id="clearAllBtn" class="alt">Deseleccionar</button>
                         <button id="reiniciarBtn" class="alt">Reiniciar</button>
@@ -112,18 +115,24 @@ class TrazabilidadSystem {
                                 <div class="chart-wrapper">
                                     <canvas id="chartMovimientos"></canvas>
                                 </div>
+                                <small class="muted" style="text-align: center; display: block; margin-top: 10px;">
+                                    Haz clic en el gráfico para ampliar
+                                </small>
                             </div>
                             <div class="chart-card">
                                 <h6>Distribución Total de Salidas</h6>
                                 <div class="chart-wrapper">
                                     <canvas id="chartDistribucion"></canvas>
                                 </div>
+                                <small class="muted" style="text-align: center; display: block; margin-top: 10px;">
+                                    Haz clic en el gráfico para ampliar
+                                </small>
                             </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Modal para stock inicial - ACTUALIZADO CON SCROLL -->
+                <!-- Modal para stock inicial -->
                 <div id="stockModal" class="modal-overlay hidden">
                     <div class="modal-content" style="max-height: 90vh; overflow-y: auto; width: 90%; max-width: 600px;">
                         <div class="modal-header" style="position: sticky; top: 0; background: #2d3748; z-index: 10; padding: 20px; border-bottom: 1px solid #4a5568;">
@@ -137,6 +146,31 @@ class TrazabilidadSystem {
                         </div>
                     </div>
                 </div>
+
+                <!-- Modales para gráficos -->
+                <div id="chart1Modal" class="modal-overlay hidden">
+                    <div class="modal-content" style="max-height: 90vh; overflow-y: auto; width: 95%; max-width: 900px;">
+                        <div class="modal-header" style="position: sticky; top: 0; background: #2d3748; z-index: 10; padding: 20px; border-bottom: 1px solid #4a5568;">
+                            <h5 style="margin: 0; color: white;">Tipos de Movimiento por Destino - Vista Ampliada</h5>
+                            <button class="close-btn" onclick="this.closest('.modal-overlay').classList.add('hidden')" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">×</button>
+                        </div>
+                        <div class="modal-body" style="padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 500px;">
+                            <canvas id="chartMovimientosModal" style="max-width: 100%; max-height: 70vh;"></canvas>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="chart2Modal" class="modal-overlay hidden">
+                    <div class="modal-content" style="max-height: 90vh; overflow-y: auto; width: 95%; max-width: 700px;">
+                        <div class="modal-header" style="position: sticky; top: 0; background: #2d3748; z-index: 10; padding: 20px; border-bottom: 1px solid #4a5568;">
+                            <h5 style="margin: 0; color: white;">Distribución Total de Salidas - Vista Ampliada</h5>
+                            <button class="close-btn" onclick="this.closest('.modal-overlay').classList.add('hidden')" style="background: none; border: none; color: white; font-size: 24px; cursor: pointer; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center;">×</button>
+                        </div>
+                        <div class="modal-body" style="padding: 20px; display: flex; justify-content: center; align-items: center; min-height: 500px;">
+                            <canvas id="chartDistribucionModal" style="max-width: 100%; max-height: 70vh;"></canvas>
+                        </div>
+                    </div>
+                </div>
             </div>
         `;
     }
@@ -146,6 +180,13 @@ class TrazabilidadSystem {
         this.container.addEventListener('click', (e) => {
             if (e.target.id === 'backToReports') {
                 this.showReportsMenu();
+            }
+        });
+
+        // Cerrar modales de gráficos al hacer click fuera
+        document.addEventListener('click', (e) => {
+            if (e.target.classList.contains('modal-overlay') && e.target.id.includes('chart')) {
+                e.target.classList.add('hidden');
             }
         });
     }
@@ -543,6 +584,17 @@ class TrazabilidadSystem {
         }, 300);
     }
 
+    // Función para abrir modal de gráfico
+    openChartModal(modalId) {
+        const modal = document.getElementById(modalId);
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        
+        setTimeout(() => {
+            modal.style.opacity = '1';
+        }, 10);
+    }
+
     // Función para reiniciar el sistema
     reiniciarSistema() {
         // 1. Limpiar instancia core
@@ -556,6 +608,14 @@ class TrazabilidadSystem {
         if (this.chart2) {
             this.chart2.destroy();
             this.chart2 = null;
+        }
+        if (this.chartModal1) {
+            this.chartModal1.destroy();
+            this.chartModal1 = null;
+        }
+        if (this.chartModal2) {
+            this.chartModal2.destroy();
+            this.chartModal2 = null;
         }
         
         // 3. Limpiar selección de materiales
@@ -586,6 +646,7 @@ class TrazabilidadSystem {
         document.getElementById('configStockBtn').disabled = true;
         document.getElementById('generateBtn').disabled = true;
         document.getElementById('downloadExcelBtn').disabled = true;
+        document.getElementById('downloadExcelWithChartsBtn').disabled = true;
         
         // 7. Cerrar modal si está abierto
         this.closeModal();
@@ -708,6 +769,7 @@ class TrazabilidadSystem {
                     document.getElementById('configStockBtn').disabled = false;
                     document.getElementById('generateBtn').disabled = false;
                     document.getElementById('downloadExcelBtn').disabled = true;
+                    document.getElementById('downloadExcelWithChartsBtn').disabled = true;
                 } catch(err) {
                     console.error(err);
                     this.showCustomAlert('Error leyendo archivo: ' + err.message, 'error');
@@ -814,6 +876,7 @@ class TrazabilidadSystem {
             
             document.getElementById('materialsAnalizados').textContent = this.core.results.map(r => `${r.material} (${r.centro})`).join(', ');
             document.getElementById('downloadExcelBtn').disabled = false;
+            document.getElementById('downloadExcelWithChartsBtn').disabled = false;
             
             // ALERT DE ÉXITO - Reporte generado
             this.showCustomAlert(`Reporte generado exitosamente. Se analizaron ${this.core.results.length} materiales.`, 'success');
@@ -871,6 +934,96 @@ class TrazabilidadSystem {
             this.showCustomAlert('Excel descargado correctamente. El archivo "reporte_trazabilidad.xlsx" se ha guardado en tu dispositivo.', 'success');
         });
 
+        // Download Excel with Charts
+        document.getElementById('downloadExcelWithChartsBtn').addEventListener('click', () => {
+            if (!this.core.results || this.core.results.length === 0) { 
+                this.showCustomAlert('Genera el reporte primero.', 'warning');
+                return; 
+            }
+
+            this.showCustomAlert('Generando Excel con gráficos... Esto puede tomar unos segundos.', 'info');
+            
+            // Crear workbook
+            const wb = XLSX.utils.book_new();
+            
+            // Hoja de datos
+            const out = this.core.results.map(r => {
+                const todasIrregularidades = r.irregularidadesAll || [];
+                const todosTipos = todasIrregularidades.map(i => i.tipo).join('; ');
+                const todosUsuarios = todasIrregularidades.map(i => i.usuario).join('; ');
+                const todasDescripciones = todasIrregularidades.map(i => i.descripcion).join(' | ');
+                
+                return {
+                    Material: r.material,
+                    Texto: r.texto,
+                    UMB: r.umb,
+                    Centro: r.centro,
+                    Tienda: r.tienda,
+                    Rango_fecha: r.rangoFecha,
+                    Ultimo_ingreso: r.ultimoIngreso,
+                    Ajustes: r.ajustes,
+                    Fecha_ajuste: r.fechaAjuste,
+                    Puntos_cero: r.puntosCero,
+                    Posible_irregularidad: todasIrregularidades.length > 0 ? todosTipos : '-',
+                    Usuario_irregularidad: todasIrregularidades.length > 0 ? todosUsuarios : '-',
+                    Descripcion_irregularidad: todasIrregularidades.length > 0 ? todasDescripciones : '-',
+                    Tipo_diferencia: r.tipoDiferencia,
+                    Total_salidas_tienda: r.totalSalidasTienda,
+                    Total_salidas_clientes: r.totalSalidasClientes,
+                    Salida_max_tienda: r.salidaMaxTienda,
+                    Salida_min_tienda: r.salidaMinTienda,
+                    Salida_max_clientes: r.salidaMaxClientes,
+                    Salida_min_clientes: r.salidaMinClientes,
+                    Promedio_salida_tienda: r.promedioSalidaTienda,
+                    Promedio_salida_cliente: r.promedioSalidaCliente,
+                    Stock_Actual: r.stockActual
+                };
+            });
+            
+            const ws = XLSX.utils.json_to_sheet(out);
+            XLSX.utils.book_append_sheet(wb, ws, 'Reporte');
+            
+            // Hoja de gráficos (vacía para que el usuario pueda pegar las imágenes)
+            const chartsWs = XLSX.utils.aoa_to_sheet([
+                ['GRÁFICOS DEL REPORTE'],
+                [''],
+                ['Nota: Los gráficos se han generado como imágenes separadas.'],
+                ['Puedes copiar y pegar las imágenes de gráficos en esta hoja.'],
+                [''],
+                ['Gráfico 1: Tipos de Movimiento por Destino'],
+                ['Gráfico 2: Distribución Total de Salidas'],
+                [''],
+                ['Para insertar los gráficos:'],
+                ['1. Abre las imágenes de gráficos generadas'],
+                ['2. Copia la imagen (Ctrl+C)'],
+                ['3. Pega en esta hoja de Excel (Ctrl+V)'],
+                ['4. Ajusta el tamaño según sea necesario']
+            ]);
+            XLSX.utils.book_append_sheet(wb, chartsWs, 'Gráficos');
+            
+            // Generar imágenes de gráficos
+            setTimeout(() => {
+                this.generateChartImages().then((chartImages) => {
+                    // Descargar el Excel
+                    XLSX.writeFile(wb, 'reporte_trazabilidad_con_graficos.xlsx');
+                    
+                    // Descargar imágenes de gráficos por separado
+                    chartImages.forEach((imgData, index) => {
+                        const link = document.createElement('a');
+                        link.download = `grafico_${index + 1}.png`;
+                        link.href = imgData;
+                        link.click();
+                    });
+                    
+                    this.showCustomAlert('Excel con gráficos descargado correctamente. Se han generado archivos separados para los gráficos.', 'success');
+                }).catch(error => {
+                    console.error('Error generando gráficos:', error);
+                    this.showCustomAlert('Error al generar los gráficos. Se descargará solo el Excel.', 'error');
+                    XLSX.writeFile(wb, 'reporte_trazabilidad_con_graficos.xlsx');
+                });
+            }, 1000);
+        });
+
         // Reiniciar sistema
         document.getElementById('reiniciarBtn').addEventListener('click', function(e) {
             e.preventDefault();
@@ -891,6 +1044,37 @@ class TrazabilidadSystem {
 
         // Inicializar eventos del modal
         initializeModalEvents();
+    }
+
+    // Función para generar imágenes de gráficos
+    generateChartImages() {
+        return new Promise((resolve, reject) => {
+            try {
+                const chartImages = [];
+                
+                // Gráfico 1
+                if (this.chart1) {
+                    const chart1Canvas = document.getElementById('chartMovimientos');
+                    if (chart1Canvas) {
+                        const imageData = chart1Canvas.toDataURL('image/png');
+                        chartImages.push(imageData);
+                    }
+                }
+                
+                // Gráfico 2
+                if (this.chart2) {
+                    const chart2Canvas = document.getElementById('chartDistribucion');
+                    if (chart2Canvas) {
+                        const imageData = chart2Canvas.toDataURL('image/png');
+                        chartImages.push(imageData);
+                    }
+                }
+                
+                resolve(chartImages);
+            } catch (error) {
+                reject(error);
+            }
+        });
     }
 
     openStockModalForKeys(keys) {
@@ -1016,18 +1200,27 @@ class TrazabilidadSystem {
         this.renderCharts(resultsArr);
     }
 
+    createChartModals() {
+        // Los modales ya están en el HTML, solo necesitamos inicializar los event listeners
+        const chartModals = document.querySelectorAll('#chart1Modal, #chart2Modal');
+        chartModals.forEach(modal => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.classList.add('hidden');
+                }
+            });
+        });
+    }
+
     renderCharts(resultsArr) {
         // Destruir gráficos anteriores
         if (this.chart1) this.chart1.destroy();
         if (this.chart2) this.chart2.destroy();
+        if (this.chartModal1) this.chartModal1.destroy();
+        if (this.chartModal2) this.chartModal2.destroy();
 
-        // Configuración común para texto blanco
-        const whiteTextConfig = {
-            color: '#ffffff',
-            font: {
-                family: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif"
-            }
-        };
+        // Crear modales para los gráficos
+        this.createChartModals();
 
         // Gráfico 1: Tipos de Movimiento por Destino (Barras 3D) - MEJORADO
         const movementTypesData = this.core.getMovementTypesData(resultsArr);
@@ -1063,6 +1256,11 @@ class TrazabilidadSystem {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            this.openChartModal('chart1Modal');
+                        }
+                    },
                     plugins: {
                         legend: {
                             position: 'top',
@@ -1072,14 +1270,14 @@ class TrazabilidadSystem {
                                     size: 12,
                                     weight: 'bold'
                                 },
-                                color: '#ffffff', // Texto blanco
+                                color: '#ffffff',
                                 padding: 15
                             }
                         },
                         title: {
                             display: true,
                             text: 'TIPOS DE MOVIMIENTO POR DESTINO',
-                            color: '#ffffff', // Texto blanco
+                            color: '#ffffff',
                             font: {
                                 size: 14,
                                 weight: 'bold'
@@ -1121,7 +1319,7 @@ class TrazabilidadSystem {
                                     size: 11,
                                     weight: 'bold'
                                 },
-                                color: '#ffffff', // Texto blanco
+                                color: '#ffffff',
                                 maxRotation: 45,
                                 minRotation: 45
                             }
@@ -1135,7 +1333,7 @@ class TrazabilidadSystem {
                                 font: { 
                                     size: 11 
                                 },
-                                color: '#ffffff', // Texto blanco
+                                color: '#ffffff',
                                 callback: function(value) {
                                     return value.toLocaleString();
                                 }
@@ -1148,6 +1346,113 @@ class TrazabilidadSystem {
                     }
                 }
             });
+
+            // Gráfico modal
+            const ctx1Modal = document.getElementById('chartMovimientosModal');
+            if (ctx1Modal) {
+                this.chartModal1 = new Chart(ctx1Modal, {
+                    type: 'bar',
+                    data: {
+                        labels: topMovements.map(m => `Mov. ${m.type}`),
+                        datasets: [
+                            {
+                                label: 'Salidas Tienda',
+                                data: topMovements.map(m => m.tienda),
+                                backgroundColor: 'rgba(33, 150, 243, 0.9)',
+                                borderColor: 'rgba(33, 150, 243, 1)',
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false,
+                            },
+                            {
+                                label: 'Salidas Clientes',
+                                data: topMovements.map(m => m.cliente),
+                                backgroundColor: 'rgba(76, 175, 80, 0.9)',
+                                borderColor: 'rgba(76, 175, 80, 1)',
+                                borderWidth: 2,
+                                borderRadius: 8,
+                                borderSkipped: false,
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                                labels: {
+                                    boxWidth: 12,
+                                    font: { 
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    color: '#ffffff',
+                                    padding: 20
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'TIPOS DE MOVIMIENTO POR DESTINO - VISTA AMPLIADA',
+                                color: '#ffffff',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    bottom: 30
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                                titleFont: { 
+                                    size: 14, 
+                                    weight: 'bold',
+                                    color: '#ffffff'
+                                },
+                                bodyFont: { 
+                                    size: 13,
+                                    color: '#ffffff'
+                                },
+                                padding: 15,
+                                cornerRadius: 8
+                            }
+                        },
+                        scales: {
+                            x: {
+                                grid: { 
+                                    display: false,
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: { 
+                                    font: { 
+                                        size: 12,
+                                        weight: 'bold'
+                                    },
+                                    color: '#ffffff',
+                                    maxRotation: 45,
+                                    minRotation: 45
+                                }
+                            },
+                            y: {
+                                beginAtZero: true,
+                                grid: { 
+                                    color: 'rgba(255, 255, 255, 0.1)'
+                                },
+                                ticks: { 
+                                    font: { 
+                                        size: 12 
+                                    },
+                                    color: '#ffffff',
+                                    callback: function(value) {
+                                        return value.toLocaleString();
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
         }
 
         // Gráfico 2: Distribución Total de Salidas (Dona 3D) - COMPLETAMENTE VISIBLE
@@ -1179,7 +1484,12 @@ class TrazabilidadSystem {
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    cutout: '65%', // Reducido para que el anillo sea más grueso y visible
+                    onClick: (evt, elements) => {
+                        if (elements.length > 0) {
+                            this.openChartModal('chart2Modal');
+                        }
+                    },
+                    cutout: '65%',
                     plugins: {
                         legend: {
                             position: 'bottom',
@@ -1189,7 +1499,7 @@ class TrazabilidadSystem {
                                     size: 12,
                                     weight: 'bold'
                                 },
-                                color: '#ffffff', // Texto blanco
+                                color: '#ffffff',
                                 padding: 15,
                                 generateLabels: function(chart) {
                                     const data = chart.data;
@@ -1216,7 +1526,7 @@ class TrazabilidadSystem {
                         title: {
                             display: true,
                             text: 'DISTRIBUCIÓN TOTAL DE SALIDAS',
-                            color: '#ffffff', // Texto blanco
+                            color: '#ffffff',
                             font: {
                                 size: 14,
                                 weight: 'bold'
@@ -1265,6 +1575,103 @@ class TrazabilidadSystem {
                     }
                 }
             });
+
+            // Gráfico modal
+            const ctx2Modal = document.getElementById('chartDistribucionModal');
+            if (ctx2Modal) {
+                this.chartModal2 = new Chart(ctx2Modal, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Salidas Tienda', 'Salidas Clientes'],
+                        datasets: [{
+                            data: [totalSalidasTienda, totalSalidasClientes],
+                            backgroundColor: [
+                                'rgba(255, 193, 7, 0.9)',
+                                'rgba(156, 39, 176, 0.9)'
+                            ],
+                            borderColor: [
+                                'rgba(255, 193, 7, 1)',
+                                'rgba(156, 39, 176, 1)'
+                            ],
+                            borderWidth: 4,
+                            borderRadius: 8,
+                            spacing: 3,
+                            borderAlign: 'inner'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: true,
+                        cutout: '60%',
+                        plugins: {
+                            legend: {
+                                position: 'bottom',
+                                labels: {
+                                    boxWidth: 20,
+                                    font: { 
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    color: '#ffffff',
+                                    padding: 20,
+                                    generateLabels: function(chart) {
+                                        const data = chart.data;
+                                        if (data.labels.length && data.datasets.length) {
+                                            return data.labels.map((label, i) => {
+                                                const value = data.datasets[0].data[i];
+                                                const total = data.datasets[0].data.reduce((a, b) => a + b, 0);
+                                                const percentage = total > 0 ? Math.round((value / total) * 100) : 0;
+                                                
+                                                return {
+                                                    text: `${label}: ${value.toLocaleString()} (${percentage}%)`,
+                                                    fillStyle: data.datasets[0].backgroundColor[i],
+                                                    strokeStyle: data.datasets[0].borderColor[i],
+                                                    lineWidth: 3,
+                                                    hidden: false,
+                                                    index: i
+                                                };
+                                            });
+                                        }
+                                        return [];
+                                    }
+                                }
+                            },
+                            title: {
+                                display: true,
+                                text: 'DISTRIBUCIÓN TOTAL DE SALIDAS - VISTA AMPLIADA',
+                                color: '#ffffff',
+                                font: {
+                                    size: 16,
+                                    weight: 'bold'
+                                },
+                                padding: {
+                                    bottom: 30
+                                }
+                            },
+                            tooltip: {
+                                backgroundColor: 'rgba(0, 0, 0, 0.9)',
+                                titleFont: { 
+                                    size: 14, 
+                                    weight: 'bold',
+                                    color: '#ffffff'
+                                },
+                                bodyFont: { 
+                                    size: 13,
+                                    color: '#ffffff'
+                                },
+                                padding: 15,
+                                cornerRadius: 8
+                            }
+                        },
+                        animation: {
+                            animateScale: true,
+                            animateRotate: true,
+                            duration: 1000,
+                            easing: 'easeOutQuart'
+                        }
+                    }
+                });
+            }
         }
     }
 }
