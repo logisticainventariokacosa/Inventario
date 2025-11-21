@@ -53,7 +53,7 @@ class TrazabilidadCore {
         this.nonInventoryMovements = new Set(['321', '322', '343', '344']);
 
         // Usuarios especiales - ACTUALIZADO
-        this.usuariosEspeciales643 = new Set(['avitora', 'lgarcia', 'ksoteldo', 'gonzalezm', 'gcontreras', 'cipolito']);
+        this.usuariosEspeciales643 = new Set(['avitora', 'lgarcia', 'ksoteldo', 'gonzalezm', 'gcontreras', 'cippolito']);
         this.usuariosEspeciales101 = new Set(['ylara']);
      } 
     // Helpers (se mantienen igual)
