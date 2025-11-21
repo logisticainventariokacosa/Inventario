@@ -30,6 +30,10 @@ class TrazabilidadCore {
         this.annul561 = '562';
         this.annul673 = '674';
         
+        // NUEVOS MOVIMIENTOS - Garantía
+        this.entry994 = '994'; // Entrada garantía (positivo)
+        this.annul994 = '995'; // Anulación de 994 (negativo)
+        
         // Consumos (cantidad NEGATIVA)
         this.consumptionCodes = new Set(['201', '261', '309']);
         
@@ -241,7 +245,8 @@ class TrazabilidadCore {
             '601': ['602'],  // 602 anula 601
             '909': ['910'],   // 910 anula 909
             '992': ['993'],   // 993 anula 992
-            '561': ['562']    // 562 anula 561
+            '561': ['562'],   // 562 anula 561
+            '994': ['995']    // 995 anula 994 - NUEVO
         };
 
         return paresAnulacion[movimientoOriginal]?.includes(movimientoAnulacion) || false;
@@ -289,7 +294,8 @@ class TrazabilidadCore {
                    movimiento === '651' || 
                    movimiento === '673' ||
                    movimiento === this.entry992 ||
-                   movimiento === this.entry561;
+                   movimiento === this.entry561 ||
+                   movimiento === this.entry994; // NUEVO: incluir 994
         });
 
         if (movimientosIngreso.length === 0) return '';
@@ -321,7 +327,7 @@ class TrazabilidadCore {
                     return this.formatDate(fecha);
                 }
             } else {
-                // Para 651, 673, 992, 561 y 101 en centro 3000, tomarlos directamente
+                // Para 651, 673, 992, 561, 994 y 101 en centro 3000, tomarlos directamente
                 return this.formatDate(fecha);
             }
         }
@@ -343,7 +349,8 @@ class TrazabilidadCore {
             return movimiento === this.entry101 || 
                    movimiento === '305' ||
                    movimiento === this.entry992 ||
-                   movimiento === this.entry561;
+                   movimiento === this.entry561 ||
+                   movimiento === this.entry994; // NUEVO: incluir 994
         });
 
         if (movimientosIngreso.length === 0) return '';
@@ -363,7 +370,7 @@ class TrazabilidadCore {
             return this.getUltimoIngresoComplejo(filtered);
         }
         
-        // Para otros centros - lógica simple (101, 305, 992, 561)
+        // Para otros centros - lógica simple (101, 305, 992, 561, 994)
         return this.getUltimoIngresoSimple(filtered);
     }
 
@@ -519,11 +526,12 @@ class TrazabilidadCore {
                 
                 // Buscar anulaciones y emparejarlas
                 if (movement === this.annul201 || movement === this.annul261 || movement === this.annul309 || 
-                    movement === this.annul992 || movement === this.annul561) {
+                    movement === this.annul992 || movement === this.annul561 || movement === this.annul994) { // NUEVO: incluir 995
                     const originalMovement = movement === this.annul201 ? '201' : 
                                            movement === this.annul261 ? '261' : 
                                            movement === this.annul309 ? '309' :
-                                           movement === this.annul992 ? '992' : '561';
+                                           movement === this.annul992 ? '992' : 
+                                           movement === this.annul561 ? '561' : '994'; // NUEVO: 995 → 994
                     const matchingOriginal = items.find(item => 
                         String(item.row['Clase de movimiento']) === originalMovement &&
                         Math.abs(Number(item.row['Ctd.en UM entrada']||0)) === qty
@@ -726,6 +734,36 @@ class TrazabilidadCore {
             }
         });
 
+        // REGLA 2.1: 994 sin 995 (para TODOS los centros) - NUEVA REGLA
+        const entries994 = filtered.filter(r => 
+            String(r['Clase de movimiento']) === this.entry994 && 
+            Number(r['Ctd.en UM entrada']) > 0
+        );
+
+        entries994.forEach(en => {
+            const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
+            const fecha = en['Fe.contabilización'];
+            if (!fecha) return;
+            
+            const fechaFormateada = this.formatDate(fecha);
+            
+            // Buscar 995 NEGATIVO con misma cantidad (en cualquier fecha)
+            const found995 = filtered.find(r => 
+                String(r['Clase de movimiento']) === this.annul994 && 
+                Number(r['Ctd.en UM entrada']) === -qty && // 995 debe ser NEGATIVO con misma cantidad
+                !pairedIgnore.has(filtered.indexOf(r))
+            );
+            
+            if (!found995) {
+                irregularidades.push({ 
+                    tipo:'994_sin_995', 
+                    usuario: en['Nombre del usuario']||'', 
+                    fecha: fechaFormateada,
+                    descripcion:`Entrada garantía 994 de ${qty} sin anulación 995 equivalente - Fecha: ${fechaFormateada}`
+                });
+            }
+        });
+
         // REGLA 3: 910 sin 909 (para TODOS los centros)
         const entries910 = filtered.filter(r => 
             String(r['Clase de movimiento']) === '910' && 
@@ -756,86 +794,86 @@ class TrazabilidadCore {
         });
 
         // REGLA 4: 651 sin 601 (para TODOS los centros) - MODIFICADA CON VALIDACIÓN DE CLIENTE
-const entries651 = filtered.filter(r => 
-    String(r['Clase de movimiento']) === '651' && 
-    Number(r['Ctd.en UM entrada']) > 0
-);
+        const entries651 = filtered.filter(r => 
+            String(r['Clase de movimiento']) === '651' && 
+            Number(r['Ctd.en UM entrada']) > 0
+        );
 
-entries651.forEach(en => {
-    const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
-    const cliente651 = String(en['Cliente']||'').trim();
-    const fecha = en['Fe.contabilización'];
-    if (!fecha) return;
-    
-    const fechaFormateada = this.formatDate(fecha);
-    
-    // Buscar 601 con misma cantidad y MISMO CLIENTE (no importa la fecha)
-    const found601 = filtered.find(r => 
-        String(r['Clase de movimiento']) === '601' && 
-        Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
-        String(r['Cliente']||'').trim() === cliente651 &&
-        !pairedIgnore.has(filtered.indexOf(r))
-    );
-    
-    if (!found601) {
-        irregularidades.push({ 
-            tipo:'651_sin_601', 
-            usuario: en['Nombre del usuario']||'', 
-            fecha: fechaFormateada,
-            descripcion:`Devolución 651 de ${qty} sin venta 601 correspondiente (mismo cliente: ${cliente651}) - Fecha: ${fechaFormateada}`
+        entries651.forEach(en => {
+            const qty = Math.abs(Number(en['Ctd.en UM entrada']||0));
+            const cliente651 = String(en['Cliente']||'').trim();
+            const fecha = en['Fe.contabilización'];
+            if (!fecha) return;
+            
+            const fechaFormateada = this.formatDate(fecha);
+            
+            // Buscar 601 con misma cantidad y MISMO CLIENTE (no importa la fecha)
+            const found601 = filtered.find(r => 
+                String(r['Clase de movimiento']) === '601' && 
+                Math.abs(Number(r['Ctd.en UM entrada']||0)) === qty &&
+                String(r['Cliente']||'').trim() === cliente651 &&
+                !pairedIgnore.has(filtered.indexOf(r))
+            );
+            
+            if (!found601) {
+                irregularidades.push({ 
+                    tipo:'651_sin_601', 
+                    usuario: en['Nombre del usuario']||'', 
+                    fecha: fechaFormateada,
+                    descripcion:`Devolución 651 de ${qty} sin venta 601 correspondiente (mismo cliente: ${cliente651}) - Fecha: ${fechaFormateada}`
+                });
+            }
         });
-    }
-});
 
         // NUEVA REGLA: 643 negativo sin 101 o 673 positivo (mismo usuario, misma cantidad, mismo día)
-const salidas643 = filtered.filter(r => 
-    String(r['Clase de movimiento']) === '643' && 
-    Number(r['Ctd.en UM entrada']) < 0 &&
-    !pairedIgnore.has(filtered.indexOf(r))
-);
+        const salidas643 = filtered.filter(r => 
+            String(r['Clase de movimiento']) === '643' && 
+            Number(r['Ctd.en UM entrada']) < 0 &&
+            !pairedIgnore.has(filtered.indexOf(r))
+        );
 
-salidas643.forEach(salida => {
-    const salidaUserNorm = this.normalizeUser(salida['Nombre del usuario']||'');
-    // EXCEPCIÓN para usuarios especiales
-    if (this.usuariosEspeciales643.has(salidaUserNorm)) return;
-    
-    const qty = Math.abs(Number(salida['Ctd.en UM entrada']||0));
-    const user = salidaUserNorm;
-    const fecha = salida['Fe.contabilización'];
-    if (!fecha) return;
-    
-    const fechaFormateada = this.formatDate(fecha);
-    
-    // BUSCAR 101 o 673 POSITIVO correspondiente (mismo usuario, misma cantidad, mismo día)
-    const fechaSalida = this.startOfDay(fecha);
-    const foundEntradaCorrespondiente = filtered.find(r => {
-        if (pairedIgnore.has(filtered.indexOf(r))) return false;
-        
-        const movimiento = String(r['Clase de movimiento']);
-        const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-        const usuario = this.normalizeUser(r['Nombre del usuario']);
-        const fechaR = r['Fe.contabilización'];
-        if (!fechaR) return false;
-        
-        const fechaRDay = this.startOfDay(fechaR);
-        
-        // Buscar 101 o 673 POSITIVO del mismo usuario, misma cantidad y mismo día
-        return (movimiento === '101' || movimiento === '673') && 
-               cantidad > 0 && // Debe ser positivo
-               Math.abs(cantidad) === qty && // Misma cantidad en valor absoluto
-               usuario === user && // Mismo usuario
-               fechaRDay.getTime() === fechaSalida.getTime(); // Mismo día
-    });
-    
-    if (!foundEntradaCorrespondiente) {
-        irregularidades.push({ 
-            tipo:'643_sin_101_o_673', 
-            usuario: salida['Nombre del usuario']||'', 
-            fecha: fechaFormateada,
-            descripcion:`Salida 643 negativa de ${qty} sin entrada 101 o 673 correspondiente (mismo usuario: ${user}, mismo día) - Fecha: ${fechaFormateada}`
+        salidas643.forEach(salida => {
+            const salidaUserNorm = this.normalizeUser(salida['Nombre del usuario']||'');
+            // EXCEPCIÓN para usuarios especiales
+            if (this.usuariosEspeciales643.has(salidaUserNorm)) return;
+            
+            const qty = Math.abs(Number(salida['Ctd.en UM entrada']||0));
+            const user = salidaUserNorm;
+            const fecha = salida['Fe.contabilización'];
+            if (!fecha) return;
+            
+            const fechaFormateada = this.formatDate(fecha);
+            
+            // BUSCAR 101 o 673 POSITIVO correspondiente (mismo usuario, misma cantidad, mismo día)
+            const fechaSalida = this.startOfDay(fecha);
+            const foundEntradaCorrespondiente = filtered.find(r => {
+                if (pairedIgnore.has(filtered.indexOf(r))) return false;
+                
+                const movimiento = String(r['Clase de movimiento']);
+                const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+                const usuario = this.normalizeUser(r['Nombre del usuario']);
+                const fechaR = r['Fe.contabilización'];
+                if (!fechaR) return false;
+                
+                const fechaRDay = this.startOfDay(fechaR);
+                
+                // Buscar 101 o 673 POSITIVO del mismo usuario, misma cantidad y mismo día
+                return (movimiento === '101' || movimiento === '673') && 
+                       cantidad > 0 && // Debe ser positivo
+                       Math.abs(cantidad) === qty && // Misma cantidad en valor absoluto
+                       usuario === user && // Mismo usuario
+                       fechaRDay.getTime() === fechaSalida.getTime(); // Mismo día
+            });
+            
+            if (!foundEntradaCorrespondiente) {
+                irregularidades.push({ 
+                    tipo:'643_sin_101_o_673', 
+                    usuario: salida['Nombre del usuario']||'', 
+                    fecha: fechaFormateada,
+                    descripcion:`Salida 643 negativa de ${qty} sin entrada 101 o 673 correspondiente (mismo usuario: ${user}, mismo día) - Fecha: ${fechaFormateada}`
+                });
+            }
         });
-    }
-});
 
         // Determinar tipo de diferencia BASADO EN LAS REGLAS CORREGIDAS
         let tipoDiferencia = 'Ninguna detectada';
@@ -845,6 +883,7 @@ salidas643.forEach(salida => {
         if (tipos.includes('101_en_1000_sin_643')) tipoDiferencia = 'Posible Error Registro 101/643';
         if (tipos.includes('673_positivo_sin_salida')) tipoDiferencia = 'Posible Error Entrada 673';
         if (tipos.includes('501_sin_502')) tipoDiferencia = 'Posible Faltante 501/502';
+        if (tipos.includes('994_sin_995')) tipoDiferencia = 'Posible Error Garantía 994/995'; // NUEVO
         if (tipos.includes('910_sin_909')) tipoDiferencia = 'Posible Error Devolución 910/909';
         if (tipos.includes('651_sin_601')) tipoDiferencia = 'Posible Error Devolución 651/601';
 
