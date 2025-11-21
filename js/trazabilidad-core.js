@@ -297,6 +297,7 @@ class TrazabilidadCore {
                    movimiento === '673' ||
                    movimiento === this.entry992 ||
                    movimiento === this.entry561 ||
+                   movimiento === this.entry501 ||
                    movimiento === this.entry994; // NUEVO: incluir 994
         });
 
@@ -352,6 +353,7 @@ class TrazabilidadCore {
                    movimiento === '305' ||
                    movimiento === this.entry992 ||
                    movimiento === this.entry561 ||
+                   movimiento === this.entry501 ||
                    movimiento === this.entry994; // NUEVO: incluir 994
         });
 
