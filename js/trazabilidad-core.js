@@ -20,7 +20,7 @@ class TrazabilidadCore {
         this.storeOutCodes = new Set(['643', '641', '351', '161', '201', '261']);
         
         // Entradas que restan a salidas a tienda (cantidad POSITIVA)
-        this.storeInCodes = new Set(['644', '642', '352', '162', '910', '202', '262']);
+        this.storeInCodes = new Set(['644', '642', '352', '162', '202', '262']);
         
         // Nuevos movimientos de ingreso
         this.entry992 = '992';
