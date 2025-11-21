@@ -45,6 +45,8 @@ class TrazabilidadCore {
         this.entry101 = '101';
         this.entry501 = '501';
         this.entry305 = '305'; // Entrada de tienda
+        this.entry992 = '992'; // Entrada dproduccion
+        this.entry561 = '561'; // Entrada produccion 1010
         
         // Devoluciones de clientes (cantidad POSITIVA)
         this.clientReturns = new Set(['651']);
