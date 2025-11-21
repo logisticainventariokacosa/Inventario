@@ -912,38 +912,37 @@ if (typeof showAlert === 'undefined') {
     });
 }
 
-/* ====== SISTEMA DE REPORTES - ACTUALIZADO PARA 2 ARCHIVOS ====== */
+/* ====== SISTEMA MODULAR DE REPORTES ====== */
+let modulesManager = null;
+
 function initializeReportsSystem() {
     const reportContent = document.getElementById('report-content');
-    if (reportContent) {
-        // Solo cargar los JS de trazabilidad cuando sea necesario
-        if (!window.trazabilidadLoaded) {
-            console.log('Cargando sistema de reportes...');
-            
-            // Cargar primero el core y luego la UI
-            loadScript('js/trazabilidad-core.js', function() {
-                loadScript('js/trazabilidad-ui.js', function() {
-                    window.trazabilidadLoaded = true;
-                    window.reportsSystem = new TrazabilidadSystem(reportContent);
-                    window.reportsSystem.showReportsMenu();
-                    console.log('Sistema de reportes cargado correctamente');
-                });
-            });
-        } else {
-            window.reportsSystem.showReportsMenu();
-        }
+    if (!reportContent) {
+        console.error('No se encontró el contenedor report-content');
+        return;
     }
-}
 
-// Función auxiliar para cargar scripts en orden
-function loadScript(src, callback) {
-    const script = document.createElement('script');
-    script.src = src;
-    script.onload = callback;
-    script.onerror = function() {
-        console.error('Error cargando script: ' + src);
-    };
-    document.head.appendChild(script);
+    try {
+        // Inicializar el gestor de módulos si no existe
+        if (!modulesManager) {
+            modulesManager = new ModulesManager();
+            window.modulesManager = modulesManager; // Hacerlo global
+            console.log('ModulesManager inicializado');
+        }
+        
+        modulesManager.init(reportContent);
+        console.log('Sistema modular de reportes inicializado correctamente');
+        
+    } catch (error) {
+        console.error('Error al inicializar sistema modular:', error);
+        reportContent.innerHTML = `
+            <div class="search-card" style="text-align: center; padding: 40px;">
+                <h3 style="color: var(--red);">Error en sistema de reportes</h3>
+                <p style="color: var(--muted);">${error.message}</p>
+                <button onclick="initializeReportsSystem()" class="alt">Reintentar</button>
+            </div>
+        `;
+    }
 }
 
 // Función global para mostrar alertas (si no existe)
