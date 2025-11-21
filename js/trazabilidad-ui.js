@@ -826,31 +826,41 @@ class TrazabilidadSystem {
                 return; 
             }
             
-            const out = this.core.results.map(r => ({
-                Material: r.material,
-                Texto: r.texto,
-                UMB: r.umb,
-                Centro: r.centro,
-                Tienda: r.tienda,
-                Rango_fecha: r.rangoFecha,
-                Ultimo_ingreso: r.ultimoIngreso,
-                Ajustes: r.ajustes,
-                Fecha_ajuste: r.fechaAjuste,
-                Puntos_cero: r.puntosCero,
-                Posible_irregularidad: r.posibleIrregularidad,
-                Usuario_irregularidad: r.usuarioIrregularidad,
-                Descripcion_irregularidad: r.descIrregularidad,
-                Tipo_diferencia: r.tipoDiferencia,
-                Total_salidas_tienda: r.totalSalidasTienda,
-                Total_salidas_clientes: r.totalSalidasClientes,
-                Salida_max_tienda: r.salidaMaxTienda,
-                Salida_min_tienda: r.salidaMinTienda,
-                Salida_max_clientes: r.salidaMaxClientes,
-                Salida_min_clientes: r.salidaMinClientes,
-                Promedio_salida_tienda: r.promedioSalidaTienda,
-                Promedio_salida_cliente: r.promedioSalidaCliente,
-                Stock_Actual: r.stockActual
-            }));
+            const out = this.core.results.map(r => {
+                // Obtener todos los errores
+                const todasIrregularidades = r.irregularidadesAll || [];
+                
+                // Crear strings con todos los errores
+                const todosTipos = todasIrregularidades.map(i => i.tipo).join('; ');
+                const todosUsuarios = todasIrregularidades.map(i => i.usuario).join('; ');
+                const todasDescripciones = todasIrregularidades.map(i => i.descripcion).join(' | ');
+                
+                return {
+                    Material: r.material,
+                    Texto: r.texto,
+                    UMB: r.umb,
+                    Centro: r.centro,
+                    Tienda: r.tienda,
+                    Rango_fecha: r.rangoFecha,
+                    Ultimo_ingreso: r.ultimoIngreso,
+                    Ajustes: r.ajustes,
+                    Fecha_ajuste: r.fechaAjuste,
+                    Puntos_cero: r.puntosCero,
+                    Posible_irregularidad: todasIrregularidades.length > 0 ? todosTipos : '-',
+                    Usuario_irregularidad: todasIrregularidades.length > 0 ? todosUsuarios : '-',
+                    Descripcion_irregularidad: todasIrregularidades.length > 0 ? todasDescripciones : '-',
+                    Tipo_diferencia: r.tipoDiferencia,
+                    Total_salidas_tienda: r.totalSalidasTienda,
+                    Total_salidas_clientes: r.totalSalidasClientes,
+                    Salida_max_tienda: r.salidaMaxTienda,
+                    Salida_min_tienda: r.salidaMinTienda,
+                    Salida_max_clientes: r.salidaMaxClientes,
+                    Salida_min_clientes: r.salidaMinClientes,
+                    Promedio_salida_tienda: r.promedioSalidaTienda,
+                    Promedio_salida_cliente: r.promedioSalidaCliente,
+                    Stock_Actual: r.stockActual
+                };
+            });
             
             const ws = XLSX.utils.json_to_sheet(out);
             const wb = XLSX.utils.book_new();
@@ -957,6 +967,14 @@ class TrazabilidadSystem {
                 if (cls) cell.classList.add(cls);
                 return cell;
             };
+
+            // Obtener todos los errores
+            const todasIrregularidades = r.irregularidadesAll || [];
+            
+            // Crear strings con todos los errores
+            const todosTipos = todasIrregularidades.map(i => i.tipo).join('; ');
+            const todosUsuarios = todasIrregularidades.map(i => i.usuario).join('; ');
+            const todasDescripciones = todasIrregularidades.map(i => i.descripcion).join(' | ');
             
             tr.appendChild(td(r.material));
             tr.appendChild(td(r.texto));
@@ -968,9 +986,16 @@ class TrazabilidadSystem {
             tr.appendChild(td(r.ajustes));
             tr.appendChild(td(r.fechaAjuste));
             tr.appendChild(td(r.puntosCero));
-            tr.appendChild(td(r.posibleIrregularidad));
-            tr.appendChild(td(r.usuarioIrregularidad));
-            tr.appendChild(td(r.descIrregularidad));
+            
+            // Mostrar TODOS los tipos de irregularidad
+            tr.appendChild(td(todasIrregularidades.length > 0 ? todosTipos : '-'));
+            
+            // Mostrar TODOS los usuarios de irregularidad
+            tr.appendChild(td(todasIrregularidades.length > 0 ? todosUsuarios : '-'));
+            
+            // Mostrar TODAS las descripciones de irregularidad
+            tr.appendChild(td(todasIrregularidades.length > 0 ? todasDescripciones : '-'));
+            
             tr.appendChild(td(r.tipoDiferencia));
             tr.appendChild(td(Math.abs(r.totalSalidasTienda), 'negative-diff'));
             tr.appendChild(td(Math.abs(r.totalSalidasClientes), 'negative-diff'));
