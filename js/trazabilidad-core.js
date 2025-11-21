@@ -17,7 +17,7 @@ class TrazabilidadCore {
         this.clientInCodes = new Set(['651', '602', '910']);
         
         // Salidas a tienda (cantidad NEGATIVA)
-        this.storeOutCodes = new Set(['673', '643', '641', '351', '161', '909', '201', '261']);
+        this.storeOutCodes = new Set(['643', '641', '351', '161', '201', '261']);
         
         // Entradas que restan a salidas a tienda (cantidad POSITIVA)
         this.storeInCodes = new Set(['644', '642', '352', '162', '910', '202', '262']);
@@ -25,8 +25,10 @@ class TrazabilidadCore {
         // Nuevos movimientos de ingreso
         this.entry992 = '992';
         this.entry561 = '561';
+        this.entry673 = '673';
         this.annul992 = '993';
         this.annul561 = '562';
+        this.annul673 = '674';
         
         // Consumos (cantidad NEGATIVA)
         this.consumptionCodes = new Set(['201', '261', '309']);
