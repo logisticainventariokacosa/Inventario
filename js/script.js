@@ -913,24 +913,27 @@ if (typeof showAlert === 'undefined') {
 }
 
 /* ====== SISTEMA MODULAR DE REPORTES ====== */
-let modulesManager = null;
-
+/* ====== SISTEMA DE REPORTES - VERSIÓN CORREGIDA ====== */
 function initializeReportsSystem() {
+    console.log('Inicializando sistema de reportes...');
+    
     const reportContent = document.getElementById('report-content');
     if (!reportContent) {
         console.error('No se encontró el contenedor report-content');
         return;
     }
 
+    // Limpiar contenido anterior
+    reportContent.innerHTML = '';
+
     try {
-        // Inicializar el gestor de módulos si no existe
-        if (!modulesManager) {
-            modulesManager = new ModulesManager();
-            window.modulesManager = modulesManager; // Hacerlo global
+        // Inicializar el gestor de módulos
+        if (!window.modulesManager) {
+            window.modulesManager = new ModulesManager();
             console.log('ModulesManager inicializado');
         }
         
-        modulesManager.init(reportContent);
+        window.modulesManager.init(reportContent);
         console.log('Sistema modular de reportes inicializado correctamente');
         
     } catch (error) {
