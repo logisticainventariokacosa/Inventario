@@ -2609,3 +2609,64 @@ body.modal-open {
     background: var(--primary);
     color: white;
     }
+/* === CORRECCIÓN ESPECÍFICA PARA BOTÓN VOLVER === */
+
+/* REGLA CRÍTICA: Asegurar que el botón volver funcione correctamente */
+.back-button {
+    background: var(--card-bg) !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    color: var(--text) !important;
+    padding: 10px 20px !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    margin-bottom: 20px !important;
+    transition: all 0.3s ease !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
+}
+
+.back-button:hover {
+    background: var(--blue-accent) !important;
+    color: white !important;
+    text-decoration: none !important;
+    transform: translateY(-2px) !important;
+}
+
+/* Asegurar que los botones dentro de reportes no sean afectados */
+#report-content button,
+.trazabilidad-container button {
+    background: var(--gradient) !important;
+    border: 0 !important;
+    padding: 12px 20px !important;
+    border-radius: 10px !important;
+    color: white !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    font-weight: 600 !important;
+    font-size: 0.95rem !important;
+    text-decoration: none !important;
+    display: inline-block !important;
+    font-family: inherit !important;
+}
+
+#report-content button.alt,
+.trazabilidad-container button.alt {
+    background: transparent !important;
+    border: 1px solid rgba(255,255,255,0.1) !important;
+    color: var(--text) !important;
+}
+
+#report-content button:hover,
+.trazabilidad-container button:hover {
+    transform: translateY(-3px) !important;
+    box-shadow: 0 10px 20px rgba(198,40,40,0.3) !important;
+}
+
+#report-content button.alt:hover,
+.trazabilidad-container button.alt:hover {
+    background: rgba(255,255,255,0.05) !important;
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2) !important;
+    border-color: var(--blue-accent) !important;
+}
