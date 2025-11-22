@@ -169,22 +169,63 @@ class TrazabilidadSystem {
     }
 
     bindEvents() {
-    // Event delegation para el botón volver - CONEXIÓN CORREGIDA
+    // Event listener directo para el botón volver - VERSIÓN CORREGIDA
+    setTimeout(() => {
+        const backButton = document.getElementById('backToReports');
+        if (backButton) {
+            backButton.addEventListener('click', (e) => {
+                e.preventDefault();
+                console.log('Botón Volver a Reportes clickeado - Evento directo'); // Debug
+                this.goBackToReports();
+            });
+        } else {
+            console.error('No se encontró el botón backToReports');
+        }
+    }, 100);
+
+    // También mantener la delegación de eventos como respaldo
     this.container.addEventListener('click', (e) => {
-        if (e.target.id === 'backToReports') {
-            console.log('Botón Volver a Reportes clickeado'); // Debug
-            if (window.modulesManager) {
-                window.modulesManager.showMainMenu();
-            } else {
-                // Fallback si no hay manager
-                console.warn('ModulesManager no encontrado, usando fallback');
-                this.showReportsMenu();
-            }
+        if (e.target.id === 'backToReports' || e.target.closest('#backToReports')) {
+            e.preventDefault();
+            console.log('Botón Volver a Reportes clickeado - Delegación'); // Debug
+            this.goBackToReports();
         }
     });
 }
 
+// Método específico para volver a reportes
+goBackToReports() {
+    console.log('Ejecutando goBackToReports');
+    
+    // Opción 1: Usar ModulesManager si está disponible
+    if (window.modulesManager) {
+        console.log('Navegando mediante ModulesManager');
+        window.modulesManager.showMainMenu();
+        return;
+    }
+    
+    // Opción 2: Usar el sistema de navegación existente
+    if (typeof initializeReportsSystem === 'function') {
+        console.log('Navegando mediante initializeReportsSystem');
+        initializeReportsSystem();
+        return;
+    }
+    
+    // Opción 3: Fallback - recargar la sección de reportes
+    console.log('Usando fallback de navegación');
+    const reportsSection = document.getElementById('reports');
+    if (reportsSection) {
+        reportsSection.innerHTML = '<div class="loading-state">Cargando reportes...</div>';
+        setTimeout(() => {
+            this.showReportsMenu();
+        }, 100);
+    }
+}
+
     showReportsMenu() {
+    // Limpiar primero cualquier contenido existente
+    this.container.innerHTML = '';
+    
     // Verificar si existe el ModulesManager
     if (window.modulesManager) {
         window.modulesManager.showMainMenu();
@@ -208,13 +249,20 @@ class TrazabilidadSystem {
         </div>
     `;
 
+    // Reconectar eventos para el menú de reportes
     document.querySelectorAll('.report-option').forEach(option => {
         option.addEventListener('click', (e) => {
             const reportType = e.currentTarget.dataset.report;
-            this.loadReport(reportType);
+            if (reportType === 'trazabilidad') {
+                this.render();
+                this.bindEvents(); // ¡IMPORTANTE! Reconectar eventos después de renderizar
+                this.initializeTrazabilidadLogic();
+            } else {
+                this.showCustomAlert('Esta funcionalidad estará disponible próximamente', 'info');
+            }
         });
     });
-}
+    }
 
     loadReport(reportType) {
         if (reportType === 'trazabilidad') {
