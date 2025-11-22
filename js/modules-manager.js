@@ -106,12 +106,12 @@ class ModulesManager {
     showComingSoon(moduleName) {
         this.container.innerHTML = `
             <div class="coming-soon-container">
-                <button class="back-button" id="backToMainMenu">← Volver al Menú Principal</button>
+                <button class="back-button" id="backToMainMenu">← Volver a Reportes</button>
                 <div class="coming-soon">
                     <div class="coming-soon-icon">🚧</div>
                     <h2>${moduleName}</h2>
                     <p>Esta funcionalidad estará disponible próximamente</p>
-                    <button id="returnToMenu" class="alt">Volver al Menú</button>
+                    <button id="returnToMenu" class="alt">← Volver atrás</button>
                 </div>
             </div>
         `;
