@@ -169,38 +169,52 @@ class TrazabilidadSystem {
     }
 
     bindEvents() {
-        // Event delegation para el botón volver
-        this.container.addEventListener('click', (e) => {
-            if (e.target.id === 'backToReports') {
+    // Event delegation para el botón volver - CONEXIÓN CORREGIDA
+    this.container.addEventListener('click', (e) => {
+        if (e.target.id === 'backToReports') {
+            console.log('Botón Volver a Reportes clickeado'); // Debug
+            if (window.modulesManager) {
+                window.modulesManager.showMainMenu();
+            } else {
+                // Fallback si no hay manager
+                console.warn('ModulesManager no encontrado, usando fallback');
                 this.showReportsMenu();
             }
-        });
-    }
+        }
+    });
+}
 
     showReportsMenu() {
-        this.container.innerHTML = `
-            <div class="reports-menu">
-                <div class="report-option" data-report="trazabilidad">
-                    <div class="report-icon">📊</div>
-                    <h3>Trazabilidad</h3>
-                    <p>Análisis de movimientos de inventario</p>
-                </div>
-                
-                <div class="report-option" data-report="analisis-pedidos">
-                    <div class="report-icon">📦</div>
-                    <h3>Análisis de Pedidos</h3>
-                    <p>Próximamente...</p>
-                </div>
-            </div>
-        `;
-
-        document.querySelectorAll('.report-option').forEach(option => {
-            option.addEventListener('click', (e) => {
-                const reportType = e.currentTarget.dataset.report;
-                this.loadReport(reportType);
-            });
-        });
+    // Verificar si existe el ModulesManager
+    if (window.modulesManager) {
+        window.modulesManager.showMainMenu();
+        return;
     }
+    
+    // Fallback: mostrar menú directamente
+    this.container.innerHTML = `
+        <div class="reports-menu">
+            <div class="report-option" data-report="trazabilidad">
+                <div class="report-icon">📊</div>
+                <h3>Trazabilidad</h3>
+                <p>Análisis de movimientos de inventario</p>
+            </div>
+            
+            <div class="report-option" data-report="analisis-pedidos">
+                <div class="report-icon">📦</div>
+                <h3>Análisis de Pedidos</h3>
+                <p>Próximamente...</p>
+            </div>
+        </div>
+    `;
+
+    document.querySelectorAll('.report-option').forEach(option => {
+        option.addEventListener('click', (e) => {
+            const reportType = e.currentTarget.dataset.report;
+            this.loadReport(reportType);
+        });
+    });
+}
 
     loadReport(reportType) {
         if (reportType === 'trazabilidad') {
