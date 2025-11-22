@@ -1,17 +1,44 @@
-// js/trazabilidad-ui.js - Interfaz de usuario del sistema (Actualizado)
+// js/trazabilidad-ui.js - Módulo independiente de Trazabilidad (MODULAR)
 class TrazabilidadSystem {
     constructor(container) {
         this.container = container;
         this.core = new TrazabilidadCore();
         this.chart1 = null;
         this.chart2 = null;
-        this.init();
+        this.isInitialized = false;
     }
 
     init() {
+        if (this.isInitialized) {
+            return this;
+        }
+        
         this.render();
         this.bindEvents();
         this.initializeTrazabilidadLogic();
+        this.isInitialized = true;
+        return this;
+    }
+
+    // MÉTODO DESTROY PARA LIMPIEZA
+    destroy() {
+        console.log('Limpiando módulo de Trazabilidad...');
+        
+        // Limpiar gráficos
+        if (this.chart1) {
+            this.chart1.destroy();
+            this.chart1 = null;
+        }
+        if (this.chart2) {
+            this.chart2.destroy();
+            this.chart2 = null;
+        }
+        
+        // Limpiar instancias
+        this.core = null;
+        this.isInitialized = false;
+        
+        console.log('Módulo de Trazabilidad limpiado correctamente');
     }
 
     render() {
