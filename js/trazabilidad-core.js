@@ -435,18 +435,21 @@ class TrazabilidadCore {
         if (!group) return null;
         const rows = group.rows.slice();
 
-        // Filtrar filas problemáticas y movimientos que no afectan inventario
-        const filtered = rows.filter(r => {
-            const movement = String(r['Clase de movimiento']);
-            
-            // Excluir movimientos que no afectan inventario físico
-            if (this.nonInventoryMovements.has(movement)) return false;
-            
-            // Filtrar casos específicos problemáticos
-            if (movement === '641' && r['Centro'] && !r['Almacén']) return false;
-            
-            return true;
-        });
+      // Filtrar filas problemáticas y movimientos que no afectan inventario
+    const filtered = rows.filter(r => {
+    const movement = String(r['Clase de movimiento']);
+    
+    // Excluir movimientos que no afectan inventario físico
+    if (this.nonInventoryMovements.has(movement)) return false;
+    
+    // NUEVO: Excluir movimientos 311 del cálculo de stock
+    if (movement === '311') return false;
+    
+    // Filtrar casos específicos problemáticos
+    if (movement === '641' && r['Centro'] && !r['Almacén']) return false;
+    
+    return true;
+});
         
         // Preparar datos - CORRECCIÓN: Asegurar que las fechas se procesen correctamente
         filtered.forEach(r => { 
