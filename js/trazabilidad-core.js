@@ -570,18 +570,26 @@ const filtered = rows.filter(r => {
             });
         });
 
-        // CÁLCULO CORREGIDO DEL STOCK ACTUAL
+              // CÁLCULO CORREGIDO DEL STOCK ACTUAL
         const stockInicial = Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0;
         
-        // Sumar solo movimientos positivos (entradas)
+        // Sumar solo movimientos positivos (entradas) - EXCLUYENDO 313 positivos
         const totalEntradas = filtered.reduce((sum, r) => {
+            const movimiento = String(r['Clase de movimiento']);
             const qty = Number(r['Ctd.en UM entrada'] || 0);
+            
+            // EXCLUIR 313 positivos del cálculo de entradas
+            if (movimiento === '313' && qty > 0) return sum;
+            
             return qty > 0 ? sum + qty : sum;
         }, 0);
         
-        // Sumar solo movimientos negativos (salidas) - en valor absoluto
+        // Sumar solo movimientos negativos (salidas) - INCLUYENDO 313 negativos
         const totalSalidas = filtered.reduce((sum, r) => {
+            const movimiento = String(r['Clase de movimiento']);
             const qty = Number(r['Ctd.en UM entrada'] || 0);
+            
+            // INCLUIR 313 negativos en el cálculo de salidas
             return qty < 0 ? sum + Math.abs(qty) : sum;
         }, 0);
         
