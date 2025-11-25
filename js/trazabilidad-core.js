@@ -63,7 +63,7 @@ class TrazabilidadCore {
         // Usuarios especiales - ACTUALIZADO
         this.usuariosEspeciales643 = new Set(['avitora', 'lgarcia', 'ksoteldo', 'gonzalezm', 'gcontreras', 'cippolito']);
         this.usuariosEspeciales101 = new Set(['ylara','egonzales']);
-     } 
+      
             // Mapeo de centros a nombres de tienda
             this.centroToTienda = {
                 '1400': 'Upi Maracay',
@@ -89,6 +89,7 @@ class TrazabilidadCore {
                 '1000': 'Kacosa',
                 '1000/3000': 'Kacosa'
             };
+        }
                 
     // Helpers (se mantienen igual)
     parseDate(v) {
