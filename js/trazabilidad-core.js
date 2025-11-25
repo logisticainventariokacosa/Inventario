@@ -89,8 +89,7 @@ class TrazabilidadCore {
                 '1000': 'Kacosa',
                 '1000/3000': 'Kacosa'
             };
-            // =================================================
-        }
+                
     // Helpers (se mantienen igual)
     parseDate(v) {
         if (!v && v !== 0) return null;
