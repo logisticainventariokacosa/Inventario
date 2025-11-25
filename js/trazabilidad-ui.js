@@ -112,6 +112,7 @@ class TrazabilidadSystem {
                                         <th>Rango de fecha</th>
                                         <th>Último ingreso</th>
                                         <th>Ajustes (+ / -)</th>
+                                        <th>Usuarios Ajuste</th> <!-- NUEVA COLUMNA -->
                                         <th>Fecha de ajuste</th>
                                         <th>Puntos cero</th>
                                         <th>Posible irregularidad</th>
@@ -933,6 +934,7 @@ goBackToReports() {
                     Rango_fecha: r.rangoFecha,
                     Ultimo_ingreso: r.ultimoIngreso,
                     Ajustes: r.ajustes,
+                     Usuarios_Ajuste: r.usuariosAjuste || '-', // NUEVA COLUMNA EN EXCEL
                     Fecha_ajuste: r.fechaAjuste,
                     Puntos_cero: r.puntosCero,
                     Posible_irregularidad: todasIrregularidades.length > 0 ? todosTipos : '-',
@@ -1073,6 +1075,7 @@ goBackToReports() {
             tr.appendChild(td(r.rangoFecha));
             tr.appendChild(td(r.ultimoIngreso));
             tr.appendChild(td(r.ajustes));
+            tr.appendChild(td(r.usuariosAjuste)); // NUEVA CELDA - Usuarios de ajuste
             tr.appendChild(td(r.fechaAjuste));
             tr.appendChild(td(r.puntosCero));
             
