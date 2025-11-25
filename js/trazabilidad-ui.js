@@ -933,8 +933,8 @@ goBackToReports() {
                     Tienda: r.tienda,
                     Rango_fecha: r.rangoFecha,
                     Ultimo_ingreso: r.ultimoIngreso,
-                    Ajustes: r.ajustes,
-                     Usuarios_Ajuste: r.usuariosAjuste || '-', // NUEVA COLUMNA EN EXCEL
+                    'Ajustes (+ / -)': r.ajustes,
+                    Usuarios_Ajuste: r.usuariosAjuste || '-', // NUEVA COLUMNA EN EXCEL
                     Fecha_ajuste: r.fechaAjuste,
                     Puntos_cero: r.puntosCero,
                     Posible_irregularidad: todasIrregularidades.length > 0 ? todosTipos : '-',
