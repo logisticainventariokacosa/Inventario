@@ -470,18 +470,39 @@ const filtered = rows.filter(r => {
         // Último ingreso según reglas específicas
         const lastIngreso = this.getUltimoIngreso(filtered, group.centro);
 
-        // Ajustes
-        const ajustesPosVal = filtered.filter(r => this.adjustmentPos.has(String(r['Clase de movimiento']))).reduce((s,r) => s + Math.abs(Number(r['Ctd.en UM entrada']||0)),0);
-        const ajustesNegVal = filtered.filter(r => this.adjustmentNeg.has(String(r['Clase de movimiento']))).reduce((s,r) => s + Math.abs(Number(r['Ctd.en UM entrada']||0)),0);
-        const fechaAjuste = filtered.filter(r => this.adjustmentPos.has(String(r['Clase de movimiento'])) || this.adjustmentNeg.has(String(r['Clase de movimiento']))).map(r => r['Fe.contabilización']).filter(Boolean).map(d => this.formatDate(d)).join(', ');
-
-        // Agrupar por día
-        const byDay = {};
-        filtered.forEach((r, idx) => {
-            const ds = r._dateKey || this.getDateKeyFromRow(r);
-            if (!byDay[ds]) byDay[ds] = [];
-            byDay[ds].push({row: r, idx});
-        });
+       // Ajustes - CON USUARIOS
+        const ajustesMovimientos = filtered.filter(r => 
+            this.adjustmentPos.has(String(r['Clase de movimiento'])) || 
+            this.adjustmentNeg.has(String(r['Clase de movimiento']))
+        );
+        
+        const ajustesPosVal = ajustesMovimientos
+            .filter(r => this.adjustmentPos.has(String(r['Clase de movimiento'])))
+            .reduce((s, r) => s + Math.abs(Number(r['Ctd.en UM entrada']||0)), 0);
+        
+        const ajustesNegVal = ajustesMovimientos
+            .filter(r => this.adjustmentNeg.has(String(r['Clase de movimiento'])))
+            .reduce((s, r) => s + Math.abs(Number(r['Ctd.en UM entrada']||0)), 0);
+        
+        const fechaAjuste = ajustesMovimientos
+            .map(r => r['Fe.contabilización'])
+            .filter(Boolean)
+            .map(d => this.formatDate(d))
+            .join(', ');
+        
+        // NUEVO: Capturar usuarios de ajustes
+        const usuariosAjuste = ajustesMovimientos
+            .map(r => r['Nombre del usuario'] || '')
+            .filter(user => user.trim() !== '')
+            .join(', ');
+                
+                // Agrupar por día
+                const byDay = {};
+                filtered.forEach((r, idx) => {
+                    const ds = r._dateKey || this.getDateKeyFromRow(r);
+                    if (!byDay[ds]) byDay[ds] = [];
+                    byDay[ds].push({row: r, idx});
+                });
 
         // Función para comparar centros
         const centersMatch = (c1,c2) => { 
@@ -909,6 +930,7 @@ const filtered = rows.filter(r => {
             ultimoIngreso: lastIngreso,
             ajustes: `${ajustesPosVal} / ${ajustesNegVal}`,
             fechaAjuste,
+            usuariosAjuste: usuariosAjuste || '-',
             puntosCero: puntosCero.length ? puntosCero.join(', ') : '-',
             posibleIrregularidad: primaryIrreg ? primaryIrreg.tipo : '-',
             usuarioIrregularidad: primaryIrreg ? primaryIrreg.usuario : '-',
