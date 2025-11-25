@@ -570,41 +570,47 @@ const filtered = rows.filter(r => {
             });
         });
             
-                      // CÁLCULO CORREGIDO DEL STOCK ACTUAL
-            const stockInicial = Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0;
+                             // CÁLCULO CORREGIDO DEL STOCK ACTUAL
+        const stockInicial = Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0;
+        
+        // Sumar solo movimientos positivos (entradas) - EXCLUYENDO 313 positivos, 351 y 641 sin almacén
+        const totalEntradas = filtered.reduce((sum, r) => {
+            const movimiento = String(r['Clase de movimiento']);
+            const qty = Number(r['Ctd.en UM entrada'] || 0);
+            const centro = String(r['Centro'] || '').trim();
+            const almacen = String(r['Almacén'] || '').trim();
             
-            // Sumar solo movimientos positivos (entradas) - EXCLUYENDO 313 positivos y 351 sin almacén
-            const totalEntradas = filtered.reduce((sum, r) => {
-                const movimiento = String(r['Clase de movimiento']);
-                const qty = Number(r['Ctd.en UM entrada'] || 0);
-                const centro = String(r['Centro'] || '').trim();
-                const almacen = String(r['Almacén'] || '').trim();
-                
-                // EXCLUIR 313 positivos del cálculo de entradas
-                if (movimiento === '313' && qty > 0) return sum;
-                
-                // EXCLUIR 351 que tiene centro pero NO tiene almacén
-                if (movimiento === '351' && centro && !almacen) return sum;
-                
-                return qty > 0 ? sum + qty : sum;
-            }, 0);
+            // EXCLUIR 313 positivos del cálculo de entradas
+            if (movimiento === '313' && qty > 0) return sum;
             
-            // Sumar solo movimientos negativos (salidas) - EXCLUYENDO 351 sin almacén
-            const totalSalidas = filtered.reduce((sum, r) => {
-                const movimiento = String(r['Clase de movimiento']);
-                const qty = Number(r['Ctd.en UM entrada'] || 0);
-                const centro = String(r['Centro'] || '').trim();
-                const almacen = String(r['Almacén'] || '').trim();
-                
-                // EXCLUIR 351 que tiene centro pero NO tiene almacén
-                if (movimiento === '351' && centro && !almacen) return sum;
-                
-                // INCLUIR 313 negativos en el cálculo de salidas
-                return qty < 0 ? sum + Math.abs(qty) : sum;
-            }, 0);
+            // EXCLUIR 351 que tiene centro pero NO tiene almacén
+            if (movimiento === '351' && centro && !almacen) return sum;
             
-            // Stock actual = (Stock Inicial + Total Entradas) - Total Salidas
-            const stockActual = (stockInicial + totalEntradas) - totalSalidas;
+            // EXCLUIR 641 que tiene centro pero NO tiene almacén
+            if (movimiento === '641' && centro && !almacen) return sum;
+            
+            return qty > 0 ? sum + qty : sum;
+        }, 0);
+        
+        // Sumar solo movimientos negativos (salidas) - EXCLUYENDO 351 y 641 sin almacén
+        const totalSalidas = filtered.reduce((sum, r) => {
+            const movimiento = String(r['Clase de movimiento']);
+            const qty = Number(r['Ctd.en UM entrada'] || 0);
+            const centro = String(r['Centro'] || '').trim();
+            const almacen = String(r['Almacén'] || '').trim();
+            
+            // EXCLUIR 351 que tiene centro pero NO tiene almacén
+            if (movimiento === '351' && centro && !almacen) return sum;
+            
+            // EXCLUIR 641 que tiene centro pero NO tiene almacén
+            if (movimiento === '641' && centro && !almacen) return sum;
+            
+            // INCLUIR 313 negativos en el cálculo de salidas
+            return qty < 0 ? sum + Math.abs(qty) : sum;
+        }, 0);
+        
+        // Stock actual = (Stock Inicial + Total Entradas) - Total Salidas
+        const stockActual = (stockInicial + totalEntradas) - totalSalidas;
 
         // CALCULAR SALIDAS A CLIENTES Y TIENDA CON LAS NUEVAS REGLAS
         const salidasClientes = this.calcularSalidasClientes(filtered);
@@ -634,7 +640,7 @@ const filtered = rows.filter(r => {
         const avgStore = storeMovs.length ? (storeMovs.reduce((a,b)=>a + Math.abs(b),0)/storeMovs.length) : 0;
         const avgClient = clientMovs.length ? (clientMovs.reduce((a,b)=>a + Math.abs(b),0)/clientMovs.length) : 0;
 
-        // PUNTOS CERO - CÁLCULO CORREGIDO
+             // PUNTOS CERO - CÁLCULO CORREGIDO (EXCLUYENDO MOVIMIENTOS ESPECIALES)
         const initData = this.initialStocks[key] || { date: (minDate ? minDate.toISOString().slice(0,10) : new Date().toISOString().slice(0,10)), stock:0 };
         const initDate = this.parseISODate(initData.date) || (minDate || null);
         let currentBalance = Number(initData.stock) || 0;
@@ -658,9 +664,22 @@ const filtered = rows.filter(r => {
                 const startBalance = currentBalance;
                 const movs = movementsByDate[ds] || [];
                 
-                // Calcular suma del día correctamente
+                // Calcular suma del día EXCLUYENDO movimientos especiales
                 const sumDay = movs.reduce((s, r) => {
+                    const movimiento = String(r['Clase de movimiento']);
                     const qty = Number(r['Ctd.en UM entrada'] || 0);
+                    const centro = String(r['Centro'] || '').trim();
+                    const almacen = String(r['Almacén'] || '').trim();
+                    
+                    // EXCLUIR 313 positivos
+                    if (movimiento === '313' && qty > 0) return s;
+                    
+                    // EXCLUIR 351 que tiene centro pero NO tiene almacén
+                    if (movimiento === '351' && centro && !almacen) return s;
+                    
+                    // EXCLUIR 641 que tiene centro pero NO tiene almacén
+                    if (movimiento === '641' && centro && !almacen) return s;
+                    
                     return s + qty; // Sumar directamente (positivos y negativos)
                 }, 0);
                 
@@ -674,22 +693,6 @@ const filtered = rows.filter(r => {
                 currentBalance = endBalance;
                 day = this.addDays(day, 1);
             }
-        } else {
-            // Método alternativo si no hay fechas válidas
-            let running = Number(initData.stock) || 0;
-            const uniqueDates = Array.from(new Set(filtered.map(r => r._dateKey || this.getDateKeyFromRow(r)))).filter(Boolean).sort();
-            
-            uniqueDates.forEach(ds => {
-                const movs = filtered.filter(r => (r._dateKey || this.getDateKeyFromRow(r)) === ds);
-                const startBalance = running;
-                const sumDay = movs.reduce((s, r) => s + Number(r['Ctd.en UM entrada'] || 0), 0);
-                const endBalance = startBalance + sumDay;
-                
-                if (Number(endBalance) === 0 && Number(startBalance) !== 0) {
-                    puntosCero.push(ds);
-                }
-                running = endBalance;
-            });
         }
 
         // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS CLARAS
