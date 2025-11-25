@@ -64,6 +64,33 @@ class TrazabilidadCore {
         this.usuariosEspeciales643 = new Set(['avitora', 'lgarcia', 'ksoteldo', 'gonzalezm', 'gcontreras', 'cippolito']);
         this.usuariosEspeciales101 = new Set(['ylara','egonzales']);
      } 
+            // Mapeo de centros a nombres de tienda
+            this.centroToTienda = {
+                '1400': 'Upi Maracay',
+                '1500': 'Upi Castillo', 
+                '1600': 'Gigante II',
+                '1700': 'Upi Los guayos',
+                '1900': 'Upi Mercaderes',
+                '1100': 'Upi Puerto Cabello',
+                '1200': 'Upi Coro',
+                '1900': 'Upi Rosal',
+                '2010': 'Comercial Salvador',
+                '2090': 'Productos Khaled',
+                '1010': 'Planta Coldermax',
+                '1020': 'Ferretools',
+                '3000': 'Kacosa',
+                '2070': 'Comagas Vigirima',
+                '2090': 'Productos Khaled',
+                '1060': 'Colex internacional',
+                '3040': 'Colex',
+                '3050': 'Materiales Amadel',
+                '2040': 'Transporte centro',
+                '1067': 'Colex internacional',
+                '1000': 'Kacosa',
+                '1000/3000': 'Kacosa'
+            };
+            // =================================================
+        }
     // Helpers (se mantienen igual)
     parseDate(v) {
         if (!v && v !== 0) return null;
@@ -100,6 +127,24 @@ class TrazabilidadCore {
         const month = (d.getMonth() + 1).toString().padStart(2, '0');
         const year = d.getFullYear();
         return `${day}/${month}/${year}`;
+    }
+    
+        // Función para obtener nombre de tienda basado en el centro
+    getNombreTienda(centro) {
+        const centroStr = String(centro || '').trim();
+        
+        // Si es centro combinado 1000/3000
+        if (centroStr === '1000/3000') {
+            return this.centroToTienda['1000/3000'] || 'Kacosa';
+        }
+        
+        // Buscar en el mapeo
+        if (this.centroToTienda[centroStr]) {
+            return this.centroToTienda[centroStr];
+        }
+        
+        // Si no está en el mapeo, devolver el centro original
+        return centroStr;
     }
 
     getDateKeyFromRow(r) {
@@ -946,7 +991,7 @@ const filtered = rows.filter(r => {
             texto: group.texto,
             umb: group.umb,
             centro: group.centro,
-            tienda: group.centro,
+            tienda: this.getNombreTienda(group.centro), 
             rangoFecha: `${minDate ? this.formatDate(minDate) : '-'} / ${maxDate ? this.formatDate(maxDate) : '-'}`,
             ultimoIngreso: lastIngreso,
             ajustes: `${ajustesPosVal} / ${ajustesNegVal}`,
