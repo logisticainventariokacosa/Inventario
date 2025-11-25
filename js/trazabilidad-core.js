@@ -569,32 +569,42 @@ const filtered = rows.filter(r => {
                 }
             });
         });
-
-              // CÁLCULO CORREGIDO DEL STOCK ACTUAL
-        const stockInicial = Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0;
-        
-        // Sumar solo movimientos positivos (entradas) - EXCLUYENDO 313 positivos
-        const totalEntradas = filtered.reduce((sum, r) => {
-            const movimiento = String(r['Clase de movimiento']);
-            const qty = Number(r['Ctd.en UM entrada'] || 0);
             
-            // EXCLUIR 313 positivos del cálculo de entradas
-            if (movimiento === '313' && qty > 0) return sum;
+                      // CÁLCULO CORREGIDO DEL STOCK ACTUAL
+            const stockInicial = Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0;
             
-            return qty > 0 ? sum + qty : sum;
-        }, 0);
-        
-        // Sumar solo movimientos negativos (salidas) - INCLUYENDO 313 negativos
-        const totalSalidas = filtered.reduce((sum, r) => {
-            const movimiento = String(r['Clase de movimiento']);
-            const qty = Number(r['Ctd.en UM entrada'] || 0);
+            // Sumar solo movimientos positivos (entradas) - EXCLUYENDO 313 positivos y 351 sin almacén
+            const totalEntradas = filtered.reduce((sum, r) => {
+                const movimiento = String(r['Clase de movimiento']);
+                const qty = Number(r['Ctd.en UM entrada'] || 0);
+                const centro = String(r['Centro'] || '').trim();
+                const almacen = String(r['Almacén'] || '').trim();
+                
+                // EXCLUIR 313 positivos del cálculo de entradas
+                if (movimiento === '313' && qty > 0) return sum;
+                
+                // EXCLUIR 351 que tiene centro pero NO tiene almacén
+                if (movimiento === '351' && centro && !almacen) return sum;
+                
+                return qty > 0 ? sum + qty : sum;
+            }, 0);
             
-            // INCLUIR 313 negativos en el cálculo de salidas
-            return qty < 0 ? sum + Math.abs(qty) : sum;
-        }, 0);
-        
-        // Stock actual = (Stock Inicial + Total Entradas) - Total Salidas
-        const stockActual = (stockInicial + totalEntradas) - totalSalidas;
+            // Sumar solo movimientos negativos (salidas) - EXCLUYENDO 351 sin almacén
+            const totalSalidas = filtered.reduce((sum, r) => {
+                const movimiento = String(r['Clase de movimiento']);
+                const qty = Number(r['Ctd.en UM entrada'] || 0);
+                const centro = String(r['Centro'] || '').trim();
+                const almacen = String(r['Almacén'] || '').trim();
+                
+                // EXCLUIR 351 que tiene centro pero NO tiene almacén
+                if (movimiento === '351' && centro && !almacen) return sum;
+                
+                // INCLUIR 313 negativos en el cálculo de salidas
+                return qty < 0 ? sum + Math.abs(qty) : sum;
+            }, 0);
+            
+            // Stock actual = (Stock Inicial + Total Entradas) - Total Salidas
+            const stockActual = (stockInicial + totalEntradas) - totalSalidas;
 
         // CALCULAR SALIDAS A CLIENTES Y TIENDA CON LAS NUEVAS REGLAS
         const salidasClientes = this.calcularSalidasClientes(filtered);
