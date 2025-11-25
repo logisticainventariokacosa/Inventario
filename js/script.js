@@ -336,7 +336,7 @@ function renderInventoryResults() {
             <thead>
                 <tr>
                     <th>Código</th><th>Nombre</th><th>Descripción</th><th>UM</th>
-                    <th>Ubicación Física</th><th>Cantidad</th><th>Ubicación Exhib</th><th>Conteo Exhib</th>
+                    <th>Ubicación Física</th><th>Conteo General</th><th>Ubicación Exhib</th><th>Conteo Exhib</th>
                     <th>Fecha Último Conteo</th><th>Auditor</th><th>DIF General</th><th>DIF Exhib</th>
                     <th>Centro Inventario</th><th>Nombre Documento</th>
                 </tr>
