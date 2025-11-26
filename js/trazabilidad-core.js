@@ -448,78 +448,71 @@ class TrazabilidadCore {
         // Para otros centros - lógica simple (101, 305, 992, 561, 994)
         return this.getUltimoIngresoSimple(filtered);
     }
-
-            // Función para calcular salidas a clientes según nuevas reglas - EXCLUYENDO USUARIOS
-        calcularSalidasClientes(filtered) {
-            // Sumar todos los 601 y 909 negativos - EXCLUYENDO USUARIOS
-            const salidasCliente = filtered.filter(r => {
-                const movimiento = String(r['Clase de movimiento']);
-                const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-                const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
-                
-                // Excluir usuarios específicos
-                if (this.usuariosExcluirSalidas.has(usuario)) return false;
-                
-                return this.clientOutCodes.has(movimiento) && cantidad < 0;
-            }).reduce((sum, r) => sum + Math.abs(Number(r['Ctd.en UM entrada'] || 0)), 0);
-        
-            // Restar todos los 651, 602, 910 positivos - EXCLUYENDO USUARIOS
-            const entradasCliente = filtered.filter(r => {
-                const movimiento = String(r['Clase de movimiento']);
-                const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-                const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
-                
-                // Excluir usuarios específicos
-                if (this.usuariosExcluirSalidas.has(usuario)) return false;
-                
-                return this.clientInCodes.has(movimiento) && cantidad > 0;
-            }).reduce((sum, r) => sum + Number(r['Ctd.en UM entrada'] || 0), 0);
-        
-            const totalSalidasClientes = Math.max(0, salidasCliente - entradasCliente);
-        
-            return {
-                total: totalSalidasClientes,
-                salidas: salidasCliente,
-                entradas: entradasCliente,
-                calculo: `${salidasCliente} - ${entradasCliente} = ${totalSalidasClientes}`
-            };
-        }
-
-        // Función para calcular salidas a tienda según nuevas reglas - EXCLUYENDO USUARIOS
-        calcularSalidasTienda(filtered) {
-            // Sumar todos los movimientos negativos de tienda - EXCLUYENDO USUARIOS
-            const salidasTienda = filtered.filter(r => {
-                const movimiento = String(r['Clase de movimiento']);
-                const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-                const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
-                
-                // Excluir usuarios específicos
-                if (this.usuariosExcluirSalidas.has(usuario)) return false;
-                
-                return this.storeOutCodes.has(movimiento) && cantidad < 0;
-            }).reduce((sum, r) => sum + Math.abs(Number(r['Ctd.en UM entrada'] || 0)), 0);
-        
-            // Restar todos los movimientos positivos que anulan salidas de tienda - EXCLUYENDO USUARIOS
-            const entradasTienda = filtered.filter(r => {
-                const movimiento = String(r['Clase de movimiento']);
-                const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-                const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
-                
-                // Excluir usuarios específicos
-                if (this.usuariosExcluirSalidas.has(usuario)) return false;
-                
-                return this.storeInCodes.has(movimiento) && cantidad > 0;
-            }).reduce((sum, r) => sum + Number(r['Ctd.en UM entrada'] || 0), 0);
-        
-            const totalSalidasTienda = Math.max(0, salidasTienda - entradasTienda);
-        
-            return {
-                total: totalSalidasTienda,
-                salidas: salidasTienda,
-                entradas: entradasTienda,
-                calculo: `${salidasTienda} - ${entradasTienda} = ${totalSalidasTienda}`
-            };
-        }
+    // Función para calcular salidas a clientes según nuevas reglas - SOLO EXCLUIR USUARIOS EN NEGATIVOS
+    calcularSalidasClientes(filtered) {
+        // Sumar todos los 601 y 909 negativos - EXCLUYENDO USUARIOS SOLO EN NEGATIVOS
+        const salidasCliente = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
+            
+            // Excluir usuarios específicos SOLO para movimientos negativos
+            if (cantidad < 0 && this.usuariosExcluirSalidas.has(usuario)) return false;
+            
+            return this.clientOutCodes.has(movimiento) && cantidad < 0;
+        }).reduce((sum, r) => sum + Math.abs(Number(r['Ctd.en UM entrada'] || 0)), 0);
+    
+        // Restar todos los 651, 602, 910 positivos - NO EXCLUIR USUARIOS EN POSITIVOS
+        const entradasCliente = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            
+            // NO excluir usuarios para movimientos positivos (restas)
+            return this.clientInCodes.has(movimiento) && cantidad > 0;
+        }).reduce((sum, r) => sum + Number(r['Ctd.en UM entrada'] || 0), 0);
+    
+        const totalSalidasClientes = Math.max(0, salidasCliente - entradasCliente);
+    
+        return {
+            total: totalSalidasClientes,
+            salidas: salidasCliente,
+            entradas: entradasCliente,
+            calculo: `${salidasCliente} - ${entradasCliente} = ${totalSalidasClientes}`
+        };
+    }
+    
+    // Función para calcular salidas a tienda según nuevas reglas - SOLO EXCLUIR USUARIOS EN NEGATIVOS
+    calcularSalidasTienda(filtered) {
+        // Sumar todos los movimientos negativos de tienda - EXCLUYENDO USUARIOS SOLO EN NEGATIVOS
+        const salidasTienda = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
+            
+            // Excluir usuarios específicos SOLO para movimientos negativos
+            if (cantidad < 0 && this.usuariosExcluirSalidas.has(usuario)) return false;
+            
+            return this.storeOutCodes.has(movimiento) && cantidad < 0;
+        }).reduce((sum, r) => sum + Math.abs(Number(r['Ctd.en UM entrada'] || 0)), 0);
+    
+        // Restar todos los movimientos positivos que anulan salidas de tienda - NO EXCLUIR USUARIOS EN POSITIVOS
+        const entradasTienda = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            
+            // NO excluir usuarios para movimientos positivos (restas)
+            return this.storeInCodes.has(movimiento) && cantidad > 0;
+        }).reduce((sum, r) => sum + Number(r['Ctd.en UM entrada'] || 0), 0);
+    
+        const totalSalidasTienda = Math.max(0, salidasTienda - entradasTienda);
+    
+        return {
+            total: totalSalidasTienda,
+            salidas: salidasTienda,
+            entradas: entradasTienda,
+            calculo: `${salidasTienda} - ${entradasTienda} = ${totalSalidasTienda}`
+        };
+    }
 
     analyzeKey(key) {
         const group = this.materialMap.get(key);
@@ -709,26 +702,36 @@ class TrazabilidadCore {
         // Stock actual = (Stock Inicial + Total Entradas) - Total Salidas
         const stockActual = (stockInicial + totalEntradas) - totalSalidas;
 
-        // CALCULAR SALIDAS A CLIENTES Y TIENDA CON LAS NUEVAS REGLAS
-        const salidasClientes = this.calcularSalidasClientes(filtered);
-        const salidasTienda = this.calcularSalidasTienda(filtered);
-
-        const totalSalidasClientes = salidasClientes.total;
-        const totalSalidasTienda = salidasTienda.total;
-
-        // Cálculos de estadísticas adicionales para salidas a tienda
-        const storeMovs = filtered.filter(r => {
-            const movimiento = String(r['Clase de movimiento']);
-            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-            return this.storeOutCodes.has(movimiento) && cantidad < 0;
-        }).map(r => Number(r['Ctd.en UM entrada']||0));
-
-        // Cálculos de estadísticas adicionales para salidas a clientes
-        const clientMovs = filtered.filter(r => {
-            const movimiento = String(r['Clase de movimiento']);
-            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-            return this.clientOutCodes.has(movimiento) && cantidad < 0;
-        }).map(r => Number(r['Ctd.en UM entrada']||0));
+            // CALCULAR SALIDAS A CLIENTES Y TIENDA CON LAS NUEVAS REGLAS
+    const salidasClientes = this.calcularSalidasClientes(filtered);
+    const salidasTienda = this.calcularSalidasTienda(filtered);
+    
+    const totalSalidasClientes = salidasClientes.total;
+    const totalSalidasTienda = salidasTienda.total;
+    
+    // Cálculos de estadísticas adicionales para salidas a tienda - EXCLUYENDO USUARIOS SOLO EN NEGATIVOS
+    const storeMovs = filtered.filter(r => {
+        const movimiento = String(r['Clase de movimiento']);
+        const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+        const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
+        
+        // Excluir usuarios específicos SOLO para movimientos negativos
+        if (cantidad < 0 && this.usuariosExcluirSalidas.has(usuario)) return false;
+        
+        return this.storeOutCodes.has(movimiento) && cantidad < 0;
+    }).map(r => Number(r['Ctd.en UM entrada']||0));
+    
+    // Cálculos de estadísticas adicionales para salidas a clientes - EXCLUYENDO USUARIOS SOLO EN NEGATIVOS
+    const clientMovs = filtered.filter(r => {
+        const movimiento = String(r['Clase de movimiento']);
+        const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+        const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
+        
+        // Excluir usuarios específicos SOLO para movimientos negativos
+        if (cantidad < 0 && this.usuariosExcluirSalidas.has(usuario)) return false;
+        
+        return this.clientOutCodes.has(movimiento) && cantidad < 0;
+    }).map(r => Number(r['Ctd.en UM entrada']||0));
 
         const storeMax = storeMovs.length ? Math.min(...storeMovs) : 0;
         const storeMin = storeMovs.length ? Math.max(...storeMovs) : 0;
