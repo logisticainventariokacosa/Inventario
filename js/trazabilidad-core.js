@@ -20,10 +20,10 @@ class TrazabilidadCore {
         this.clientInCodes = new Set(['651', '602', '910']);
         
         // Salidas a tienda (cantidad NEGATIVA)
-        this.storeOutCodes = new Set(['643', '641', '351', '161', '201', '261']);
+        this.storeOutCodes = new Set(['643', '641', '351', '161', '303']);
         
         // Entradas que restan a salidas a tienda (cantidad POSITIVA)
-        this.storeInCodes = new Set(['644', '642', '352', '162', '202', '262']);
+        this.storeInCodes = new Set(['644', '642', '352', '162', '304']);
         
         // Nuevos movimientos de ingreso
         this.entry992 = '992';
@@ -480,16 +480,22 @@ class TrazabilidadCore {
             calculo: `${salidasCliente} - ${entradasCliente} = ${totalSalidasClientes}`
         };
     }
-    
-    // Función para calcular salidas a tienda según nuevas reglas - SOLO EXCLUIR USUARIOS EN NEGATIVOS
+        // Función para calcular salidas a tienda - EXCLUIR USUARIOS PERO NO PARA 303 Y NO PARA CENTRO 1010
     calcularSalidasTienda(filtered) {
-        // Sumar todos los movimientos negativos de tienda - EXCLUYENDO USUARIOS SOLO EN NEGATIVOS
+        // Sumar todos los movimientos negativos de tienda - EXCLUYENDO USUARIOS PERO NO PARA 303 Y NO PARA CENTRO 1010
         const salidasTienda = filtered.filter(r => {
             const movimiento = String(r['Clase de movimiento']);
             const cantidad = Number(r['Ctd.en UM entrada'] || 0);
             const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
+            const centro = String(r['Centro'] || '').trim();
             
-            // Excluir usuarios específicos SOLO para movimientos negativos
+            // EXCEPCIÓN 1: No excluir usuarios para movimiento 303
+            if (movimiento === '303') return this.storeOutCodes.has(movimiento) && cantidad < 0;
+            
+            // EXCEPCIÓN 2: No excluir usuarios para centro 1010
+            if (centro === '1010') return this.storeOutCodes.has(movimiento) && cantidad < 0;
+            
+            // Excluir usuarios específicos SOLO para movimientos negativos (excepto los casos anteriores)
             if (cantidad < 0 && this.usuariosExcluirSalidas.has(usuario)) return false;
             
             return this.storeOutCodes.has(movimiento) && cantidad < 0;
@@ -709,13 +715,20 @@ class TrazabilidadCore {
     const totalSalidasClientes = salidasClientes.total;
     const totalSalidasTienda = salidasTienda.total;
     
-    // Cálculos de estadísticas adicionales para salidas a tienda - EXCLUYENDO USUARIOS SOLO EN NEGATIVOS
+    // Cálculos de estadísticas adicionales para salidas a tienda - EXCLUYENDO USUARIOS PERO NO PARA 303 Y NO PARA CENTRO 1010
     const storeMovs = filtered.filter(r => {
         const movimiento = String(r['Clase de movimiento']);
         const cantidad = Number(r['Ctd.en UM entrada'] || 0);
         const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
+        const centro = String(r['Centro'] || '').trim();
         
-        // Excluir usuarios específicos SOLO para movimientos negativos
+        // EXCEPCIÓN 1: No excluir usuarios para movimiento 303
+        if (movimiento === '303') return this.storeOutCodes.has(movimiento) && cantidad < 0;
+        
+        // EXCEPCIÓN 2: No excluir usuarios para centro 1010
+        if (centro === '1010') return this.storeOutCodes.has(movimiento) && cantidad < 0;
+        
+        // Excluir usuarios específicos SOLO para movimientos negativos (excepto los casos anteriores)
         if (cantidad < 0 && this.usuariosExcluirSalidas.has(usuario)) return false;
         
         return this.storeOutCodes.has(movimiento) && cantidad < 0;
