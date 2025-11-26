@@ -448,13 +448,17 @@ class TrazabilidadCore {
         // Para otros centros - lógica simple (101, 305, 992, 561, 994)
         return this.getUltimoIngresoSimple(filtered);
     }
-    // Función para calcular salidas a clientes según nuevas reglas - SOLO EXCLUIR USUARIOS EN NEGATIVOS
+       // Función para calcular salidas a clientes - AGREGAR EXCEPCIÓN PARA CENTRO 1010
     calcularSalidasClientes(filtered) {
-        // Sumar todos los 601 y 909 negativos - EXCLUYENDO USUARIOS SOLO EN NEGATIVOS
+        // Sumar todos los 601 y 909 negativos - EXCLUYENDO USUARIOS PERO NO PARA CENTRO 1010
         const salidasCliente = filtered.filter(r => {
             const movimiento = String(r['Clase de movimiento']);
             const cantidad = Number(r['Ctd.en UM entrada'] || 0);
             const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
+            const centro = String(r['Centro'] || '').trim();
+            
+            // EXCEPCIÓN: No excluir usuarios para centro 1010
+            if (centro === '1010') return this.clientOutCodes.has(movimiento) && cantidad < 0;
             
             // Excluir usuarios específicos SOLO para movimientos negativos
             if (cantidad < 0 && this.usuariosExcluirSalidas.has(usuario)) return false;
@@ -734,18 +738,22 @@ class TrazabilidadCore {
         return this.storeOutCodes.has(movimiento) && cantidad < 0;
     }).map(r => Number(r['Ctd.en UM entrada']||0));
     
-    // Cálculos de estadísticas adicionales para salidas a clientes - EXCLUYENDO USUARIOS SOLO EN NEGATIVOS
-    const clientMovs = filtered.filter(r => {
-        const movimiento = String(r['Clase de movimiento']);
-        const cantidad = Number(r['Ctd.en UM entrada'] || 0);
-        const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
+          // Cálculos de estadísticas adicionales para salidas a clientes - AGREGAR EXCEPCIÓN PARA CENTRO 1010
+        const clientMovs = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            const usuario = this.normalizeUser(r['Nombre del usuario'] || '');
+            const centro = String(r['Centro'] || '').trim();
+            
+            // EXCEPCIÓN: No excluir usuarios para centro 1010
+            if (centro === '1010') return this.clientOutCodes.has(movimiento) && cantidad < 0;
+            
+            // Excluir usuarios específicos SOLO para movimientos negativos
+            if (cantidad < 0 && this.usuariosExcluirSalidas.has(usuario)) return false;
+            
+            return this.clientOutCodes.has(movimiento) && cantidad < 0;
+        }).map(r => Number(r['Ctd.en UM entrada']||0));
         
-        // Excluir usuarios específicos SOLO para movimientos negativos
-        if (cantidad < 0 && this.usuariosExcluirSalidas.has(usuario)) return false;
-        
-        return this.clientOutCodes.has(movimiento) && cantidad < 0;
-    }).map(r => Number(r['Ctd.en UM entrada']||0));
-
         const storeMax = storeMovs.length ? Math.min(...storeMovs) : 0;
         const storeMin = storeMovs.length ? Math.max(...storeMovs) : 0;
         const clientMax = clientMovs.length ? Math.min(...clientMovs) : 0;
