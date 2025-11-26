@@ -341,15 +341,19 @@ class TrazabilidadCore {
         return movimientos643.length > 0;
     }
 
-    // Nueva función para centros 1000/3000 - CORREGIDA CON 643 Y REGLA ACTUALIZADA
+       // Nueva función para centros 1000/3000 - SOLO ALMACENES PRINCIPALES
     getUltimoIngresoComplejo(filtered) {
-        // Movimientos considerados como ingresos para 1000/3000
+        // Movimientos considerados como ingresos para 1000/3000 - SOLO EN ALMACENES PRINCIPALES
         const movimientosIngreso = filtered.filter(r => {
             const movimiento = String(r['Clase de movimiento']);
             const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            const almacen = String(r['Almacén'] || '').trim();
             
             // Solo movimientos positivos (entradas)
             if (cantidad <= 0) return false;
+            
+            // Solo almacenes principales (usando el set existente)
+            if (!this.almacenesProhibidos201.has(almacen)) return false;
             
             // Tipos de movimiento considerados ingresos
             return movimiento === this.entry101 || 
@@ -358,7 +362,7 @@ class TrazabilidadCore {
                    movimiento === this.entry992 ||
                    movimiento === this.entry561 ||
                    movimiento === this.entry501 ||
-                   movimiento === this.entry994; // NUEVO: incluir 994
+                   movimiento === this.entry994;
         });
 
         if (movimientosIngreso.length === 0) return '';
@@ -398,15 +402,19 @@ class TrazabilidadCore {
         return ''; // Si ningún movimiento cumple las condiciones
     }
 
-    // Función simple para otros centros - ACTUALIZADA CON NUEVOS MOVIMIENTOS
+        // Función simple para otros centros - SOLO ALMACENES PRINCIPALES  
     getUltimoIngresoSimple(filtered) {
-        // Movimientos considerados como ingresos para otros centros
+        // Movimientos considerados como ingresos para otros centros - SOLO EN ALMACENES PRINCIPALES
         const movimientosIngreso = filtered.filter(r => {
             const movimiento = String(r['Clase de movimiento']);
             const cantidad = Number(r['Ctd.en UM entrada'] || 0);
+            const almacen = String(r['Almacén'] || '').trim();
             
             // Solo movimientos positivos (entradas)
             if (cantidad <= 0) return false;
+            
+            // Solo almacenes principales (usando el set existente)
+            if (!this.almacenesProhibidos201.has(almacen)) return false;
             
             // Tipos de movimiento considerados ingresos
             return movimiento === this.entry101 || 
@@ -414,7 +422,7 @@ class TrazabilidadCore {
                    movimiento === this.entry992 ||
                    movimiento === this.entry561 ||
                    movimiento === this.entry501 ||
-                   movimiento === this.entry994; // NUEVO: incluir 994
+                   movimiento === this.entry994;
         });
 
         if (movimientosIngreso.length === 0) return '';
