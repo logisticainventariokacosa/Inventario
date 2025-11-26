@@ -630,7 +630,7 @@ class TrazabilidadCore {
             });
         });
             
-        // CÁLCULO CORREGIDO DEL STOCK ACTUAL - EXCLUYENDO MOVIMIENTOS POSITIVOS SIN ALMACÉN
+        // CÁLCULO CORREGIDO DEL STOCK ACTUAL - EXCLUYENDO MOVIMIENTOS SIN ALMACÉN (POSITIVOS Y NEGATIVOS)
         const stockInicial = Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0;
 
         // Sumar solo movimientos positivos (entradas) - EXCLUYENDO movimientos sin almacén
@@ -655,7 +655,7 @@ class TrazabilidadCore {
             return qty > 0 ? sum + qty : sum;
         }, 0);
 
-        // Sumar solo movimientos negativos (salidas) - EXCLUYENDO 351 y 641 sin almacén
+        // Sumar solo movimientos negativos (salidas) - EXCLUYENDO movimientos sin almacén
         const totalSalidas = filtered.reduce((sum, r) => {
             const movimiento = String(r['Clase de movimiento']);
             const qty = Number(r['Ctd.en UM entrada'] || 0);
@@ -667,6 +667,9 @@ class TrazabilidadCore {
             
             // EXCLUIR 641 que tiene centro pero NO tiene almacén
             if (movimiento === '641' && centro && !almacen) return sum;
+            
+            // NUEVA EXCLUSIÓN: Cualquier movimiento negativo que NO tenga almacén
+            if (qty < 0 && centro && !almacen) return sum;
             
             // INCLUIR 313 negativos en el cálculo de salidas
             return qty < 0 ? sum + Math.abs(qty) : sum;
@@ -743,8 +746,8 @@ class TrazabilidadCore {
                     // EXCLUIR 641 que tiene centro pero NO tiene almacén
                     if (movimiento === '641' && centro && !almacen) return s;
                     
-                    // NUEVA EXCLUSIÓN: Cualquier movimiento positivo que NO tenga almacén
-                    if (qty > 0 && centro && !almacen) return s;
+                    // NUEVA EXCLUSIÓN: Cualquier movimiento (positivo o negativo) que NO tenga almacén
+                    if (centro && !almacen) return s;
                     
                     return s + qty; // Sumar directamente (positivos y negativos)
                 }, 0);
