@@ -1,4 +1,4 @@
-// js/trazabilidad-core.js - Lógica principal del sistema (COMPLETO)
+// js/trazabilidad-core.js - Lógica principal del sistema (COMPLETO ACTUALIZADO)
 class TrazabilidadCore {
     constructor() {
         this.rawRows = [];
@@ -34,6 +34,10 @@ class TrazabilidadCore {
         this.entry994 = '994'; // Entrada garantía (positivo)
         this.annul994 = '995'; // Anulación de 994 (negativo)
         
+        // NUEVOS MOVIMIENTOS - Regla 313/315
+        this.movimiento313 = '313'; // Movimiento negativo (salida)
+        this.movimiento315 = '315'; // Movimiento positivo (entrada) que compensa 313
+        
         // Consumos (cantidad NEGATIVA)
         this.consumptionCodes = new Set(['201', '261', '309']);
         
@@ -60,36 +64,47 @@ class TrazabilidadCore {
         // Movimientos que NO afectan inventario físico
         this.nonInventoryMovements = new Set(['321', '322', '343', '344']);
 
+        // NUEVA REGLA: Almacenes donde 201 es irregular
+        this.almacenesProhibidos201 = new Set([
+            '1000', '1001', '1029', '1006', '3000', '3001', '3029', '3006',
+            '1200', '1202', '1203', '1300', '1302', '1303', '1400', '1402', '1403',
+            '1500', '1502', '1503', '1600', '1602', '1603', '1700', '1702', '1703',
+            '1900', '1902', '1903', '11A0', '11A2', '11A3', '12A0', '12A2', '12A3',
+            '19A0', '19A2', '19A3', '2090', '2092', '2093', '2010', '2012', '2013',
+            '2017', '1020', '1022', '1023', '1010', '1012', '2040', '1060', '1067',
+            '3040'
+        ]);
+
         // Usuarios especiales - ACTUALIZADO
         this.usuariosEspeciales643 = new Set(['avitora', 'lgarcia', 'ksoteldo', 'gonzalezm', 'gcontreras', 'cippolito']);
         this.usuariosEspeciales101 = new Set(['ylara','egonzales']);
       
-            // Mapeo de centros a nombres de tienda
-            this.centroToTienda = {
-                '1400': 'Upi Maracay',
-                '1500': 'Upi Castillo', 
-                '1600': 'Gigante II',
-                '1700': 'Upi Los guayos',
-                '1900': 'Upi Mercaderes',
-                '1100': 'Upi Puerto Cabello',
-                '1200': 'Upi Coro',
-                '1900': 'Upi Rosal',
-                '2010': 'Comercial Salvador',
-                '2090': 'Productos Khaled',
-                '1010': 'Planta Coldermax',
-                '1020': 'Ferretools',
-                '3000': 'Kacosa',
-                '2070': 'Comagas Vigirima',
-                '2090': 'Productos Khaled',
-                '1060': 'Colex internacional',
-                '3040': 'Colex',
-                '3050': 'Materiales Amadel',
-                '2040': 'Transporte centro',
-                '1067': 'Colex internacional',
-                '1000': 'Kacosa',
-                '1000/3000': 'Kacosa'
-            };
-        }
+        // Mapeo de centros a nombres de tienda
+        this.centroToTienda = {
+            '1400': 'Upi Maracay',
+            '1500': 'Upi Castillo', 
+            '1600': 'Gigante II',
+            '1700': 'Upi Los guayos',
+            '1900': 'Upi Mercaderes',
+            '1100': 'Upi Puerto Cabello',
+            '1200': 'Upi Coro',
+            '1900': 'Upi Rosal',
+            '2010': 'Comercial Salvador',
+            '2090': 'Productos Khaled',
+            '1010': 'Planta Coldermax',
+            '1020': 'Ferretools',
+            '3000': 'Kacosa',
+            '2070': 'Comagas Vigirima',
+            '2090': 'Productos Khaled',
+            '1060': 'Colex internacional',
+            '3040': 'Colex',
+            '3050': 'Materiales Amadel',
+            '2040': 'Transporte centro',
+            '1067': 'Colex internacional',
+            '1000': 'Kacosa',
+            '1000/3000': 'Kacosa'
+        };
+    }
                 
     // Helpers (se mantienen igual)
     parseDate(v) {
@@ -129,7 +144,7 @@ class TrazabilidadCore {
         return `${day}/${month}/${year}`;
     }
     
-        // Función para obtener nombre de tienda basado en el centro
+    // Función para obtener nombre de tienda basado en el centro
     getNombreTienda(centro) {
         const centroStr = String(centro || '').trim();
         
@@ -480,18 +495,18 @@ class TrazabilidadCore {
         if (!group) return null;
         const rows = group.rows.slice();
 
-      // Filtrar filas problemáticas y movimientos que no afectan inventario
-const filtered = rows.filter(r => {
-    const movement = String(r['Clase de movimiento']);
-    
-    // Excluir movimientos que no afectan inventario físico
-    if (this.nonInventoryMovements.has(movement)) return false;
-    
-    // Filtrar casos específicos problemáticos
-    if (movement === '641' && r['Centro'] && !r['Almacén']) return false;
-    
-    return true;
-});
+        // Filtrar filas problemáticas y movimientos que no afectan inventario
+        const filtered = rows.filter(r => {
+            const movement = String(r['Clase de movimiento']);
+            
+            // Excluir movimientos que no afectan inventario físico
+            if (this.nonInventoryMovements.has(movement)) return false;
+            
+            // Filtrar casos específicos problemáticos
+            if (movement === '641' && r['Centro'] && !r['Almacén']) return false;
+            
+            return true;
+        });
         
         // Preparar datos - CORRECCIÓN: Asegurar que las fechas se procesen correctamente
         filtered.forEach(r => { 
@@ -515,7 +530,7 @@ const filtered = rows.filter(r => {
         // Último ingreso según reglas específicas
         const lastIngreso = this.getUltimoIngreso(filtered, group.centro);
 
-       // Ajustes - CON USUARIOS
+        // Ajustes - CON USUARIOS
         const ajustesMovimientos = filtered.filter(r => 
             this.adjustmentPos.has(String(r['Clase de movimiento'])) || 
             this.adjustmentNeg.has(String(r['Clase de movimiento']))
@@ -541,13 +556,13 @@ const filtered = rows.filter(r => {
             .filter(user => user.trim() !== '')
             .join(', ');
                 
-                // Agrupar por día
-                const byDay = {};
-                filtered.forEach((r, idx) => {
-                    const ds = r._dateKey || this.getDateKeyFromRow(r);
-                    if (!byDay[ds]) byDay[ds] = [];
-                    byDay[ds].push({row: r, idx});
-                });
+        // Agrupar por día
+        const byDay = {};
+        filtered.forEach((r, idx) => {
+            const ds = r._dateKey || this.getDateKeyFromRow(r);
+            if (!byDay[ds]) byDay[ds] = [];
+            byDay[ds].push({row: r, idx});
+        });
 
         // Función para comparar centros
         const centersMatch = (c1,c2) => { 
@@ -615,10 +630,10 @@ const filtered = rows.filter(r => {
             });
         });
             
-                             // CÁLCULO CORREGIDO DEL STOCK ACTUAL
+        // CÁLCULO CORREGIDO DEL STOCK ACTUAL - EXCLUYENDO MOVIMIENTOS POSITIVOS SIN ALMACÉN
         const stockInicial = Number(this.initialStocks[key] ? this.initialStocks[key].stock : 0) || 0;
-        
-        // Sumar solo movimientos positivos (entradas) - EXCLUYENDO 313 positivos, 351 y 641 sin almacén
+
+        // Sumar solo movimientos positivos (entradas) - EXCLUYENDO movimientos sin almacén
         const totalEntradas = filtered.reduce((sum, r) => {
             const movimiento = String(r['Clase de movimiento']);
             const qty = Number(r['Ctd.en UM entrada'] || 0);
@@ -634,9 +649,12 @@ const filtered = rows.filter(r => {
             // EXCLUIR 641 que tiene centro pero NO tiene almacén
             if (movimiento === '641' && centro && !almacen) return sum;
             
+            // NUEVA EXCLUSIÓN: Cualquier movimiento positivo que NO tenga almacén
+            if (qty > 0 && centro && !almacen) return sum;
+            
             return qty > 0 ? sum + qty : sum;
         }, 0);
-        
+
         // Sumar solo movimientos negativos (salidas) - EXCLUYENDO 351 y 641 sin almacén
         const totalSalidas = filtered.reduce((sum, r) => {
             const movimiento = String(r['Clase de movimiento']);
@@ -653,7 +671,7 @@ const filtered = rows.filter(r => {
             // INCLUIR 313 negativos en el cálculo de salidas
             return qty < 0 ? sum + Math.abs(qty) : sum;
         }, 0);
-        
+
         // Stock actual = (Stock Inicial + Total Entradas) - Total Salidas
         const stockActual = (stockInicial + totalEntradas) - totalSalidas;
 
@@ -685,7 +703,7 @@ const filtered = rows.filter(r => {
         const avgStore = storeMovs.length ? (storeMovs.reduce((a,b)=>a + Math.abs(b),0)/storeMovs.length) : 0;
         const avgClient = clientMovs.length ? (clientMovs.reduce((a,b)=>a + Math.abs(b),0)/clientMovs.length) : 0;
 
-             // PUNTOS CERO - CÁLCULO CORREGIDO (EXCLUYENDO MOVIMIENTOS ESPECIALES)
+        // PUNTOS CERO - CÁLCULO CORREGIDO (EXCLUYENDO MOVIMIENTOS ESPECIALES Y SIN ALMACÉN)
         const initData = this.initialStocks[key] || { date: (minDate ? minDate.toISOString().slice(0,10) : new Date().toISOString().slice(0,10)), stock:0 };
         const initDate = this.parseISODate(initData.date) || (minDate || null);
         let currentBalance = Number(initData.stock) || 0;
@@ -709,7 +727,7 @@ const filtered = rows.filter(r => {
                 const startBalance = currentBalance;
                 const movs = movementsByDate[ds] || [];
                 
-                // Calcular suma del día EXCLUYENDO movimientos especiales
+                // Calcular suma del día EXCLUYENDO movimientos especiales Y SIN ALMACÉN
                 const sumDay = movs.reduce((s, r) => {
                     const movimiento = String(r['Clase de movimiento']);
                     const qty = Number(r['Ctd.en UM entrada'] || 0);
@@ -724,6 +742,9 @@ const filtered = rows.filter(r => {
                     
                     // EXCLUIR 641 que tiene centro pero NO tiene almacén
                     if (movimiento === '641' && centro && !almacen) return s;
+                    
+                    // NUEVA EXCLUSIÓN: Cualquier movimiento positivo que NO tenga almacén
+                    if (qty > 0 && centro && !almacen) return s;
                     
                     return s + qty; // Sumar directamente (positivos y negativos)
                 }, 0);
@@ -743,7 +764,6 @@ const filtered = rows.filter(r => {
         // IRREGULARIDADES - CORREGIDAS CON LAS NUEVAS REGLAS CLARAS
         const irregularidades = [];
 
-    
         // REGLA 1: 673 positivo sin 643 o 641 negativo (mismo usuario, misma cantidad, mismo día)
         if (group.centro === '1000/3000') {
             const entries673Positivo = filtered.filter(r => 
@@ -966,6 +986,66 @@ const filtered = rows.filter(r => {
             }
         });
 
+        // NUEVA REGLA 1: 313 negativo sin 315 positivo (mismo centro, misma cantidad)
+        const movimientos313Negativo = filtered.filter(r => 
+            String(r['Clase de movimiento']) === this.movimiento313 && 
+            Number(r['Ctd.en UM entrada']) < 0 &&
+            !pairedIgnore.has(filtered.indexOf(r))
+        );
+
+        movimientos313Negativo.forEach(mov313 => {
+            const qty313 = Math.abs(Number(mov313['Ctd.en UM entrada'] || 0));
+            const centro313 = String(mov313['Centro'] || '').trim();
+            const fecha313 = mov313['Fe.contabilización'];
+            
+            if (!fecha313) return;
+            
+            const fechaFormateada = this.formatDate(fecha313);
+            
+            // Buscar 315 POSITIVO en el MISMO centro con la MISMA cantidad
+            const found315 = filtered.find(r => 
+                String(r['Clase de movimiento']) === this.movimiento315 && 
+                Number(r['Ctd.en UM entrada']) > 0 &&
+                Math.abs(Number(r['Ctd.en UM entrada'] || 0)) === qty313 &&
+                String(r['Centro'] || '').trim() === centro313 &&
+                !pairedIgnore.has(filtered.indexOf(r))
+            );
+            
+            if (!found315) {
+                irregularidades.push({ 
+                    tipo: '313_negativo_sin_315', 
+                    usuario: mov313['Nombre del usuario'] || '', 
+                    fecha: fechaFormateada,
+                    descripcion: `Movimiento 313 negativo de ${qty313} en centro ${centro313} sin 315 positivo correspondiente - Posible sobrante - Fecha: ${fechaFormateada}`
+                });
+            }
+        });
+
+        // NUEVA REGLA 2: 201 en almacenes prohibidos
+        const movimientos201Prohibidos = filtered.filter(r => {
+            const movimiento = String(r['Clase de movimiento']);
+            const almacen = String(r['Almacén'] || '').trim();
+            
+            return movimiento === '201' && this.almacenesProhibidos201.has(almacen);
+        });
+
+        movimientos201Prohibidos.forEach(mov201 => {
+            const qty201 = Math.abs(Number(mov201['Ctd.en UM entrada'] || 0));
+            const almacen201 = String(mov201['Almacén'] || '').trim();
+            const fecha201 = mov201['Fe.contabilización'];
+            
+            if (!fecha201) return;
+            
+            const fechaFormateada = this.formatDate(fecha201);
+            
+            irregularidades.push({ 
+                tipo: '201_en_almacen_prohibido', 
+                usuario: mov201['Nombre del usuario'] || '', 
+                fecha: fechaFormateada,
+                descripcion: `Movimiento 201 de ${qty201} en almacén prohibido ${almacen201} - Posible sobrante - Fecha: ${fechaFormateada}`
+            });
+        });
+
         // Determinar tipo de diferencia BASADO EN LAS REGLAS CORREGIDAS
         let tipoDiferencia = 'Ninguna detectada';
         const tipos = irregularidades.map(i => i.tipo);
@@ -974,9 +1054,13 @@ const filtered = rows.filter(r => {
         if (tipos.includes('101_en_1000_sin_643')) tipoDiferencia = 'Posible Error Registro 101/643';
         if (tipos.includes('673_positivo_sin_salida')) tipoDiferencia = 'Posible Error Entrada 673';
         if (tipos.includes('501_sin_502')) tipoDiferencia = 'Posible Faltante 501/502';
-        if (tipos.includes('994_sin_995')) tipoDiferencia = 'Posible Error Garantía 994/995'; // NUEVO
+        if (tipos.includes('994_sin_995')) tipoDiferencia = 'Posible Error Garantía 994/995';
         if (tipos.includes('910_sin_909')) tipoDiferencia = 'Posible Error Devolución 910/909';
         if (tipos.includes('651_sin_601')) tipoDiferencia = 'Posible Error Devolución 651/601';
+        
+        // NUEVOS TIPOS DE DIFERENCIA
+        if (tipos.includes('313_negativo_sin_315')) tipoDiferencia = 'Posible Sobrante 313/315';
+        if (tipos.includes('201_en_almacen_prohibido')) tipoDiferencia = 'Posible Sobrante 201 en Almacén Prohibido';
 
         // Si hay múltiples tipos
         if (tipos.length > 1) {
