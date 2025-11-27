@@ -6,6 +6,8 @@ class TrazabilidadSystem {
         this.chart1 = null;
         this.chart2 = null;
         this.isInitialized = false;
+        this.selectedCentros = [];
+        this.selectedAlmacenes = [];
     }
 
     init() {
@@ -36,6 +38,8 @@ class TrazabilidadSystem {
         
         // Limpiar instancias
         this.core = null;
+        this.selectedCentros = [];
+        this.selectedAlmacenes = [];
         this.isInitialized = false;
         
         console.log('Módulo de Trazabilidad limpiado correctamente');
@@ -58,10 +62,19 @@ class TrazabilidadSystem {
                         </div>
 
                         <div class="filter-input-group">
-                            <label for="filterCentro">Filtro Centro:</label>
-                            <select id="filterCentro" class="custom-select">
+                            <label for="filterCentro">Filtro Centro (Múltiple):</label>
+                            <select id="filterCentro" class="custom-select" multiple size="4" style="height: auto; min-height: 80px;">
                                 <option value="">-- Todos --</option>
                             </select>
+                            <small class="muted">Ctrl+Click para selección múltiple</small>
+                        </div>
+
+                        <div class="filter-input-group">
+                            <label for="filterAlmacen">Filtro Almacén (Múltiple):</label>
+                            <select id="filterAlmacen" class="custom-select" multiple size="4" style="height: auto; min-height: 80px;" disabled>
+                                <option value="">-- Seleccione centros primero --</option>
+                            </select>
+                            <small class="muted">Ctrl+Click para selección múltiple</small>
                         </div>
 
                         <div class="filter-input-group">
@@ -112,7 +125,7 @@ class TrazabilidadSystem {
                                         <th>Rango de fecha</th>
                                         <th>Último ingreso</th>
                                         <th>Ajustes (+ / -)</th>
-                                        <th>Usuarios Ajuste</th> <!-- NUEVA COLUMNA -->
+                                        <th>Usuarios Ajuste</th>
                                         <th>Fecha de ajuste</th>
                                         <th>Puntos cero</th>
                                         <th>Posible irregularidad</th>
@@ -169,100 +182,202 @@ class TrazabilidadSystem {
         `;
     }
 
-    bindEvents() {
-    // Event listener directo para el botón volver - VERSIÓN CORREGIDA
-    setTimeout(() => {
-        const backButton = document.getElementById('backToReports');
-        if (backButton) {
-            backButton.addEventListener('click', (e) => {
-                e.preventDefault();
-                console.log('Botón Volver a Reportes clickeado - Evento directo'); // Debug
-                this.goBackToReports();
+    // MÉTODOS PARA MANEJO DE FILTROS MÚLTIPLES
+    updateCentrosFilter() {
+        const filterCentro = document.getElementById('filterCentro');
+        const selectedOptions = Array.from(filterCentro.selectedOptions).map(opt => opt.value);
+        
+        // Manejar la opción "Todos"
+        if (selectedOptions.includes('')) {
+            filterCentro.querySelectorAll('option').forEach(opt => {
+                if (opt.value !== '') opt.selected = false;
             });
+            this.selectedCentros = [];
         } else {
-            console.error('No se encontró el botón backToReports');
+            // Deseleccionar "Todos" si se seleccionan otros centros
+            const allOption = filterCentro.querySelector('option[value=""]');
+            if (allOption) allOption.selected = false;
+            this.selectedCentros = selectedOptions;
         }
-    }, 100);
+        
+        this.updateAlmacenesFilter();
+    }
 
-    // También mantener la delegación de eventos como respaldo
-    this.container.addEventListener('click', (e) => {
-        if (e.target.id === 'backToReports' || e.target.closest('#backToReports')) {
-            e.preventDefault();
-            console.log('Botón Volver a Reportes clickeado - Delegación'); // Debug
-            this.goBackToReports();
+    updateAlmacenesFilter() {
+        const filterAlmacen = document.getElementById('filterAlmacen');
+        const selectedOptions = Array.from(filterAlmacen.selectedOptions).map(opt => opt.value);
+        
+        // Manejar la opción "Todos"
+        if (selectedOptions.includes('')) {
+            filterAlmacen.querySelectorAll('option').forEach(opt => {
+                if (opt.value !== '') opt.selected = false;
+            });
+            this.selectedAlmacenes = [];
+        } else {
+            // Deseleccionar "Todos" si se seleccionan otros almacenes
+            const allOption = filterAlmacen.querySelector('option[value=""]');
+            if (allOption) allOption.selected = false;
+            this.selectedAlmacenes = selectedOptions;
         }
-    });
-}
+    }
 
-// Método específico para volver a reportes
-goBackToReports() {
-    console.log('Ejecutando goBackToReports');
-    
-    // Opción 1: Usar ModulesManager si está disponible
-    if (window.modulesManager) {
-        console.log('Navegando mediante ModulesManager');
-        window.modulesManager.showMainMenu();
-        return;
-    }
-    
-    // Opción 2: Usar el sistema de navegación existente
-    if (typeof initializeReportsSystem === 'function') {
-        console.log('Navegando mediante initializeReportsSystem');
-        initializeReportsSystem();
-        return;
-    }
-    
-    // Opción 3: Fallback - recargar la sección de reportes
-    console.log('Usando fallback de navegación');
-    const reportsSection = document.getElementById('reports');
-    if (reportsSection) {
-        reportsSection.innerHTML = '<div class="loading-state">Cargando reportes...</div>';
-        setTimeout(() => {
-            this.showReportsMenu();
-        }, 100);
-    }
-}
-
-    showReportsMenu() {
-    // Limpiar primero cualquier contenido existente
-    this.container.innerHTML = '';
-    
-    // Verificar si existe el ModulesManager
-    if (window.modulesManager) {
-        window.modulesManager.showMainMenu();
-        return;
-    }
-    
-    // Fallback: mostrar menú directamente
-    this.container.innerHTML = `
-        <div class="reports-menu">
-            <div class="report-option" data-report="trazabilidad">
-                <div class="report-icon">📊</div>
-                <h3>Trazabilidad</h3>
-                <p>Análisis de movimientos de inventario</p>
-            </div>
-            
-            <div class="report-option" data-report="analisis-pedidos">
-                <div class="report-icon">📦</div>
-                <h3>Análisis de Pedidos</h3>
-                <p>Próximamente...</p>
-            </div>
-        </div>
-    `;
-
-    // Reconectar eventos para el menú de reportes
-    document.querySelectorAll('.report-option').forEach(option => {
-        option.addEventListener('click', (e) => {
-            const reportType = e.currentTarget.dataset.report;
-            if (reportType === 'trazabilidad') {
-                this.render();
-                this.bindEvents(); // ¡IMPORTANTE! Reconectar eventos después de renderizar
-                this.initializeTrazabilidadLogic();
-            } else {
-                this.showCustomAlert('Esta funcionalidad estará disponible próximamente', 'info');
+    // Método para obtener almacenes basados en centros seleccionados
+    getAlmacenesByCentros(centros) {
+        if (!centros || centros.length === 0) {
+            return new Set();
+        }
+        
+        const almacenesSet = new Set();
+        this.core.rawRows.forEach(row => {
+            if (centros.includes(row.centro) && row.almacen) {
+                almacenesSet.add(row.almacen);
             }
         });
-    });
+        
+        return almacenesSet;
+    }
+
+    // Método para poblar el filtro de almacenes
+    populateAlmacenesFilter() {
+        const filterAlmacen = document.getElementById('filterAlmacen');
+        filterAlmacen.innerHTML = '<option value="">-- Todos --</option>';
+        
+        if (this.selectedCentros.length === 0) {
+            filterAlmacen.disabled = true;
+            filterAlmacen.innerHTML = '<option value="">-- Seleccione centros primero --</option>';
+            return;
+        }
+        
+        filterAlmacen.disabled = false;
+        const almacenes = this.getAlmacenesByCentros(this.selectedCentros);
+        
+        Array.from(almacenes).sort().forEach(almacen => {
+            const opt = document.createElement('option');
+            opt.value = almacen;
+            opt.textContent = almacen;
+            filterAlmacen.appendChild(opt);
+        });
+    }
+
+    // MÉTODO PARA FILTRAR MATERIALES CON LOS NUEVOS FILTROS
+    filterMaterials() {
+        const matFilter = (document.getElementById('filterMaterial').value || '').toLowerCase();
+        
+        return this.core.uniqueMaterials.filter(u => {
+            // Filtro por centros (múltiple)
+            if (this.selectedCentros.length > 0 && !this.selectedCentros.includes(u.centro)) {
+                return false;
+            }
+            
+            // Filtro por almacenes (múltiple)
+            if (this.selectedAlmacenes.length > 0 && !this.selectedAlmacenes.includes(u.almacen)) {
+                return false;
+            }
+            
+            // Filtro por material
+            if (matFilter && !(String(u.material).toLowerCase().includes(matFilter) || 
+                String(u.texto).toLowerCase().includes(matFilter))) {
+                return false;
+            }
+            
+            return true;
+        });
+    }
+
+    bindEvents() {
+        // Event listener directo para el botón volver
+        setTimeout(() => {
+            const backButton = document.getElementById('backToReports');
+            if (backButton) {
+                backButton.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    console.log('Botón Volver a Reportes clickeado - Evento directo');
+                    this.goBackToReports();
+                });
+            } else {
+                console.error('No se encontró el botón backToReports');
+            }
+        }, 100);
+
+        // También mantener la delegación de eventos como respaldo
+        this.container.addEventListener('click', (e) => {
+            if (e.target.id === 'backToReports' || e.target.closest('#backToReports')) {
+                e.preventDefault();
+                console.log('Botón Volver a Reportes clickeado - Delegación');
+                this.goBackToReports();
+            }
+        });
+    }
+
+    // Método específico para volver a reportes
+    goBackToReports() {
+        console.log('Ejecutando goBackToReports');
+        
+        // Opción 1: Usar ModulesManager si está disponible
+        if (window.modulesManager) {
+            console.log('Navegando mediante ModulesManager');
+            window.modulesManager.showMainMenu();
+            return;
+        }
+        
+        // Opción 2: Usar el sistema de navegación existente
+        if (typeof initializeReportsSystem === 'function') {
+            console.log('Navegando mediante initializeReportsSystem');
+            initializeReportsSystem();
+            return;
+        }
+        
+        // Opción 3: Fallback - recargar la sección de reportes
+        console.log('Usando fallback de navegación');
+        const reportsSection = document.getElementById('reports');
+        if (reportsSection) {
+            reportsSection.innerHTML = '<div class="loading-state">Cargando reportes...</div>';
+            setTimeout(() => {
+                this.showReportsMenu();
+            }, 100);
+        }
+    }
+
+    showReportsMenu() {
+        // Limpiar primero cualquier contenido existente
+        this.container.innerHTML = '';
+        
+        // Verificar si existe el ModulesManager
+        if (window.modulesManager) {
+            window.modulesManager.showMainMenu();
+            return;
+        }
+        
+        // Fallback: mostrar menú directamente
+        this.container.innerHTML = `
+            <div class="reports-menu">
+                <div class="report-option" data-report="trazabilidad">
+                    <div class="report-icon">📊</div>
+                    <h3>Trazabilidad</h3>
+                    <p>Análisis de movimientos de inventario</p>
+                </div>
+                
+                <div class="report-option" data-report="analisis-pedidos">
+                    <div class="report-icon">📦</div>
+                    <h3>Análisis de Pedidos</h3>
+                    <p>Próximamente...</p>
+                </div>
+            </div>
+        `;
+
+        // Reconectar eventos para el menú de reportes
+        document.querySelectorAll('.report-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                const reportType = e.currentTarget.dataset.report;
+                if (reportType === 'trazabilidad') {
+                    this.render();
+                    this.bindEvents(); // ¡IMPORTANTE! Reconectar eventos después de renderizar
+                    this.initializeTrazabilidadLogic();
+                } else {
+                    this.showCustomAlert('Esta funcionalidad estará disponible próximamente', 'info');
+                }
+            });
+        });
     }
 
     loadReport(reportType) {
@@ -663,24 +778,33 @@ goBackToReports() {
         // 5. Limpiar inputs y selects
         const fileInput = document.getElementById('fileInput');
         const filterCentro = document.getElementById('filterCentro');
+        const filterAlmacen = document.getElementById('filterAlmacen');
         const filterMaterial = document.getElementById('filterMaterial');
         
         if (fileInput) fileInput.value = '';
         if (filterCentro) {
             filterCentro.innerHTML = '<option value="">-- Todos --</option>';
         }
+        if (filterAlmacen) {
+            filterAlmacen.innerHTML = '<option value="">-- Seleccione centros primero --</option>';
+            filterAlmacen.disabled = true;
+        }
         if (filterMaterial) filterMaterial.value = '';
         
-        // 6. Deshabilitar botones
+        // 6. Limpiar selecciones
+        this.selectedCentros = [];
+        this.selectedAlmacenes = [];
+        
+        // 7. Deshabilitar botones
         document.getElementById('listMaterialsBtn').disabled = true;
         document.getElementById('configStockBtn').disabled = true;
         document.getElementById('generateBtn').disabled = true;
         document.getElementById('downloadExcelBtn').disabled = true;
         
-        // 7. Cerrar modal si está abierto
+        // 8. Cerrar modal si está abierto
         this.closeModal();
         
-        // 8. Mostrar confirmación
+        // 9. Mostrar confirmación
         this.showCustomAlert('Sistema reiniciado correctamente. Puedes cargar un nuevo archivo Excel.', 'success');
         
         console.log('Sistema reiniciado completamente');
@@ -784,7 +908,7 @@ goBackToReports() {
                     }
                     this.core.populateMaterialList(this.core.rawRows);
                     
-                    // Fill filterCentro
+                    // Fill filterCentro (múltiple)
                     const filterCentro = document.getElementById('filterCentro');
                     filterCentro.innerHTML = '<option value="">-- Todos --</option>';
                     Array.from(this.core.centroSet).sort().forEach(c => {
@@ -793,6 +917,11 @@ goBackToReports() {
                         opt.textContent = c;
                         filterCentro.appendChild(opt);
                     });
+                    
+                    // Inicializar filtro de almacenes como deshabilitado
+                    const filterAlmacen = document.getElementById('filterAlmacen');
+                    filterAlmacen.innerHTML = '<option value="">-- Seleccione centros primero --</option>';
+                    filterAlmacen.disabled = true;
                     
                     document.getElementById('listMaterialsBtn').disabled = false;
                     document.getElementById('configStockBtn').disabled = false;
@@ -806,7 +935,17 @@ goBackToReports() {
             reader.readAsArrayBuffer(f);
         });
 
-        // Render materials list
+        // Event listeners para filtros múltiples
+        document.getElementById('filterCentro').addEventListener('change', () => {
+            this.updateCentrosFilter();
+            this.populateAlmacenesFilter();
+        });
+
+        document.getElementById('filterAlmacen').addEventListener('change', () => {
+            this.updateAlmacenesFilter();
+        });
+
+        // Render materials list - ACTUALIZADO CON NUEVOS FILTROS
         document.getElementById('listMaterialsBtn').addEventListener('click', () => {
             const materialsContainer = document.getElementById('materialsContainer');
             const materialsSection = document.getElementById('materialsSection');
@@ -814,14 +953,9 @@ goBackToReports() {
             materialsContainer.innerHTML = '';
             materialsSection.classList.remove('hidden');
             
-            const centroFilter = document.getElementById('filterCentro').value;
-            const matFilter = (document.getElementById('filterMaterial').value || '').toLowerCase();
+            const filteredMaterials = this.filterMaterials();
 
-            this.core.uniqueMaterials.forEach(u => {
-                if (centroFilter && u.centro !== centroFilter) return;
-                if (matFilter && !(String(u.material).toLowerCase().includes(matFilter) || 
-                    String(u.texto).toLowerCase().includes(matFilter))) return;
-
+            filteredMaterials.forEach(u => {
                 const item = document.createElement('div');
                 item.className = 'material-item';
                 item.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 15px; background: rgba(255,255,255,0.02); border-radius: 8px; margin-bottom: 10px;';
@@ -837,7 +971,7 @@ goBackToReports() {
                 cb.style.cssText = 'width: 18px; height: 18px;';
                 
                 const span = document.createElement('div');
-                span.textContent = `${u.material} — ${u.texto} (${u.centro})`;
+                span.textContent = `${u.material} — ${u.texto} (${u.centro} - ${u.almacen})`;
                 span.style.cssText = 'color: var(--text);';
                 
                 left.appendChild(cb);
@@ -873,7 +1007,8 @@ goBackToReports() {
         document.getElementById('configStockBtn').addEventListener('click', () => {
             const checked = Array.from(document.querySelectorAll('.material-checkbox:checked')).map(c => c.dataset.key);
             if (checked.length === 0) {
-                this.openStockModalForKeys(this.core.uniqueMaterials.map(u => u.key));
+                const filteredMaterials = this.filterMaterials();
+                this.openStockModalForKeys(filteredMaterials.map(u => u.key));
             } else {
                 this.openStockModalForKeys(checked);
             }
@@ -1000,7 +1135,7 @@ goBackToReports() {
             wrapper.dataset.key = m.key;
             
             const h = document.createElement('h6');
-            h.textContent = `${m.material} — ${m.texto} (${m.centro})`;
+            h.textContent = `${m.material} — ${m.texto} (${m.centro} - ${m.almacen})`;
             h.style.cssText = 'color: var(--text); margin-bottom: 15px; font-size: 1rem;';
             
             const dateLabel = document.createElement('label');
