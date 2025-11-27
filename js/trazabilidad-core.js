@@ -8,6 +8,202 @@ class TrazabilidadCore {
         this.results = [];
         this.centroSet = new Set();
         
+        // MAPA DE MATERIALES CON FACTORES ESPECIALES
+        this.materialesConFactor = new Map([
+            // Materiales con KG
+            ['1000013461', {unidad: 'KG', factor: 10.9}],
+            ['1000012907', {unidad: 'KG', factor: 13.6}],
+            ['1000009740', {unidad: 'KG', factor: 11.3}],
+            ['1000017132', {unidad: 'KG', factor: 11.3}],
+            ['1000011789', {unidad: 'KG', factor: 5}],
+            ['1000012597', {unidad: 'KG', factor: 11.35}],
+            ['1000017743', {unidad: 'KG', factor: 10.9}],
+            ['1000015728', {unidad: 'KG', factor: 13.6}],
+            ['1000012399', {unidad: 'KG', factor: 11.3}],
+            ['1000037818', {unidad: 'KG', factor: 11.3}],
+            ['1000012934', {unidad: 'KG', factor: 11.3}],
+            ['1000017966', {unidad: 'KG', factor: 11.35}],
+            ['1000020985', {unidad: 'KG', factor: 5}],
+            ['1000012284', {unidad: 'KG', factor: 13.6}],
+            ['1000009052', {unidad: 'KG', factor: 12.3}],
+            ['1000008244', {unidad: 'KG', factor: 11.35}],
+            ['1000011315', {unidad: 'KG', factor: 13.6}],
+            ['1000008245', {unidad: 'KG', factor: 12.25}],
+            ['1000012599', {unidad: 'KG', factor: 13.6}],
+            ['1000018312', {unidad: 'KG', factor: 13.6}],
+            ['1000012285', {unidad: 'KG', factor: 13.6}],
+            ['1000001891', {unidad: 'KG', factor: 11.3}],
+            ['1000008247', {unidad: 'KG', factor: 13.79}],
+            ['1000008826', {unidad: 'KG', factor: 13.6}],
+            ['1000008848', {unidad: 'KG', factor: 11.35}],
+            ['1000008902', {unidad: 'KG', factor: 11.35}],
+            ['1000008908', {unidad: 'KG', factor: 11.3}],
+            ['1000011213', {unidad: 'KG', factor: 6.5}],
+            ['1000012728', {unidad: 'KG', factor: 13.6}],
+            ['1000017113', {unidad: 'KG', factor: 13.6}],
+            ['1000017746', {unidad: 'KG', factor: 11.3}],
+            ['1000017768', {unidad: 'KG', factor: 10.9}],
+            ['1000017850', {unidad: 'KG', factor: 11.3}],
+            ['1000018024', {unidad: 'KG', factor: 13.6}],
+            ['1000019286', {unidad: 'KG', factor: 13.6}],
+            ['1000027370', {unidad: 'KG', factor: 5}],
+            ['1000027371', {unidad: 'KG', factor: 11.3}],
+            
+            // Materiales con M
+            ['1000014173', {unidad: 'M', factor: 15}],
+            ['1000014174', {unidad: 'M', factor: 15}],
+            ['1000012049', {unidad: 'M', factor: 15}],
+            ['1000017106', {unidad: 'M', factor: 15}],
+            ['1000002901', {unidad: 'M', factor: 15.24}],
+            ['1000012047', {unidad: 'M', factor: 15}],
+            ['1000012048', {unidad: 'M', factor: 15}],
+            ['1000012717', {unidad: 'M', factor: 15}],
+            ['1000016446', {unidad: 'M', factor: 15}],
+            ['1000017117', {unidad: 'M', factor: 15.24}],
+            ['1000016429', {unidad: 'M', factor: 15}],
+            ['1000012045', {unidad: 'M', factor: 15}],
+            ['1000012044', {unidad: 'M', factor: 15}],
+            ['1000012043', {unidad: 'M', factor: 15}],
+            ['1000012046', {unidad: 'M', factor: 15}],
+            ['1000014171', {unidad: 'M', factor: 15}],
+            ['1000014172', {unidad: 'M', factor: 15}],
+            ['1000021235', {unidad: 'M', factor: 15}],
+            ['1000016445', {unidad: 'M', factor: 15}],
+            ['1000002904', {unidad: 'M', factor: 15.24}],
+            ['1000002886', {unidad: 'M', factor: 18.29}],
+            ['1000002892', {unidad: 'M', factor: 15.24}],
+            ['1000002894', {unidad: 'M', factor: 15.24}],
+            ['1000002895', {unidad: 'M', factor: 15.24}],
+            ['1000002902', {unidad: 'M', factor: 15.24}],
+            ['1000002906', {unidad: 'M', factor: 15.24}],
+            ['1000002907', {unidad: 'M', factor: 15.24}],
+            ['1000002909', {unidad: 'M', factor: 15.24}],
+            ['1000002910', {unidad: 'M', factor: 18.29}],
+            ['1000012050', {unidad: 'M', factor: 15}],
+            ['1000012715', {unidad: 'M', factor: 15}],
+            ['1000012716', {unidad: 'M', factor: 15}],
+            ['1000012718', {unidad: 'M', factor: 15}],
+            ['1000012719', {unidad: 'M', factor: 15}],
+            ['1000012720', {unidad: 'M', factor: 15}],
+            ['1000012721', {unidad: 'M', factor: 15}],
+            ['1000012722', {unidad: 'M', factor: 15}],
+            ['1000012723', {unidad: 'M', factor: 15}],
+            ['1000012725', {unidad: 'M', factor: 15}],
+            ['1000012904', {unidad: 'M', factor: 18.28}],
+            ['1000014169', {unidad: 'M', factor: 15}],
+            ['1000014170', {unidad: 'M', factor: 15}],
+            ['1000014175', {unidad: 'M', factor: 15}],
+            ['1000016394', {unidad: 'M', factor: 15}],
+            ['1000016880', {unidad: 'M', factor: 15}],
+            ['1000017119', {unidad: 'M', factor: 15.24}],
+            ['1000017120', {unidad: 'M', factor: 15.24}],
+            ['1000014179', {unidad: 'M', factor: 3}],
+            ['1000014178', {unidad: 'M', factor: 3}],
+            ['1000012029', {unidad: 'M', factor: 30}],
+            ['1000000320', {unidad: 'M', factor: 30}],
+            ['1000014176', {unidad: 'M', factor: 3}],
+            ['1000012054', {unidad: 'M', factor: 30}],
+            ['1000012053', {unidad: 'M', factor: 30}],
+            ['1000013107', {unidad: 'M', factor: 30}],
+            ['1000013111', {unidad: 'M', factor: 30}],
+            ['1000014177', {unidad: 'M', factor: 3}],
+            ['1000012026', {unidad: 'M', factor: 30}],
+            ['1000012028', {unidad: 'M', factor: 30}],
+            ['1000013103', {unidad: 'M', factor: 30}],
+            ['1000012027', {unidad: 'M', factor: 30}],
+            ['1000000315', {unidad: 'M', factor: 30}],
+            ['1000000316', {unidad: 'M', factor: 30}],
+            ['1000000317', {unidad: 'M', factor: 30}],
+            ['1000000318', {unidad: 'M', factor: 30}],
+            ['1000000319', {unidad: 'M', factor: 30}],
+            ['1000000321', {unidad: 'M', factor: 30}],
+            ['1000008549', {unidad: 'M', factor: 30.48}],
+            ['1000017765', {unidad: 'M', factor: 30.48}],
+            ['1000017766', {unidad: 'M', factor: 30.48}],
+            ['1000017767', {unidad: 'M', factor: 30.48}],
+            ['3000000009', {unidad: 'M', factor: 30}],
+            ['3000000010', {unidad: 'M', factor: 30}],
+            ['1000023004', {unidad: 'M', factor: 6}],
+            ['1000013126', {unidad: 'M', factor: 6}],
+            ['1000023005', {unidad: 'M', factor: 6}],
+            ['1000023352', {unidad: 'M', factor: 6}],
+            ['1000002903', {unidad: 'M', factor: 3}],
+            ['1000012042', {unidad: 'M', factor: 6}],
+            ['1000023006', {unidad: 'M', factor: 6}],
+            ['1000002889', {unidad: 'M', factor: 6.1}],
+            ['1000002911', {unidad: 'M', factor: 6.1}],
+            ['1000002887', {unidad: 'M', factor: 6.1}],
+            ['1000002893', {unidad: 'M', factor: 6.1}],
+            ['1000002908', {unidad: 'M', factor: 6.1}],
+            ['1000002897', {unidad: 'M', factor: 6}],
+            ['1000013771', {unidad: 'M', factor: 6}],
+            ['1000023007', {unidad: 'M', factor: 6}],
+            ['1000023354', {unidad: 'M', factor: 6}],
+            ['1000023510', {unidad: 'M', factor: 6}],
+            ['1000023511', {unidad: 'M', factor: 6}],
+            ['1000012041', {unidad: 'M', factor: 6}],
+            ['1000002891', {unidad: 'M', factor: 6.1}],
+            ['1000002898', {unidad: 'M', factor: 6.1}],
+            ['1000011019', {unidad: 'M', factor: 3}],
+            ['1000013122', {unidad: 'M', factor: 6}],
+            ['1000013125', {unidad: 'M', factor: 6}],
+            ['1000013389', {unidad: 'M', factor: 6}],
+            ['1000020249', {unidad: 'M', factor: 4}],
+            ['1000023509', {unidad: 'M', factor: 6}],
+            ['1000026154', {unidad: 'M', factor: 6}],
+            
+            // Materiales con UN
+            ['1000023415', {unidad: 'UN', factor: 65}],
+            ['1000026091', {unidad: 'UN', factor: 120}],
+            ['1000023430', {unidad: 'UN', factor: 100}],
+            ['1000000166', {unidad: 'UN', factor: 60}],
+            ['1000023414', {unidad: 'UN', factor: 49}],
+            ['1000023418', {unidad: 'UN', factor: 30}],
+            ['1000023416', {unidad: 'UN', factor: 72}],
+            ['1000023417', {unidad: 'UN', factor: 36}],
+            ['1000011265', {unidad: 'UN', factor: 168}],
+            ['1000000163', {unidad: 'UN', factor: 90}],
+            ['1000019085', {unidad: 'UN', factor: 20}],
+            ['1000023428', {unidad: 'UN', factor: 30}],
+            ['1000000164', {unidad: 'UN', factor: 110}],
+            ['1000007112', {unidad: 'UN', factor: 20}],
+            ['1000000165', {unidad: 'UN', factor: 70}],
+            ['1000023422', {unidad: 'UN', factor: 36}],
+            ['1000023426', {unidad: 'UN', factor: 63}],
+            ['1000023427', {unidad: 'UN', factor: 25}],
+            ['1000023424', {unidad: 'UN', factor: 25}],
+            ['1000000157', {unidad: 'UN', factor: 24}],
+            ['1000000158', {unidad: 'UN', factor: 40}],
+            ['1000000159', {unidad: 'UN', factor: 35}],
+            ['1000000160', {unidad: 'UN', factor: 55}],
+            ['1000000161', {unidad: 'UN', factor: 70}],
+            ['1000000162', {unidad: 'UN', factor: 80}],
+            ['1000000167', {unidad: 'UN', factor: 55}],
+            ['1000000169', {unidad: 'UN', factor: 38}],
+            ['1000000170', {unidad: 'UN', factor: 33}],
+            ['1000000171', {unidad: 'UN', factor: 30}],
+            ['1000000172', {unidad: 'UN', factor: 20}],
+            ['1000000173', {unidad: 'UN', factor: 35}],
+            ['1000000174', {unidad: 'UN', factor: 32}],
+            ['1000000175', {unidad: 'UN', factor: 30}],
+            ['1000000176', {unidad: 'UN', factor: 24}],
+            ['1000000177', {unidad: 'UN', factor: 22}],
+            ['1000000178', {unidad: 'UN', factor: 18}],
+            ['1000009647', {unidad: 'UN', factor: 100}],
+            ['1000012211', {unidad: 'UN', factor: 50}],
+            ['1000012214', {unidad: 'UN', factor: 50}],
+            ['1000012215', {unidad: 'UN', factor: 50}],
+            ['1000012216', {unidad: 'UN', factor: 50}],
+            ['1000012218', {unidad: 'UN', factor: 50}],
+            ['1000016091', {unidad: 'UN', factor: 72}],
+            ['1000016400', {unidad: 'UN', factor: 55}],
+            ['1000023413', {unidad: 'UN', factor: 20}],
+            ['1000023423', {unidad: 'UN', factor: 30}],
+            ['1000023425', {unidad: 'UN', factor: 18}],
+            ['1000023429', {unidad: 'UN', factor: 24}],
+            ['3000000008', {unidad: 'UN', factor: 130}]
+        ]);
+        
         // MOVIMIENTOS COMPLETOS - REGLA: negativo = salida, positivo = entrada
         
         // Salidas a cliente (cantidad NEGATIVA)
@@ -184,6 +380,23 @@ class TrazabilidadCore {
         return raw;
     }
 
+    // Función para aplicar factor especial si corresponde
+    aplicarFactorEspecial(material, unidad, cantidad) {
+        // Verificar si el material está en nuestro mapa de factores especiales
+        const materialInfo = this.materialesConFactor.get(String(material));
+        
+        if (materialInfo) {
+            // Verificar si la unidad de medida coincide
+            if (String(unidad).trim().toUpperCase() === materialInfo.unidad) {
+                // Aplicar división por el factor
+                return cantidad / materialInfo.factor;
+            }
+        }
+        
+        // Si no aplica factor especial, devolver la cantidad original
+        return cantidad;
+    }
+
     transformRow(r) {
         const row = {};
         const keys = Object.keys(r);
@@ -228,6 +441,12 @@ class TrazabilidadCore {
             }
             qty = parseFloat(s) || 0;
         }
+
+        // APLICAR FACTOR ESPECIAL SI CORRESPONDE
+        const material = row['Material'];
+        const unidad = row['Un.medida de entrada'];
+        qty = this.aplicarFactorEspecial(material, unidad, qty);
+
         row['Ctd.en UM entrada'] = qty;
 
         row['Clase de movimiento'] = row['Clase de movimiento'] ? String(row['Clase de movimiento']).trim() : '';
