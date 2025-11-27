@@ -701,6 +701,9 @@ class TrazabilidadCore {
             
             // EXCLUIR 641 que tiene centro pero NO tiene almacén
             if (movimiento === '641' && centro && !almacen) return sum;
+
+            //EXCLUIR 314 NEGATIVOS
+            if (movimiento === '314' && qty < 0) return sum;
             
             // NUEVA EXCLUSIÓN: Cualquier movimiento negativo que NO tenga almacén
             if (qty < 0 && centro && !almacen) return sum;
