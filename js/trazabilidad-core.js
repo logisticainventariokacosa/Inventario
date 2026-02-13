@@ -48,6 +48,10 @@ class TrazabilidadCore {
             ['1000019286|KG', {unidad: 'KG', factor: 13.6}],
             ['1000027370|KG', {unidad: 'KG', factor: 5}],
             ['1000027371|KG', {unidad: 'KG', factor: 11.3}],
+            ['1000012595|KG', {unidad: 'KG', factor: 13.6}],
+            ['1000012600|KG', {unidad: 'KG', factor: 10.9}],
+            ['1000012601|KG', {unidad: 'KG', factor: 11.3}],
+            ['1000012394|KG', {unidad: 'KG', factor: 13.6}],
 
             // Materiales con G (gramos) - NUEVOS - clave: "material|unidad"
             ['1000013461|G', {unidad: 'G', factor: 10900}],
@@ -87,6 +91,10 @@ class TrazabilidadCore {
             ['1000019286|G', {unidad: 'G', factor: 13600}],
             ['1000027370|G', {unidad: 'G', factor: 5000}],
             ['1000027371|G', {unidad: 'G', factor: 11300}],
+            ['1000012595|G', {unidad: 'KG', factor: 13600}],
+            ['1000012600|G', {unidad: 'KG', factor: 10900}],
+            ['1000012601|G', {unidad: 'KG', factor: 11300}],
+            ['1000012394|G', {unidad: 'KG', factor: 13600}],
                         
             // Materiales con M - clave: "material|unidad"
             ['1000014173|M', {unidad: 'M', factor: 15}],
