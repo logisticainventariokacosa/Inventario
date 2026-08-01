@@ -1,16 +1,37 @@
 /* ====== CONFIG ====== */
 const API_URL = 'https://script.google.com/macros/s/AKfycbzGoWmn4doU1_vDqQvWYbqg4WzW8WD6y64lI96xKYn_bGd-L1THgt3HVJJl_BprqpysTA/exec';
 
+// Este proyecto ahora es el mismo que usa el Portal KACOSA (sesión compartida:
+// si el usuario ya inició sesión en el portal, entra aquí directo sin volver a loguearse)
 const firebaseConfig = {
-    apiKey:"AIzaSyDpBoHiKKC7MLQHiWV9psdE3eJ4YuR66GU",
-    authDomain:"pagina-dda30.firebaseapp.com",
-    projectId:"pagina-dda30",
-    appId:"1:14427407275:web:8cba04677fdeef39a088ee"
+    apiKey: "AIzaSyAeXFRdPZsEKX5vcTgGQ5hIOAlJyVv92kQ",
+    authDomain: "portal-kacosa.firebaseapp.com",
+    projectId: "portal-kacosa",
+    storageBucket: "portal-kacosa.firebasestorage.app",
+    messagingSenderId: "350653710617",
+    appId: "1:350653710617:web:d29f757730e4515ec3c588"
 };
 
 // Inicializar Firebase
 firebase.initializeApp(firebaseConfig);
 const auth = firebase.auth();
+const db = firebase.firestore();
+
+// Roles que tienen acceso a esta app (Información Logística)
+const ROLES_PERMITIDOS = ["admin", "supervisor", "directiva", "gerente"];
+
+// Revisa si el correo está dado de alta en el portal y con un rol permitido para esta app
+async function correoAutorizado(email) {
+    try {
+        const snap = await db.collection("usuarios").doc(email.toLowerCase()).get();
+        if (!snap.exists) return false;
+        const rol = snap.data().rol;
+        return ROLES_PERMITIDOS.includes(rol);
+    } catch (e) {
+        console.error("Error verificando acceso:", e);
+        return false;
+    }
+}
 
 // Variables globales
 let currentInventoryResults = [];
@@ -200,8 +221,16 @@ function getAlertTitle(type) {
         this.textContent = type === 'password' ? '👁️' : '🔒'; 
     });
 
-    auth.onAuthStateChanged(user => {
+    auth.onAuthStateChanged(async user => {
         if (user) {
+            const autorizado = await correoAutorizado(user.email);
+            if (!autorizado) {
+                // No se cierra sesión: es compartida con el portal y las demás apps de KACOSA.
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('mainApp').classList.add('hidden');
+                showAlert('Tu cuenta no tiene acceso a este módulo. Contacta al administrador.', 'error', 6000);
+                return;
+            }
             document.getElementById('authScreen').classList.add('hidden');
             document.getElementById('mainApp').classList.remove('hidden');
             document.getElementById('userEmail').textContent = user.email || user.displayName || '';
@@ -210,24 +239,6 @@ function getAlertTitle(type) {
         } else {
             document.getElementById('authScreen').classList.remove('hidden');
             document.getElementById('mainApp').classList.add('hidden');
-        }
-    });
-
-    document.getElementById('btnRegister').addEventListener('click', async () => {
-        const name = document.getElementById('name').value.trim();
-        const email = document.getElementById('email').value.trim();
-        const pass = document.getElementById('password').value;
-        if (!name || !email || !pass) {
-            showAlert('Completa todos los campos.', 'warning', 4000);
-            return;
-        }
-        try {
-            const userCred = await auth.createUserWithEmailAndPassword(email, pass);
-            await userCred.user.updateProfile({ displayName: name });
-            await callApi('registerUser', { user: { nombreDeUsuario: name, email, uid: userCred.user.uid } }); 
-            showAlert('Registrado correctamente', 'success', 3000);
-        } catch (err) { 
-            showAlert(err.message, 'error', 5000);
         }
     });
 
@@ -244,9 +255,7 @@ function getAlertTitle(type) {
     document.getElementById('btnGoogle').addEventListener('click', async () => {
         const provider = new firebase.auth.GoogleAuthProvider();
         try {
-            const res = await auth.signInWithPopup(provider);
-            const user = res.user;
-            await callApi('registerUser', { user: { nombreDeUsuario: user.displayName, email: user.email, uid: user.uid } });
+            await auth.signInWithPopup(provider);
         } catch (err) { 
             showAlert(err.message, 'error', 5000);
         }
