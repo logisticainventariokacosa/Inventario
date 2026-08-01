@@ -27,16 +27,14 @@
         <div class="card auth-card">
             <h1>Logística & Inventario</h1>
             <p class="muted">Accede para información</p>
-            <input id="name" placeholder="Nombre"/>
-            <input id="email" placeholder="Correo" type="email"/>
+            <input id="email" placeholder="Correo" type="email" maxlength="50"/>
             
             <div class="password-container">
-                <input id="password" placeholder="Contraseña" type="password"/>
+                <input id="password" placeholder="Contraseña" type="password" maxlength="20"/>
                 <button class="toggle-password" id="togglePasswordBtn">👁️</button>
             </div>
             
             <div class="row">
-                <button id="btnRegister">Registrarse</button>
                 <button id="btnLogin" class="alt">Iniciar sesión</button>
             </div>
             <br>
@@ -49,7 +47,7 @@
                 
             </div>
             <br>
-            <p class="muted small">Los datos se guardarán en el sistema.</p>
+            <p class="muted small">Acceso exclusivo para personal autorizado de KACOSA.</p>
         </div>
     </div>
 
@@ -288,6 +286,7 @@
     <!-- Firebase -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <!-- Scripts -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
